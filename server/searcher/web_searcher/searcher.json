@@ -1,0 +1,22 @@
+{
+    "searchers": [
+        {
+            "key": "girigirilove",
+            "name": "girigiri愛動漫",
+            "subjectSearcher": {
+                "searchUrl": "https://bgm.girigirilove.com/search/-------------/?wd={keyword}",
+                "parser": "a",
+                "a": "body > .box-width .mask2 .search-list .detail-info > a",
+                "cover": "body > .box-width .mask2 .search-list .detail-pic img",
+                "cover_attr": "data-src"
+            },
+            "channdelSearcher": {
+                "parser": "index-grouped",
+                "selectChannelNames": ".anthology-tab > .swiper-wrapper a",
+                "selectEpisodeLists": ".anthology-list-box",
+                "selectEpisodesFromList": "a",
+                "selectEpisodeLinksFromList": ""
+            }
+        }
+    ]
+}
