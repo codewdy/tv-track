@@ -32,12 +32,12 @@ class LocalStore(BaseModel):
 
 
 class TV(BaseModel):
-    id: str
+    id: int
     name: str
     source: Source
     local: LocalStore
 
 
 class DB(BaseModel):
-    tv: dict[str, TV] = {}
+    tv: dict[int, str] = {}
     next_id: int = 1
