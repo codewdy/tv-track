@@ -16,6 +16,9 @@
                 "selectEpisodeLists": ".anthology-list-box",
                 "selectEpisodesFromList": "a",
                 "selectEpisodeLinksFromList": ""
+            },
+            "resourceSearcher": {
+                "parser": "browser"
             }
         }
     ]

@@ -23,32 +23,43 @@ class RequestResourceHandler:
         return result.result
 
 
-class ResourceParser:
-    def __init__(self):
+class BrowserParser:
+    def __init__(self, **kwargs):
         pass
 
-    def parse(self, url):
-        parsed_url = urlparse(url)
+    async def parse(self, url):
+        video_url = await RequestResourceHandler.get(url)
+        if video_url is None:
+            raise ValueError(f"cannot get resource: {url}")
+        parsed_url = urlparse(video_url)
         query_params = parse_qs(parsed_url.query)
         if "url" in query_params:
             return query_params["url"][0]
-        return url
+        return video_url
+
+
+_PARSER = {
+    "browser": BrowserParser,
+}
 
 
 class ResourceSearcher:
     def __init__(self, searchConfig):
-        self.parser = ResourceParser()
+        self.parser = _PARSER[searchConfig["parser"]](**searchConfig)
 
     async def search(self, url):
-        rst = await RequestResourceHandler.get(url)
-        if rst is None:
-            raise ValueError(f"cannot get resource: {url}")
-        return self.parser.parse(rst)
+        return await self.parser.parse(url)
 
 
 if __name__ == "__main__":
+    import json
     import asyncio
-    searcher = ResourceSearcher(None)
+    from pathlib import Path
+    from utils.context import Context
+
+    with open(Path(__file__).parent / "searcher.json", "r") as f:
+        config = json.load(f)
+    searcher = ResourceSearcher(config["searchers"][0]["resourceSearcher"])
 
     async def test():
         async with Context(use_browser=True) as ctx:
