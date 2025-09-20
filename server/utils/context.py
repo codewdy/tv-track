@@ -1,7 +1,9 @@
 from playwright.async_api import async_playwright
 import aiohttp
 import threading
-from utils.temp_manager import TempManager
+from .temp_manager import TempManager
+from .error_handler import ErrorHandler
+from .logger import get_logger
 
 
 class ContextMeta(type):
@@ -24,6 +26,25 @@ class ContextMeta(type):
     def browser(cls):
         return cls.current.browser
 
+    def add_error_handler(cls, handler):
+        cls.current.error_handler.add_handler(handler)
+
+    @property
+    def handle_error(cls):
+        return cls.current.error_handler.handle_error()
+
+    def info(cls, msg, *args, **kwargs):
+        cls.current.logger.info(msg, *args, **kwargs)
+
+    def debug(cls, msg, *args, **kwargs):
+        cls.current.logger.debug(msg, *args, **kwargs)
+
+    def error(cls, msg, *args, **kwargs):
+        cls.current.logger.error(msg, *args, **kwargs)
+
+    def warning(cls, msg, *args, **kwargs):
+        cls.current.logger.warning(msg, *args, **kwargs)
+
     def tempdir(cls):
         return TempManager(cls.current.tmp_dir)
 
@@ -31,7 +52,7 @@ class ContextMeta(type):
 class Context(metaclass=ContextMeta):
     _current_holder = threading.local()
 
-    def __init__(self, tmp_dir="/tmp/ani_track", use_client=True, use_browser=False):
+    def __init__(self, tmp_dir="/tmp/ani_track", logger_level="DEBUG", log_filename=None, use_client=True, use_browser=False):
         self.tmp_dir = tmp_dir
         self.use_client = use_client
         self.use_browser = use_browser
@@ -39,6 +60,9 @@ class Context(metaclass=ContextMeta):
         self.playwright_ctx = None
         self.browser = None
         self.client = None
+        self.error_handler = ErrorHandler()
+        self.logger = get_logger(logger_level, log_filename)
+        self.error_handler.add_handler(self.logger.error)
 
     async def __aenter__(self):
         self._current_holder.context = self
