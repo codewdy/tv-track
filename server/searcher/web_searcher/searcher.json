@@ -10,7 +10,7 @@
                 "cover": "body > .box-width .mask2 .search-list .detail-pic img",
                 "cover_attr": "data-src"
             },
-            "channdelSearcher": {
+            "channelSearcher": {
                 "parser": "index-grouped",
                 "selectChannelNames": ".anthology-tab > .swiper-wrapper a",
                 "selectEpisodeLists": ".anthology-list-box",

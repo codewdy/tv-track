@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from enum import Enum
 
 
 class Source(BaseModel):
@@ -7,6 +8,7 @@ class Source(BaseModel):
         url: str
     source_key: str
     name: str
+    channel_name: str
     url: str
     cover_url: str
     tracking: bool
