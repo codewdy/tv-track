@@ -13,7 +13,7 @@ class Searcher:
         self.resource_searcher = ResourceSearcher(config["resourceSearcher"])
 
     async def search(self, keyword):
-        async with Context.handle_error:
+        async with Context.handle_error_context():
             try:
                 results = []
                 subjects = await self.subject_searcher.search(keyword)
@@ -33,9 +33,10 @@ class Searcher:
                 return results
             except:
                 raise RuntimeError("search error: ", self.name, keyword)
+        return []
 
     async def update(self, source: Source):
-        async with Context.handle_error:
+        async with Context.handle_error_context():
             try:
                 channels = await self.channel_searcher.search(source.url)
                 for channel in channels:
@@ -55,6 +56,7 @@ class Searcher:
                         f"channel not found: {source.channel_name}")
             except:
                 raise RuntimeError("update error: ", self.name, source.name)
+        return source
 
 
 if __name__ == "__main__":

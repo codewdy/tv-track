@@ -9,13 +9,18 @@ class ErrorHandler:
     def add_handler(self, handler):
         self.handlers.append(handler)
 
+    def handle_error(self, error):
+        for handler in self.handlers:
+            handler(error)
+
     @asynccontextmanager
-    async def handle_error(self):
+    async def handle_error_context(self, rethrow=False):
         try:
             yield
         except Exception as e:
-            for handler in self.handlers:
-                handler(traceback.format_exc())
+            self.handle_error(traceback.format_exc())
+            if rethrow:
+                raise e
 
 
 if __name__ == "__main__":

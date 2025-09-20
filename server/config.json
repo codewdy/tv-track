@@ -1,0 +1,12 @@
+{
+    "logger": {
+        "level": "INFO",
+        "filename": "tracker.log",
+        "rotate_day": 7
+    },
+    "tracker": {
+        "temp_dir": "/tmp/tracker",
+        "resource_dir": "test-data",
+        "save_interval": "1m"
+    }
+}

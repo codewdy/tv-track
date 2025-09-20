@@ -4,6 +4,7 @@ import threading
 from .temp_manager import TempManager
 from .error_handler import ErrorHandler
 from .logger import get_logger
+from schema.config import Config
 
 
 class ContextMeta(type):
@@ -29,9 +30,8 @@ class ContextMeta(type):
     def add_error_handler(cls, handler):
         cls.current.error_handler.add_handler(handler)
 
-    @property
-    def handle_error(cls):
-        return cls.current.error_handler.handle_error()
+    def handle_error_context(cls, rethrow=False):
+        return cls.current.error_handler.handle_error_context(rethrow=rethrow)
 
     def info(cls, msg, *args, **kwargs):
         cls.current.logger.info(msg, *args, **kwargs)
@@ -52,8 +52,8 @@ class ContextMeta(type):
 class Context(metaclass=ContextMeta):
     _current_holder = threading.local()
 
-    def __init__(self, tmp_dir="/tmp/ani_track", logger_level="DEBUG", log_filename=None, use_client=True, use_browser=False):
-        self.tmp_dir = tmp_dir
+    def __init__(self, config: Config = Config(), use_client=True, use_browser=False):
+        self.tmp_dir = config.tracker.temp_dir
         self.use_client = use_client
         self.use_browser = use_browser
         self.playwright = None
@@ -61,7 +61,8 @@ class Context(metaclass=ContextMeta):
         self.browser = None
         self.client = None
         self.error_handler = ErrorHandler()
-        self.logger = get_logger(logger_level, log_filename)
+        self.logger = get_logger(
+            config.logger.level, config.logger.filename, config.logger.rotate_day)
         self.error_handler.add_handler(self.logger.error)
 
     async def __aenter__(self):

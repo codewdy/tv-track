@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 from pydantic import BaseModel
+from utils.timer import Timer
+from schema.db import DB, TV
+from utils.atomic_file_write import atomic_file_write
+import os
 
 
 @dataclass
@@ -67,6 +71,7 @@ class DBManager:
             self.impl.load_row(tv_id, self.tv_path(tv_name), TV)
 
     async def start(self):
+        self.load()
         await self.impl.start()
 
     async def stop(self):
