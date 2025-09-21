@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
+from typing import Optional
 
 
 class Source(BaseModel):
@@ -26,9 +27,10 @@ class LocalStore(BaseModel):
         url: str
         filename: str
         download: "LocalStore.DownloadStatus"
+        download_error: Optional[str] = None
 
     episodes: list["LocalStore.Episode"] = []
-    cover: str = ""
+    cover: Optional[str] = None
 
 
 class TV(BaseModel):
@@ -40,4 +42,5 @@ class TV(BaseModel):
 
 class DB(BaseModel):
     tv: dict[int, str] = {}
+    removed: dict[int, str] = {}
     next_id: int = 1

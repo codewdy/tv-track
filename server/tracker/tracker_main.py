@@ -3,19 +3,24 @@ from schema.config import Config
 from utils.context import Context
 from searcher.searchers import Searchers
 from schema.api import *
-import os
+from .path_manager import PathManager
+from .local_manager import LocalManager
+from utils.path import ensure_path
 
 
 class Tracker:
     def __init__(self, config: Config):
         self.config = config
+        self.path = PathManager(config)
+        self.db_manager = DBManager(self.config)
+        self.local_manager = LocalManager(config, self.db_manager)
 
     async def start(self):
-        os.makedirs(self.config.tracker.resource_dir, exist_ok=True)
+        for path in self.path.required_path():
+            ensure_path(path)
         self.context = Context(
             use_browser=True, config=self.config)
         await self.context.__aenter__()
-        self.db_manager = DBManager(self.config)
         await self.db_manager.start()
         self.searchers = Searchers()
 
@@ -32,6 +37,10 @@ class Tracker:
     async def search_tv(self, request: SearchTV.Request):
         return SearchTV.Response(source=await self.searchers.search(request.keyword))
 
+    async def add_tv(self, request: AddTV.Request):
+        tv_id = await self.local_manager.add_tv(request.name, request.source)
+        return AddTV.Response(id=tv_id)
+
 
 if __name__ == "__main__":
     import asyncio
@@ -46,6 +55,12 @@ if __name__ == "__main__":
         async with tracker:
             return await tracker.search_tv(SearchTV.Request(keyword="碧蓝之海"))
 
-    result = asyncio.run(test1()).model_dump_json(indent=2)
+    async def test2():
+        tracker = Tracker(config)
+        async with tracker:
+            rst1 = (await tracker.search_tv(SearchTV.Request(keyword="碧蓝之海"))).source[0]
+            return await tracker.add_tv(AddTV.Request(name="碧蓝之海2", source=rst1))
+
+    result = asyncio.run(test2()).model_dump_json(indent=2)
     print(result)
     open("result.json", "w").write(result)

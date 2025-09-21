@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 from utils.timer import Timer
 from schema.db import DB, TV
-from utils.atomic_file_write import atomic_file_write
+from utils.path import atomic_file_write
+from .path_manager import PathManager
 import os
 
 
@@ -54,21 +55,16 @@ class DBManagerImpl:
 class DBManager:
     def __init__(self, config):
         self.impl = DBManagerImpl(config.tracker.save_interval.total_seconds())
+        self.path = PathManager(config)
         self.resource_dir = config.tracker.resource_dir
 
-    def db_path(self):
-        return os.path.join(self.resource_dir, "db.json")
-
-    def tv_path(self, tv_name):
-        return os.path.join(self.resource_dir, tv_name, "tv.json")
-
     def load(self):
-        if os.path.exists(self.db_path()):
-            self.impl.load_row("db", self.db_path(), DB)
+        if os.path.exists(self.path.db_json()):
+            self.impl.load_row("db", self.path.db_json(), DB)
         else:
-            self.impl.new_row("db", self.db_path(), DB())
+            self.impl.new_row("db", self.path.db_json(), DB())
         for tv_id, tv_name in self.db().tv.items():
-            self.impl.load_row(tv_id, self.tv_path(tv_name), TV)
+            self.impl.load_row(tv_id, self.path.tv_json(tv_id), TV)
 
     async def start(self):
         self.load()
@@ -84,7 +80,18 @@ class DBManager:
         self.impl.mark_dirty(tv.id)
 
     def tv_new(self, tv):
-        self.impl.new_row(tv.id, self.tv_path(tv.name), tv)
+        self.impl.new_row(tv.id, self.path.tv_json(tv.id), tv)
+
+    def tv_del(self, tv):
+        self.impl.del_row(tv.id)
+
+    def db(self):
+        return self.impl.get_row("db")
+
+    def db_dirty(self):
+        self.impl.mark_dirty("db")
+
+        self.impl.new_row(tv.id, self.path.tv_json(tv.id), tv)
 
     def tv_del(self, tv):
         self.impl.del_row(tv.id)
