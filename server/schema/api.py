@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from .db import Sorce
+from .db import Source
+from typing import Optional
 
 
 class SearchTV(BaseModel):

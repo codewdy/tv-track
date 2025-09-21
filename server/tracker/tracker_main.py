@@ -1,6 +1,8 @@
 from .db_manager import DBManager
 from schema.config import Config
 from utils.context import Context
+from searcher.searchers import Searchers
+from schema.api import *
 import os
 
 
@@ -15,6 +17,7 @@ class Tracker:
         await self.context.__aenter__()
         self.db_manager = DBManager(self.config)
         await self.db_manager.start()
+        self.searchers = Searchers()
 
     async def stop(self):
         await self.db_manager.stop()
@@ -25,6 +28,9 @@ class Tracker:
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.stop()
+
+    async def search_tv(self, request: SearchTV.Request):
+        return SearchTV.Response(source=await self.searchers.search(request.keyword))
 
 
 if __name__ == "__main__":
@@ -38,7 +44,8 @@ if __name__ == "__main__":
     async def test1():
         tracker = Tracker(config)
         async with tracker:
-            return config
+            return await tracker.search_tv(SearchTV.Request(keyword="碧蓝之海"))
 
-    open("result.json", "w").write(
-        asyncio.run(test1()).model_dump_json(indent=2))
+    result = asyncio.run(test1()).model_dump_json(indent=2)
+    print(result)
+    open("result.json", "w").write(result)
