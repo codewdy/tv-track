@@ -2,7 +2,7 @@
     <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="240" :collapsed="collapsed"
         show-trigger @collapse="collapsed = true" @expand="collapsed = false">
         <n-menu :collapsed="collapsed" :collapsed-width="64" :collapsed-icon-size="22" :options="menuOptions"
-            :expand-icon="expandIcon" :value="value()" :default-expanded-keys="['anime-view']" />
+            :expand-icon="expandIcon" :value="value()" :default-expanded-keys="['tv-view']" />
     </n-layout-sider>
 </template>
 
@@ -25,14 +25,14 @@ function createItem(to: string, v: string, icon: any) {
 
 const menuOptions = computed(() => [
     createItem('/', '动画列表', HomeOutline),
-    createItem('/add-anime', '添加动画', SettingsOutline),
+    createItem('/add-tv', '添加TV', SettingsOutline),
     createItem('/download', '下载进度', ArrowDownCircleOutline),
     {
-        label: '动画',
-        key: 'anime-view',
+        label: 'TV',
+        key: 'tv-view',
         icon: () => h(NIcon, null, { default: () => h(LayersOutline) }),
         children: [
-            // TODO: 动画列表
+            // TODO: TV列表
         ]
     }
 ])

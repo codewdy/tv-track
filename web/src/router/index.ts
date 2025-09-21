@@ -6,12 +6,12 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../components/AnimeList/AnimeList.vue'),
+      component: () => import('../components/TVList/TVList.vue'),
     },
     {
-      path: '/add-anime',
-      name: 'add-anime',
-      component: () => import('../components/AddAnime/AddAnime.vue'),
+      path: '/add-tv',
+      name: 'add-tv',
+      component: () => import('../components/AddTV/AddTV.vue'),
     },
     {
       path: '/download',

@@ -1,5 +1,5 @@
 <template>
-    <p> 添加动画 </p>
+    <p> 添加TV </p>
 </template>
 
 <script setup lang="ts">
