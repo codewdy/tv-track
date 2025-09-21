@@ -63,16 +63,25 @@ if __name__ == "__main__":
     import asyncio
     from pathlib import Path
     from utils.context import Context
+    import sys
+
+    src = sys.argv[-2]
+    keyword = sys.argv[-1]
 
     with open(Path(__file__).parent / "searcher.json", "r") as f:
         config = json.load(f)
-    searcher = Searcher(config["searchers"][0])
+    config = [i for i in config["searchers"] if i["key"] == src][0]
+    searcher = Searcher(config)
 
     async def run():
-        async with Context() as ctx:
-            rst = await searcher.search("碧蓝之海")
+        async with Context(use_browser=True) as ctx:
+            rst = await searcher.search(keyword)
+            example_video = await searcher.get_video(rst[0].episodes[0].url)
+            rst = {
+                "source": [i.model_dump(mode="json") for i in rst],
+                "example_video": example_video,
+            }
             print(rst)
-            rst2 = await searcher.update(rst[0])
-            print(rst2)
-
+            with open("result.json", "w") as f:
+                f.write(json.dumps(rst, ensure_ascii=False, indent=2))
     asyncio.run(run())

@@ -4,7 +4,7 @@ from .dtype import TimeDelta, to_timedelta
 
 class LoggerConfig(BaseModel):
     level: str = "INFO"
-    filename: str = "tracker.log"
+    filename: str = ""
     rotate_day: int = 7
 
 

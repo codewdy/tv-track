@@ -13,6 +13,8 @@ async def request(url):
 
 
 def to_text(token):
+    if "title" in token.attrs:
+        return token.attrs["title"]
     for child in token.children:
         if isinstance(child, NavigableString):
             return child.text.strip()

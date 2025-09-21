@@ -20,6 +20,27 @@
             "resourceSearcher": {
                 "parser": "browser"
             }
+        },
+        {
+            "key": "renrenpro",
+            "name": "人人影视Pro",
+            "subjectSearcher": {
+                "searchUrl": "https://www.renren.pro/search?wd={keyword}",
+                "parser": "a",
+                "a": "main .content .module .module-list .video-info-header h3 a",
+                "cover": "main .content .module .module-list .video-cover img",
+                "cover_attr": "data-src"
+            },
+            "channelSearcher": {
+                "parser": "index-grouped",
+                "selectChannelNames": "",
+                "selectEpisodeLists": ".module-blocklist",
+                "selectEpisodesFromList": "a",
+                "selectEpisodeLinksFromList": ""
+            },
+            "resourceSearcher": {
+                "parser": "browser"
+            }
         }
     ]
 }

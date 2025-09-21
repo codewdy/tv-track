@@ -45,8 +45,11 @@ class IndexGroupedParser:
         return result
 
     def parse(self, src, soup):
-        channel_names = [to_text(i)
-                         for i in soup.select(self.selectChannelNames)]
+        if self.selectChannelNames:
+            channel_names = [to_text(i)
+                             for i in soup.select(self.selectChannelNames)]
+        else:
+            channel_names = ["default"]
         episode_lists = [
             self.parse_episode_list(src, i)
             for i in soup.select(self.selectEpisodeLists)
