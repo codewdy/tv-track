@@ -8,7 +8,6 @@ class SearchTV(BaseModel):
         keyword: str
 
     class Response(BaseModel):
-        error: Optional[str] = None
         source: list[Source]
 
 
@@ -18,7 +17,6 @@ class AddTV(BaseModel):
         source: Source
 
     class Response(BaseModel):
-        error: Optional[str] = None
         id: int
 
 
@@ -27,4 +25,4 @@ class RemoveTV(BaseModel):
         id: int
 
     class Response(BaseModel):
-        error: Optional[str] = None
+        pass
