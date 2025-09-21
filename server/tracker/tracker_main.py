@@ -41,6 +41,10 @@ class Tracker:
         tv_id = await self.local_manager.add_tv(request.name, request.source)
         return AddTV.Response(id=tv_id)
 
+    async def remove_tv(self, request: RemoveTV.Request):
+        await self.local_manager.remove_tv(request.id)
+        return RemoveTV.Response()
+
 
 if __name__ == "__main__":
     import asyncio
@@ -61,6 +65,11 @@ if __name__ == "__main__":
             rst1 = (await tracker.search_tv(SearchTV.Request(keyword="碧蓝之海"))).source[0]
             return await tracker.add_tv(AddTV.Request(name="碧蓝之海2", source=rst1))
 
-    result = asyncio.run(test2()).model_dump_json(indent=2)
+    async def test3():
+        tracker = Tracker(config)
+        async with tracker:
+            return await tracker.remove_tv(RemoveTV.Request(id=1))
+
+    result = asyncio.run(test3()).model_dump_json(indent=2)
     print(result)
     open("result.json", "w").write(result)

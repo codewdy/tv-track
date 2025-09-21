@@ -34,6 +34,16 @@ class LocalManager:
         await self.update(tv.id)
         return tv.id
 
+    async def remove_tv(self, tv_id: int):
+        db = self.db.db()
+        tv = self.db.tv(tv_id)
+        if os.path.exists(self.path.tv_dir(tv, by="name")):
+            os.remove(self.path.tv_dir(tv, by="name"))
+        del db.tv[tv.id]
+        db.removed[tv.id] = tv.name
+        self.db.tv_del(tv)
+        self.db.db_dirty()
+
     async def update(self, tv_id: int):
         tv = self.db.tv(tv_id)
         if tv.local.cover is None:

@@ -40,7 +40,8 @@ class DBManagerImpl:
 
     def del_row(self, key):
         del self.rows[key]
-        self.dirty.remove(key)
+        if key in self.dirty:
+            self.dirty.remove(key)
 
     def mark_dirty(self, key):
         self.dirty.add(key)
