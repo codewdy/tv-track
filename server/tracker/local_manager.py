@@ -24,6 +24,8 @@ class LocalManager:
                 raise ValueError(f"tv {name} already exists")
         tv = TV(id=db.next_id, name=name, source=source, local=LocalStore())
         os.makedirs(self.path.tv_dir(tv), exist_ok=True)
+        if os.path.exists(self.path.tv_dir(tv, by="name")):
+            os.remove(self.path.tv_dir(tv, by="name"))
         os.symlink(f"../by-id/{tv.id}", self.path.tv_dir(tv, by="name"))
         db.tv[tv.id] = tv.name
         db.next_id += 1
