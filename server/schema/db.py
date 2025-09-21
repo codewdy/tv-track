@@ -24,7 +24,6 @@ class LocalStore(BaseModel):
 
     class Episode(BaseModel):
         name: str
-        url: str
         filename: str
         download: "LocalStore.DownloadStatus"
         download_error: Optional[str] = None

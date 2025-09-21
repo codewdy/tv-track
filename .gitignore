@@ -1,5 +1,5 @@
 __pycache__/
 *.pyc
 test-data
-tracker.log
+tracker.log*
 result.json

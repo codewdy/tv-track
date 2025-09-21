@@ -1,3 +1,4 @@
+from re import L
 from pydantic import BaseModel
 from .db import Source
 from typing import Optional
@@ -26,3 +27,16 @@ class RemoveTV(BaseModel):
 
     class Response(BaseModel):
         pass
+
+
+class GetDownloadStatus:
+    class DownloadTask(BaseModel):
+        resource: str
+        status: str
+
+    class Request(BaseModel):
+        pass
+
+    class Response(BaseModel):
+        downloading: list['GetDownloadStatus.DownloadTask']
+        pending: list['GetDownloadStatus.DownloadTask']

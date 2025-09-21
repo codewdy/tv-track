@@ -5,22 +5,36 @@ from schema.config import Config
 from schema.db import TV, LocalStore, Source
 from utils.context import Context
 from .db_manager import DBManager
+from downloader.download_manager import DownloadManager
 
 
 def _get_ext(url: str):
     return os.path.splitext(url)[1]
 
 
+def _get_name(name, other):
+    if name not in other:
+        return name
+    idx = 1
+    base, ext = os.path.splitext(name)
+    while True:
+        new_name = f"{base} ({idx}){ext}"
+        if new_name not in other:
+            return new_name
+        idx += 1
+
+
 class LocalManager:
-    def __init__(self, config: Config, db: DBManager):
+    def __init__(self, config: Config, db: DBManager, downloader: DownloadManager):
         self.config = config
         self.db = db
         self.path = PathManager(config)
+        self.downloader = downloader
 
     async def add_tv(self, name: str, source: Source):
         db = self.db.db()
-        for tv_id, tv in db.tv.items():
-            if tv.name == name:
+        for tv_id, tv_name in db.tv.items():
+            if tv_name == name:
                 raise ValueError(f"tv {name} already exists")
         tv = TV(id=db.next_id, name=name, source=source, local=LocalStore())
         os.makedirs(self.path.tv_dir(tv), exist_ok=True)
@@ -54,3 +68,38 @@ class LocalManager:
                 atomic_file_write(self.path.tv_file(tv, cover_fn), cover)
                 tv.local.cover = cover_fn
                 self.db.tv_dirty(tv)
+        if len(tv.local.episodes) < len(tv.source.episodes):
+            for episode_id in range(len(tv.local.episodes), len(tv.source.episodes)):
+                name = tv.source.episodes[episode_id].name
+                tv.local.episodes.append(LocalStore.Episode(
+                    name=name,
+                    filename=_get_name(
+                        f"{name}.mp4", [i.filename for i in tv.local.episodes]),
+                    download=LocalStore.DownloadStatus.RUNNING,
+                ))
+                self.submit_download(tv.id, episode_id)
+
+    def on_download_finished(self, tv_id: int, episode_id: int):
+        tv = self.db.tv(tv_id)
+        episode = tv.local.episodes[episode_id]
+        episode.download = LocalStore.DownloadStatus.SUCCESS
+        self.db.tv_dirty(tv)
+
+    def on_download_error(self, tv_id: int, episode_id: int, error: str):
+        tv = self.db.tv(tv_id)
+        episode = tv.local.episodes[episode_id]
+        episode.download = LocalStore.DownloadStatus.FAILED
+        episode.error = error
+        self.db.tv_dirty(tv)
+
+    def submit_download(self, tv_id, episode_id):
+        tv = self.db.tv(tv_id)
+        episode = tv.source.episodes[episode_id]
+        self.downloader.submit(
+            sourceKey=tv.source.source_key,
+            url=episode.url,
+            dst=self.path.episode(tv, episode_id),
+            meta=f"{tv.name} - {episode.name}",
+            on_finished=lambda: self.on_download_finished(tv_id, episode_id),
+            on_error=lambda e: self.on_download_error(tv_id, episode_id, e),
+        )

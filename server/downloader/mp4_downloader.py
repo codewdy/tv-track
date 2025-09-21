@@ -1,8 +1,8 @@
-from downloader.download_tracker import DownloadTracker
-from downloader.simple_downloader import SimpleDownloader
+from .download_tracker import DownloadTracker
+from .simple_downloader import SimpleDownloader
 from utils.run_cmd import run_cmd
 import asyncio
-from context import Context
+from utils.context import Context
 
 
 class MP4Downloader:

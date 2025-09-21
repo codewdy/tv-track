@@ -1,13 +1,16 @@
 from utils.parallel_runner import ParallelRunner
-from downloader.task_downloader import TaskDownloader
+from .task_downloader import TaskDownloader
+from .download_task import DownloadTask
 import asyncio
 import traceback
 from utils.context import Context
+from schema.config import DownloadConfig
 
 
 class DownloadManager:
-    def __init__(self, max_concurrent):
-        self.runner = ParallelRunner(max_concurrent)
+    def __init__(self, config: DownloadConfig):
+        self.runner = ParallelRunner(max_concurrent=config.concurrent)
+        self.config = config
         self.pending_tasks = []
         self.downloaders = []
 
@@ -23,7 +26,11 @@ class DownloadManager:
             "running": [(downloader.download_task, downloader.human_readable_status()) for downloader in self.downloaders],
         }
 
-    def submit(self, task):
+    def submit(self, **kwargs):
+        task = DownloadTask(**kwargs)
+        task.timeout = task.timeout or self.config.timeout.total_seconds()
+        task.retry = task.retry or self.config.retry
+        task.retry_interval = task.retry_interval or self.config.retry_interval.total_seconds()
         self.pending_tasks.append(task)
         self.runner.submit(self.process(task))
 
@@ -32,14 +39,15 @@ class DownloadManager:
         downloader = TaskDownloader(task)
         self.downloaders.append(downloader)
         try:
-            async with Context.handle_error_context(rethow=True):
+            async with Context.handle_error_context(rethrow=True):
                 await downloader.run()
                 if task.on_finished:
                     async with Context.handle_error_context():
                         task.on_finished()
         except Exception as e:
+            error = traceback.format_exc()
             async with Context.handle_error_context():
-                task.on_error(traceback.format_exc())
+                task.on_error(error)
         self.downloaders.remove(downloader)
 
 

@@ -38,8 +38,8 @@ class PathManager:
     def tv_file(self, tv: TV, filename: str, by: str = "id"):
         return os.path.join(self.tv_dir(tv, by), filename)
 
-    def tv_cover(self, tv: TV):
-        pass
+    def tv_cover(self, tv: TV, by: str = "id"):
+        return self.tv_file(tv, tv.local.cover, by)
 
-    def episode(self, tv: TV, episode_idx: int):
-        pass
+    def episode(self, tv: TV, episode_idx: int, by: str = "id"):
+        return self.tv_file(tv, tv.local.episodes[episode_idx].filename, by)

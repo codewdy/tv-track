@@ -1,7 +1,7 @@
-from searcher.searcher_list import searcher_dict
+from searcher.searchers import Searchers
 from downloader.mp4_downloader import MP4Downloader
 from downloader.m3u8_downloader import M3U8Downloader
-from context import Context
+from utils.context import Context
 import asyncio
 
 
@@ -9,6 +9,7 @@ class TaskDownloader:
     def __init__(self, download_task):
         self.download_task = download_task
         self.status = "preparing"
+        self.searchers = Searchers()
 
     def get_downloader(self, video_url):
         if video_url.endswith(".mp4"):
@@ -19,8 +20,7 @@ class TaskDownloader:
 
     async def run_once(self):
         self.status = "searching task"
-        searcher = searcher_dict()[self.download_task.sourceKey]
-        video_url = await searcher.search_resource(self.download_task.url)
+        video_url = await self.searchers.get_video(self.download_task.sourceKey, self.download_task.url)
         self.downloader = self.get_downloader(video_url)
         self.status = "downloading"
         await self.downloader.run()

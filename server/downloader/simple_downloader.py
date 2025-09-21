@@ -1,4 +1,4 @@
-from context import Context
+from utils.context import Context
 
 
 class SimpleDownloader:

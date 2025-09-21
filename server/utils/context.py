@@ -53,7 +53,7 @@ class Context(metaclass=ContextMeta):
     _current_holder = threading.local()
 
     def __init__(self, config: Config = Config(), use_client=True, use_browser=False):
-        self.tmp_dir = config.tracker.temp_dir
+        self.tmp_dir = config.download.tmp_dir
         self.use_client = use_client
         self.use_browser = use_browser
         self.playwright = None

@@ -54,6 +54,9 @@ class Searcher:
         except:
             raise RuntimeError("update error: ", self.name, source.name)
 
+    async def get_video(self, url):
+        return await self.resource_searcher.search(url)
+
 
 if __name__ == "__main__":
     import json

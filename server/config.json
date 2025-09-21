@@ -1,12 +1,18 @@
 {
     "logger": {
         "level": "INFO",
-        "filename": "tracker.log",
+        "filename": "",
         "rotate_day": 7
     },
     "tracker": {
-        "temp_dir": "/tmp/tracker",
         "resource_dir": "test-data",
         "save_interval": "1m"
+    },
+    "download": {
+        "concurrent": 5,
+        "retry": 5,
+        "retry_interval": "1m",
+        "timeout": "1h",
+        "tmp_dir": "/tmp/tv_track"
     }
 }

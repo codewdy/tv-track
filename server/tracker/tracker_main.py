@@ -6,6 +6,7 @@ from schema.api import *
 from .path_manager import PathManager
 from .local_manager import LocalManager
 from utils.path import ensure_path
+from downloader.download_manager import DownloadManager
 
 
 class Tracker:
@@ -13,7 +14,9 @@ class Tracker:
         self.config = config
         self.path = PathManager(config)
         self.db_manager = DBManager(self.config)
-        self.local_manager = LocalManager(config, self.db_manager)
+        self.downloader = DownloadManager(self.config.download)
+        self.local_manager = LocalManager(
+            config, self.db_manager, self.downloader)
 
     async def start(self):
         for path in self.path.required_path():
@@ -45,6 +48,20 @@ class Tracker:
         await self.local_manager.remove_tv(request.id)
         return RemoveTV.Response()
 
+    async def get_download_status(self, request: GetDownloadStatus.Request):
+        status = self.downloader.get_status()
+        return GetDownloadStatus.Response(
+            downloading=[
+                GetDownloadStatus.DownloadTask(
+                    resource=task.meta,
+                    status=s)
+                for task, s in status["running"]],
+            pending=[
+                GetDownloadStatus.DownloadTask(
+                    resource=task.meta,
+                    status="pending")
+                for task in status["pending"]])
+
 
 if __name__ == "__main__":
     import asyncio
@@ -57,19 +74,23 @@ if __name__ == "__main__":
     async def test1():
         tracker = Tracker(config)
         async with tracker:
-            return await tracker.search_tv(SearchTV.Request(keyword="碧蓝之海"))
+            return await tracker.search_tv(SearchTV.Request(keyword="房东妹子"))
 
     async def test2():
         tracker = Tracker(config)
         async with tracker:
-            rst1 = (await tracker.search_tv(SearchTV.Request(keyword="碧蓝之海"))).source[0]
-            return await tracker.add_tv(AddTV.Request(name="碧蓝之海2", source=rst1))
+            rst1 = (await tracker.search_tv(SearchTV.Request(keyword="房东妹子"))).source[0]
+            rst1.episodes = rst1.episodes[:1]
+            await tracker.add_tv(AddTV.Request(name="房东妹子青春期", source=rst1))
+            for i in range(100):
+                print((await tracker.get_download_status(GetDownloadStatus.Request())).model_dump_json(indent=2))
+                await asyncio.sleep(1)
 
     async def test3():
         tracker = Tracker(config)
         async with tracker:
             return await tracker.remove_tv(RemoveTV.Request(id=1))
 
-    result = asyncio.run(test3()).model_dump_json(indent=2)
+    result = asyncio.run(test2()).model_dump_json(indent=2)
     print(result)
     open("result.json", "w").write(result)
