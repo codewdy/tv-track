@@ -1,6 +1,6 @@
 from re import L
 from pydantic import BaseModel
-from .db import Source
+from .db import Source, ErrorDB
 from typing import Optional
 
 
@@ -40,3 +40,11 @@ class GetDownloadStatus:
     class Response(BaseModel):
         downloading: list['GetDownloadStatus.DownloadTask']
         pending: list['GetDownloadStatus.DownloadTask']
+
+
+class GetErrors(BaseModel):
+    class Request(BaseModel):
+        pass
+
+    class Response(BaseModel):
+        errors: list[ErrorDB.Error]

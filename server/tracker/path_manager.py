@@ -18,6 +18,9 @@ class PathManager:
     def db_json(self):
         return os.path.join(self.local_path, "db.json")
 
+    def error_json(self):
+        return os.path.join(self.local_path, "error.json")
+
     def tv_dir_by_id(self, tv_id: int):
         return os.path.join(self.local_path, "by-id", str(tv_id))
 

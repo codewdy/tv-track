@@ -14,5 +14,8 @@
         "retry_interval": "1m",
         "timeout": "1h",
         "tmp_dir": "/tmp/tv_track"
+    },
+    "error": {
+        "max_error_count": 1000
     }
 }

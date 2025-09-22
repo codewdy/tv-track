@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
+from datetime import datetime
 
 
 class Source(BaseModel):
@@ -42,4 +43,13 @@ class TV(BaseModel):
 class DB(BaseModel):
     tv: dict[int, str] = {}
     removed: dict[int, str] = {}
+    next_id: int = 1
+
+
+class ErrorDB(BaseModel):
+    class Error(BaseModel):
+        id: int
+        timestamp: datetime
+        error: str
+    errors: list["ErrorDB.Error"] = []
     next_id: int = 1

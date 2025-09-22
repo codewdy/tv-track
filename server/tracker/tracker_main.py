@@ -7,6 +7,7 @@ from .path_manager import PathManager
 from .local_manager import LocalManager
 from utils.path import ensure_path
 from downloader.download_manager import DownloadManager
+from .error_manager import ErrorManager
 
 
 class Tracker:
@@ -17,12 +18,14 @@ class Tracker:
         self.downloader = DownloadManager(self.config.download)
         self.local_manager = LocalManager(
             config, self.db_manager, self.downloader)
+        self.error_manager = ErrorManager(config, self.db_manager)
 
     async def start(self):
         for path in self.path.required_path():
             ensure_path(path)
         self.context = Context(
             use_browser=True, config=self.config)
+        self.context.error_handler.add_handler(self.error_manager.handle_error)
         await self.context.__aenter__()
         await self.db_manager.start()
         self.searchers = Searchers()
@@ -62,11 +65,16 @@ class Tracker:
                     status="pending")
                 for task in status["pending"]])
 
+    async def get_errors(self, request: GetErrors.Request):
+        error_db = self.db_manager.error()
+        return GetErrors.Response(errors=error_db.errors)
+
 
 if __name__ == "__main__":
     import asyncio
     from pathlib import Path
     from schema.config import Config
+    import sys
 
     config = Config.model_validate_json(
         open(Path(__file__).parent.parent / "config.json").read())
@@ -91,6 +99,11 @@ if __name__ == "__main__":
         async with tracker:
             return await tracker.remove_tv(RemoveTV.Request(id=1))
 
-    result = asyncio.run(test2()).model_dump_json(indent=2)
+    async def test4():
+        tracker = Tracker(config)
+        async with tracker:
+            return await tracker.get_errors(GetErrors.Request())
+
+    result = asyncio.run(locals()[sys.argv[1]]()).model_dump_json(indent=2)
     print(result)
     open("result.json", "w").write(result)

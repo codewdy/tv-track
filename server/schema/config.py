@@ -21,7 +21,12 @@ class DownloadConfig(BaseModel):
     tmp_dir: str = "/tmp/tv_track"
 
 
+class ErrorConfig(BaseModel):
+    max_error_count: int = 1000
+
+
 class Config(BaseModel):
     logger: LoggerConfig = LoggerConfig()
+    error: ErrorConfig = ErrorConfig()
     tracker: TrackerConfig = TrackerConfig()
     download: DownloadConfig = DownloadConfig()

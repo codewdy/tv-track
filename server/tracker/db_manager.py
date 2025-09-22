@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pydantic import BaseModel
 from utils.timer import Timer
-from schema.db import DB, TV
+from schema.db import DB, TV, ErrorDB
 from utils.path import atomic_file_write
 from .path_manager import PathManager
 import os
@@ -64,6 +64,10 @@ class DBManager:
             self.impl.load_row("db", self.path.db_json(), DB)
         else:
             self.impl.new_row("db", self.path.db_json(), DB())
+        if os.path.exists(self.path.error_json()):
+            self.impl.load_row("error", self.path.error_json(), ErrorDB)
+        else:
+            self.impl.new_row("error", self.path.error_json(), ErrorDB())
         for tv_id, tv_name in self.db().tv.items():
             self.impl.load_row(tv_id, self.path.tv_json(tv_id), TV)
 
@@ -86,14 +90,6 @@ class DBManager:
     def tv_del(self, tv):
         self.impl.del_row(tv.id)
 
-    def db(self):
-        return self.impl.get_row("db")
-
-    def db_dirty(self):
-        self.impl.mark_dirty("db")
-
-        self.impl.new_row(tv.id, self.path.tv_json(tv.id), tv)
-
     def tv_del(self, tv):
         self.impl.del_row(tv.id)
 
@@ -102,3 +98,9 @@ class DBManager:
 
     def db_dirty(self):
         self.impl.mark_dirty("db")
+
+    def error(self):
+        return self.impl.get_row("error")
+
+    def error_dirty(self):
+        self.impl.mark_dirty("error")
