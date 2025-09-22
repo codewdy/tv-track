@@ -18,6 +18,11 @@ const router = createRouter({
       name: 'download',
       component: () => import('../components/DownloadStatus/DownloadStatus.vue'),
     },
+    {
+      path: '/error-log',
+      name: 'error-log',
+      component: () => import('../components/ErrorLog/ErrorLog.vue'),
+    },
   ],
 })
 

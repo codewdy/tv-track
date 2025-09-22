@@ -9,7 +9,10 @@
 <script setup lang="ts">
 import { NMenu, NIcon, NLayoutSider, NBadge } from 'naive-ui'
 import { ref, h, computed, inject } from 'vue'
-import { CaretDownOutline, LayersOutline, SettingsOutline, HomeOutline, CaretForwardCircleOutline, ArrowDownCircleOutline } from '@vicons/ionicons5'
+import {
+    CaretDownOutline, LayersOutline, SettingsOutline, HomeOutline,
+    CaretForwardCircleOutline, ArrowDownCircleOutline, WarningOutline
+} from '@vicons/ionicons5'
 
 import { RouterLink, useRoute } from 'vue-router'
 
@@ -27,6 +30,7 @@ const menuOptions = computed(() => [
     createItem('/', '动画列表', HomeOutline),
     createItem('/add-tv', '添加TV', SettingsOutline),
     createItem('/download', '下载进度', ArrowDownCircleOutline),
+    createItem('/error-log', '错误日志', WarningOutline),
     {
         label: 'TV',
         key: 'tv-view',
