@@ -6,7 +6,8 @@
     },
     "tracker": {
         "resource_dir": "test-data",
-        "save_interval": "1m"
+        "save_interval": "1m",
+        "port": 9876
     },
     "download": {
         "concurrent": 5,

@@ -11,6 +11,7 @@ class LoggerConfig(BaseModel):
 class TrackerConfig(BaseModel):
     resource_dir: str = "test-data"
     save_interval: TimeDelta = to_timedelta("1m")
+    port: int = 9876
 
 
 class DownloadConfig(BaseModel):

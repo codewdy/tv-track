@@ -17,15 +17,18 @@ class DBManagerImpl:
     def __init__(self, save_interval):
         self.rows = {}
         self.dirty = set()
-        self.save_timer = Timer(self.save, save_interval)
+        self.save_timer = Timer(self.async_save, save_interval)
 
     async def start(self):
-        await self.save()
+        self.save()
         await self.save_timer.start()
 
     async def stop(self):
         await self.save_timer.stop()
-        await self.save()
+        self.save()
+
+    async def async_save(self):
+        self.save()
 
     def load_row(self, key, path, dtype):
         row = dtype.parse_file(path)
@@ -46,7 +49,7 @@ class DBManagerImpl:
     def mark_dirty(self, key):
         self.dirty.add(key)
 
-    async def save(self):
+    def save(self):
         for key in self.dirty:
             row_dump = self.rows[key].row.model_dump_json(indent=2)
             atomic_file_write(self.rows[key].path, row_dump)
@@ -104,3 +107,6 @@ class DBManager:
 
     def error_dirty(self):
         self.impl.mark_dirty("error")
+
+    def save(self):
+        self.impl.save()

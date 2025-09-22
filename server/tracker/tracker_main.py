@@ -40,6 +40,9 @@ class Tracker:
     async def __aexit__(self, exc_type, exc, tb):
         await self.stop()
 
+    def save(self):
+        self.db_manager.save()
+
     async def search_tv(self, request: SearchTV.Request):
         return SearchTV.Response(source=await self.searchers.search(request.keyword))
 
