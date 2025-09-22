@@ -19,6 +19,7 @@ if config.service.auth_username and config.service.auth_password:
 else:
     app = web.Application()
 app.add_routes(create_routes(tracker))
+app.add_routes([web.static('/resource', config.tracker.resource_dir)])
 app.add_routes(web_routes(
     '/', os.path.join(os.path.dirname(__file__), '../web/dist'), 'index.html'))
 
