@@ -10,9 +10,9 @@ def mk_socket(host, port):
     return sock
 
 
-def run_app(tracker, app, port):
+def run_app(app, port, async_start, stop):
     async def run_app_inner():
-        await tracker.start()
+        await async_start()
         runner = web.AppRunner(app)
         await runner.setup()
         sock = mk_socket("::", port)
@@ -24,7 +24,7 @@ def run_app(tracker, app, port):
     loop.create_task(run_app_inner())
 
     def sigterm_handler(_signo, _stack_frame):
-        tracker.save()
+        stop()
         exit()
 
     signal.signal(signal.SIGTERM, sigterm_handler)

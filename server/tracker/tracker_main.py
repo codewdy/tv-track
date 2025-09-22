@@ -8,6 +8,7 @@ from .local_manager import LocalManager
 from utils.path import ensure_path
 from downloader.download_manager import DownloadManager
 from .error_manager import ErrorManager
+from service.api_service import api
 
 
 class Tracker:
@@ -43,17 +44,21 @@ class Tracker:
     def save(self):
         self.db_manager.save()
 
+    @api
     async def search_tv(self, request: SearchTV.Request):
         return SearchTV.Response(source=await self.searchers.search(request.keyword))
 
+    @api
     async def add_tv(self, request: AddTV.Request):
         tv_id = await self.local_manager.add_tv(request.name, request.source)
         return AddTV.Response(id=tv_id)
 
+    @api
     async def remove_tv(self, request: RemoveTV.Request):
         await self.local_manager.remove_tv(request.id)
         return RemoveTV.Response()
 
+    @api
     async def get_download_status(self, request: GetDownloadStatus.Request):
         status = self.downloader.get_status()
         return GetDownloadStatus.Response(
@@ -68,6 +73,7 @@ class Tracker:
                     status="pending")
                 for task in status["pending"]])
 
+    @api
     async def get_errors(self, request: GetErrors.Request):
         error_db = self.db_manager.error()
         return GetErrors.Response(errors=error_db.errors)
