@@ -2,6 +2,12 @@ from pydantic import BaseModel
 from .dtype import TimeDelta, to_timedelta
 
 
+class ServiceConfig(BaseModel):
+    port: int = 0
+    auth_username: str = ""
+    auth_password: str = ""
+
+
 class LoggerConfig(BaseModel):
     level: str = "INFO"
     filename: str = ""
@@ -27,6 +33,7 @@ class ErrorConfig(BaseModel):
 
 
 class Config(BaseModel):
+    service: ServiceConfig = ServiceConfig()
     logger: LoggerConfig = LoggerConfig()
     error: ErrorConfig = ErrorConfig()
     tracker: TrackerConfig = TrackerConfig()

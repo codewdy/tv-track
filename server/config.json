@@ -1,4 +1,9 @@
 {
+    "service": {
+        "port": 9876,
+        "auth_username": "",
+        "auth_password": ""
+    },
     "logger": {
         "level": "INFO",
         "filename": "",

@@ -11,21 +11,28 @@ def mk_socket(host, port):
 
 
 def run_app(app, port, async_start, stop):
+    sock = mk_socket("::", port)
+
     async def run_app_inner():
-        await async_start()
-        runner = web.AppRunner(app)
-        await runner.setup()
-        sock = mk_socket("::", port)
-        srv = web.SockSite(runner, sock)
-        await srv.start()
-        print(f"Serving HTTP on [::] port {port}")
+        try:
+            await async_start()
+            runner = web.AppRunner(app)
+            await runner.setup()
+            srv = web.SockSite(runner, sock)
+            await srv.start()
+            print(f"Serving HTTP on [::] port {port}")
+        except Exception as e:
+            print(f"Failed to start app: {e}")
+            stop()
+            exit(1)
 
     loop = asyncio.new_event_loop()
     loop.create_task(run_app_inner())
 
     def sigterm_handler(_signo, _stack_frame):
+        sock.close()
         stop()
-        exit()
+        exit(0)
 
     signal.signal(signal.SIGTERM, sigterm_handler)
     signal.signal(signal.SIGINT, sigterm_handler)

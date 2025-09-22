@@ -11,10 +11,15 @@ from service.api_service import create_routes
 config = Config.model_validate_json(open(sys.argv[-1]).read())
 
 tracker = Tracker(config)
-auth = BasicAuthMiddleware(username='user', password='password')
-app = web.Application()
+
+if config.service.auth_username and config.service.auth_password:
+    auth = BasicAuthMiddleware(
+        username=config.service.auth_username, password=config.service.auth_password)
+    app = web.Application(middlewares=[auth])
+else:
+    app = web.Application()
 app.add_routes(create_routes(tracker))
 app.add_routes(web_routes(
     '/', os.path.join(os.path.dirname(__file__), '../web/dist'), 'index.html'))
 
-run_app(app, config.tracker.port, tracker.start, tracker.save)
+run_app(app, config.service.port, tracker.start, tracker.save)
