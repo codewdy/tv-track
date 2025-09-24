@@ -6,6 +6,7 @@ import asyncio
 
 def mk_socket(host, port):
     sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((host, port))
     return sock
 
