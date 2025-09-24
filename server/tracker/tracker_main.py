@@ -80,10 +80,15 @@ class Tracker:
 
     @mock
     async def mock_get_download_status(self, request: GetDownloadStatus.Request):
-        print(f"mock get download status: ", request)
         return GetDownloadStatus.Response(
-            downloading=[],
-            pending=[])
+            downloading=[
+                GetDownloadStatus.DownloadTask(
+                    resource="三月的狮子1", status="downloading 1M/s"),
+                GetDownloadStatus.DownloadTask(
+                    resource="三月的狮子2", status="downloading 3M/s")],
+            pending=[
+                GetDownloadStatus.DownloadTask(
+                    resource="三月的狮子3", status="pending")])
 
     @api
     async def get_errors(self, request: GetErrors.Request):

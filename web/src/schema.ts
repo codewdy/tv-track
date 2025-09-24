@@ -24,3 +24,15 @@ export namespace search_tv {
         source: db.Source[]
     }
 }
+
+export namespace get_download_status {
+    export interface DownloadTask {
+        resource: string
+        status: string
+    }
+
+    export interface Response {
+        downloading: DownloadTask[]
+        pending: DownloadTask[]
+    }
+}
