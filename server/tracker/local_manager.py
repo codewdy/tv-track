@@ -79,6 +79,15 @@ class LocalManager:
                 ))
                 self.submit_download(tv.id, episode_id)
 
+    async def start(self):
+        self.submit_download_tasks()
+
+    def submit_download_tasks(self):
+        for tv_id in self.db.db().tv:
+            for episode_id, episode in enumerate(self.db.tv(tv_id).local.episodes):
+                if episode.download == LocalStore.DownloadStatus.RUNNING:
+                    self.submit_download(tv_id, episode_id)
+
     def on_download_finished(self, tv_id: int, episode_id: int):
         tv = self.db.tv(tv_id)
         episode = tv.local.episodes[episode_id]
@@ -89,7 +98,7 @@ class LocalManager:
         tv = self.db.tv(tv_id)
         episode = tv.local.episodes[episode_id]
         episode.download = LocalStore.DownloadStatus.FAILED
-        episode.error = error
+        episode.download_error = error
         self.db.tv_dirty(tv)
 
     def submit_download(self, tv_id, episode_id):

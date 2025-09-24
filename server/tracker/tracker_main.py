@@ -29,6 +29,7 @@ class Tracker:
         self.context.error_handler.add_handler(self.error_manager.handle_error)
         await self.context.__aenter__()
         await self.db_manager.start()
+        await self.local_manager.start()
         self.searchers = Searchers()
 
     async def stop(self):

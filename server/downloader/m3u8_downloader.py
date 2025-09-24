@@ -44,7 +44,7 @@ class M3U8Downloader:
         if master_playlist:
             self.src = urllib.parse.urljoin(
                 self.src, self.select_sub_list(lines))
-            await self.download_meta()
+            return await self.download_meta(file)
         else:
             return [urllib.parse.urljoin(self.src, line) for line in lines if (not line.startswith("#")) and line != ""]
 
