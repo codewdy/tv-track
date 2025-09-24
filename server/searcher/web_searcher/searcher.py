@@ -21,7 +21,7 @@ class Searcher:
                 for channel in channels:
                     results.append(Source(
                         source_key=self.key,
-                        name=subject.name + " - " + channel.name,
+                        name=f"{subject.name} - {self.name} - {channel.name}",
                         channel_name=channel.name,
                         url=subject.url,
                         cover_url=subject.cover_url,

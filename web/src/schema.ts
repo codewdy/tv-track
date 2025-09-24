@@ -1,0 +1,26 @@
+export namespace db {
+    export interface Episode {
+        name: string
+        url: string
+    }
+
+    export interface Source {
+        source_key: string
+        name: string
+        channel_name: string
+        url: string
+        cover_url: string
+        tracking: boolean
+        episodes: Episode[]
+    }
+}
+
+export namespace search_tv {
+    export interface Request {
+        keyword: string
+    }
+
+    export interface Response {
+        source: db.Source[]
+    }
+}
