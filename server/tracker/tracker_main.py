@@ -8,7 +8,7 @@ from .local_manager import LocalManager
 from utils.path import ensure_path
 from downloader.download_manager import DownloadManager
 from .error_manager import ErrorManager
-from service.api_service import api
+from service.api_service import api, mock
 
 
 class Tracker:
@@ -53,6 +53,11 @@ class Tracker:
         tv_id = await self.local_manager.add_tv(request.name, request.source)
         return AddTV.Response(id=tv_id)
 
+    @mock
+    async def mock_add_tv(self, request: AddTV.Request):
+        print(f"mock add tv: ", request)
+        return AddTV.Response(id=0)
+
     @api
     async def remove_tv(self, request: RemoveTV.Request):
         await self.local_manager.remove_tv(request.id)
@@ -72,6 +77,13 @@ class Tracker:
                     resource=task.meta,
                     status="pending")
                 for task in status["pending"]])
+
+    @mock
+    async def mock_get_download_status(self, request: GetDownloadStatus.Request):
+        print(f"mock get download status: ", request)
+        return GetDownloadStatus.Response(
+            downloading=[],
+            pending=[])
 
     @api
     async def get_errors(self, request: GetErrors.Request):

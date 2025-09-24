@@ -1,6 +1,6 @@
 {
     "service": {
-        "port": 9876,
+        "port": 6789,
         "auth_username": "",
         "auth_password": ""
     },
@@ -12,7 +12,7 @@
     "tracker": {
         "resource_dir": "test-data",
         "save_interval": "1m",
-        "port": 9876
+        "port": 6789
     },
     "download": {
         "concurrent": 5,

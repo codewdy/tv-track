@@ -14,8 +14,8 @@ export default defineConfig({
     host: '::',
     port: 5173, // Or your desired port
     proxy: {
-      '/api': 'http://localhost:9876',
-      '/resource': 'http://localhost:9876'
+      '/api': 'http://localhost:6789',
+      '/resource': 'http://localhost:6789'
     },
   },
   resolve: {

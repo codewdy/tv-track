@@ -6,6 +6,11 @@ def api(func):
     return func
 
 
+def mock(func):
+    func.__mock__ = True
+    return func
+
+
 def _wrap(func):
     request_type = func.__annotations__["request"]
 
@@ -16,10 +21,20 @@ def _wrap(func):
     return wrapper
 
 
-def create_routes(api_handler):
+def create_routes(api_handler, mock=False):
     routes = []
+    api = {}
+    mock_api = {}
     for name, func in api_handler.__class__.__dict__.items():
         if hasattr(func, "__api__"):
+            api[name] = getattr(api_handler, name)
+        if name.startswith("mock_") and hasattr(func, "__mock__"):
+            mock_api[name[5:]] = getattr(api_handler, name)
+    for name, func in api.items():
+        if mock and name in mock_api:
             routes.append(
-                web.post(f"/api/{name}", _wrap(getattr(api_handler, name))))
+                web.post(f"/api/{name}", _wrap(mock_api[name])))
+        else:
+            routes.append(
+                web.post(f"/api/{name}", _wrap(func)))
     return routes

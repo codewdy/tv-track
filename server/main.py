@@ -7,8 +7,15 @@ from tracker.tracker_main import Tracker
 import os
 import sys
 from service.api_service import create_routes
+import argparse
 
-config = Config.model_validate_json(open(sys.argv[-1]).read())
+parser = argparse.ArgumentParser()
+parser.add_argument("--mock", default=False,
+                    action='store_true', help="enable mock api")
+parser.add_argument("--config", default="config.json", help="config file path")
+args = parser.parse_args()
+
+config = Config.model_validate_json(open(args.config).read())
 
 tracker = Tracker(config)
 
@@ -18,7 +25,7 @@ if config.service.auth_username and config.service.auth_password:
     app = web.Application(middlewares=[auth])
 else:
     app = web.Application()
-app.add_routes(create_routes(tracker))
+app.add_routes(create_routes(tracker, mock=args.mock))
 app.add_routes([web.static('/resource', config.tracker.resource_dir)])
 app.add_routes(web_routes(
     '/', os.path.join(os.path.dirname(__file__), '../web/dist'), 'index.html'))
