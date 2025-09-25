@@ -6,18 +6,20 @@
         <n-space vertical>
             <DownloadUnit v-for="item in downloading" :download="item" />
         </n-space>
+        <n-empty v-if="downloading.length === 0" description="没有下载中的任务" />
         <n-divider title-placement="left">
             等待中
         </n-divider>
         <n-space vertical>
             <DownloadUnit v-for="item in pending" :download="item" />
         </n-space>
+        <n-empty v-if="pending.length === 0" description="没有等待中的任务" />
     </n-spin>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { NSpin, NSpace, NDivider, useMessage } from 'naive-ui'
+import { NSpin, NSpace, NDivider, NEmpty, useMessage } from 'naive-ui'
 import DownloadUnit from './DownloadUnit.vue'
 import type { get_download_status } from '@/schema'
 import type { AxiosResponse } from 'axios'
