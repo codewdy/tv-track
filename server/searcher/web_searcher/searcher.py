@@ -44,7 +44,7 @@ class Searcher:
                         channel_name=channel.name,
                         url=source.url,
                         cover_url=source.cover_url,
-                        tracking=False,
+                        tracking=source.tracking,
                         episodes=[Source.Episode(
                             name=e.name, url=e.url) for e in channel.episodes],
                     )

@@ -40,7 +40,7 @@ class Searchers:
 
     async def update(self, source):
         async with Context.handle_error_context():
-            return await self.searcher_dict[source.key].update(source)
+            return await self.searcher_dict[source.source_key].update(source)
         return source
 
     async def get_video(self, sourceKey, url):

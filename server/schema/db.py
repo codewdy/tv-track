@@ -15,6 +15,7 @@ class Source(BaseModel):
     cover_url: str
     tracking: bool
     episodes: list["Source.Episode"] = []
+    latest_update: Optional[datetime] = None
 
 
 class LocalStore(BaseModel):

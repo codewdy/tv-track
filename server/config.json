@@ -11,8 +11,7 @@
     },
     "tracker": {
         "resource_dir": "test-data",
-        "save_interval": "1m",
-        "port": 6789
+        "save_interval": "1m"
     },
     "download": {
         "concurrent": 5,
@@ -23,5 +22,9 @@
     },
     "error": {
         "max_error_count": 1000
+    },
+    "source_updater": {
+        "update_interval": "1h",
+        "notrack_timeout": "30d"
     }
 }

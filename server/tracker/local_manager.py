@@ -77,6 +77,7 @@ class LocalManager:
                         f"{name}.mp4", [i.filename for i in tv.local.episodes]),
                     download=LocalStore.DownloadStatus.RUNNING,
                 ))
+                self.db.tv_dirty(tv)
                 self.submit_download(tv.id, episode_id)
 
     async def start(self):
@@ -91,12 +92,16 @@ class LocalManager:
     def on_download_finished(self, tv_id: int, episode_id: int):
         tv = self.db.tv(tv_id)
         episode = tv.local.episodes[episode_id]
+        download_name = f"{tv.name} - {tv.source.episodes[episode_id].name}"
+        Context.info(f"download finished: {download_name}")
         episode.download = LocalStore.DownloadStatus.SUCCESS
         self.db.tv_dirty(tv)
 
     def on_download_error(self, tv_id: int, episode_id: int, error: str):
         tv = self.db.tv(tv_id)
         episode = tv.local.episodes[episode_id]
+        download_name = f"{tv.name} - {tv.source.episodes[episode_id].name}"
+        Context.error(f"download error: {download_name} :\n{error}")
         episode.download = LocalStore.DownloadStatus.FAILED
         episode.download_error = error
         self.db.tv_dirty(tv)
@@ -104,11 +109,13 @@ class LocalManager:
     def submit_download(self, tv_id, episode_id):
         tv = self.db.tv(tv_id)
         episode = tv.source.episodes[episode_id]
+        download_name = f"{tv.name} - {tv.source.episodes[episode_id].name}"
+        Context.info(f"downloading {download_name}")
         self.downloader.submit(
             sourceKey=tv.source.source_key,
             url=episode.url,
             dst=self.path.episode(tv, episode_id),
-            meta=f"{tv.name} - {episode.name}",
+            meta=download_name,
             on_finished=lambda: self.on_download_finished(tv_id, episode_id),
             on_error=lambda e: self.on_download_error(tv_id, episode_id, e),
         )

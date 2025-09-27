@@ -9,6 +9,7 @@ from utils.path import ensure_path
 from downloader.download_manager import DownloadManager
 from .error_manager import ErrorManager
 from service.api_service import api, mock
+from .source_updater import SourceUpdater
 
 
 class Tracker:
@@ -20,6 +21,8 @@ class Tracker:
         self.local_manager = LocalManager(
             config, self.db_manager, self.downloader)
         self.error_manager = ErrorManager(config, self.db_manager)
+        self.source_updater = SourceUpdater(
+            config, self.db_manager, self.local_manager)
 
     async def start(self):
         for path in self.path.required_path():
@@ -30,6 +33,7 @@ class Tracker:
         await self.context.__aenter__()
         await self.db_manager.start()
         await self.local_manager.start()
+        await self.source_updater.start()
         self.searchers = Searchers()
 
     async def stop(self):
