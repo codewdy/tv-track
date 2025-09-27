@@ -52,7 +52,7 @@ class TV(BaseModel):
     name: str
     tag: WatchTag = WatchTag.Wanted
     source: Source
-    local: LocalStore
+    local: LocalStore = LocalStore()
     watch: WatchStatus = WatchStatus()
 
 

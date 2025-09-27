@@ -36,8 +36,7 @@ class LocalManager:
         for tv_id, tv_name in db.tv.items():
             if tv_name == name:
                 raise ValueError(f"tv {name} already exists")
-        tv = TV(id=db.next_id, name=name, source=source,
-                local=LocalStore(), tag=tag)
+        tv = TV(id=db.next_id, name=name, source=source, tag=tag)
         os.makedirs(self.path.tv_dir(tv), exist_ok=True)
         if os.path.exists(self.path.tv_dir(tv, by="name")):
             os.remove(self.path.tv_dir(tv, by="name"))
