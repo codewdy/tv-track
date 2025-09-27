@@ -2,7 +2,7 @@ from utils.path import atomic_file_write
 from .path_manager import PathManager
 import os
 from schema.config import Config
-from schema.db import TV, LocalStore, Source
+from schema.db import TV, LocalStore, Source, WatchTag, WatchStatus
 from utils.context import Context
 from .db_manager import DBManager
 from downloader.download_manager import DownloadManager
@@ -31,12 +31,13 @@ class LocalManager:
         self.path = PathManager(config)
         self.downloader = downloader
 
-    async def add_tv(self, name: str, source: Source):
+    async def add_tv(self, name: str, source: Source, tag: WatchTag):
         db = self.db.db()
         for tv_id, tv_name in db.tv.items():
             if tv_name == name:
                 raise ValueError(f"tv {name} already exists")
-        tv = TV(id=db.next_id, name=name, source=source, local=LocalStore())
+        tv = TV(id=db.next_id, name=name, source=source,
+                local=LocalStore(), tag=tag)
         os.makedirs(self.path.tv_dir(tv), exist_ok=True)
         if os.path.exists(self.path.tv_dir(tv, by="name")):
             os.remove(self.path.tv_dir(tv, by="name"))

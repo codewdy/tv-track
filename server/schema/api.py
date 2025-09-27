@@ -1,6 +1,6 @@
 from re import L
 from pydantic import BaseModel
-from .db import Source, ErrorDB
+from .db import Source, ErrorDB, WatchTag
 from typing import Optional
 
 
@@ -16,6 +16,7 @@ class AddTV(BaseModel):
     class Request(BaseModel):
         name: str
         source: Source
+        tag: WatchTag
 
     class Response(BaseModel):
         id: int

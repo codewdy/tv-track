@@ -55,7 +55,7 @@ class Tracker:
 
     @api
     async def add_tv(self, request: AddTV.Request):
-        tv_id = await self.local_manager.add_tv(request.name, request.source)
+        tv_id = await self.local_manager.add_tv(request.name, request.source, request.tag)
         return AddTV.Response(id=tv_id)
 
     @mock
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         async with tracker:
             rst1 = (await tracker.search_tv(SearchTV.Request(keyword="房东妹子"))).source[0]
             rst1.episodes = rst1.episodes[:1]
-            await tracker.add_tv(AddTV.Request(name="房东妹子青春期", source=rst1))
+            await tracker.add_tv(AddTV.Request(name="房东妹子青春期2", source=rst1, tag="dropped"))
             for i in range(100):
                 print((await tracker.get_download_status(GetDownloadStatus.Request())).model_dump_json(indent=2))
                 await asyncio.sleep(1)

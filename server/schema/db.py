@@ -34,11 +34,26 @@ class LocalStore(BaseModel):
     cover: Optional[str] = None
 
 
+class WatchTag(str, Enum):
+    Wanted = "wanted"
+    Watching = "watching"
+    Watched = "watched"
+    Dropped = "dropped"
+
+
+class WatchStatus(BaseModel):
+    watched_episode: int = 0
+    watched_episode_time: float = 0
+    watched_episode_time_percent: float = 0
+
+
 class TV(BaseModel):
     id: int
     name: str
+    tag: WatchTag = WatchTag.Wanted
     source: Source
     local: LocalStore
+    watch: WatchStatus = WatchStatus()
 
 
 class DB(BaseModel):

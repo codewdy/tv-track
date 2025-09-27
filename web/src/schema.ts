@@ -13,6 +13,13 @@ export namespace db {
         tracking: boolean
         episodes: Episode[]
     }
+
+    export enum WatchTag {
+        Wanted = "wanted",
+        Watching = "watching",
+        Watched = "watched",
+        Dropped = "dropped",
+    }
 }
 
 export namespace search_tv {
