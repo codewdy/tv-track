@@ -44,7 +44,7 @@ class WatchTag(str, Enum):
 class WatchStatus(BaseModel):
     watched_episode: int = 0
     watched_episode_time: float = 0
-    watched_episode_time_percent: float = 0
+    watched_episode_time_ratio: float = 0
 
 
 class TV(BaseModel):

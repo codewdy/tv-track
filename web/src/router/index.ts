@@ -14,6 +14,11 @@ const router = createRouter({
       component: () => import('../components/AddTV/AddTV.vue'),
     },
     {
+      path: '/tv-view/:tv_id',
+      name: 'tv-view',
+      component: () => import('../components/TVView/TVView.vue'),
+    },
+    {
       path: '/download',
       name: 'download',
       component: () => import('../components/DownloadStatus/DownloadStatus.vue'),

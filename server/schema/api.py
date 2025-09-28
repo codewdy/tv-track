@@ -1,6 +1,6 @@
 from re import L
 from pydantic import BaseModel
-from .db import Source, ErrorDB, WatchTag
+from .db import Source, ErrorDB, WatchTag, WatchStatus
 from typing import Optional
 
 
@@ -30,6 +30,21 @@ class RemoveTV(BaseModel):
         pass
 
 
+class GetTV(BaseModel):
+    class Episode(BaseModel):
+        name: str
+        url: str
+
+    class Request(BaseModel):
+        id: int
+
+    class Response(BaseModel):
+        name: str
+        tag: WatchTag
+        watch: WatchStatus
+        episodes: list["GetTV.Episode"]
+
+
 class GetDownloadStatus:
     class DownloadTask(BaseModel):
         resource: str
@@ -49,3 +64,12 @@ class GetErrors(BaseModel):
 
     class Response(BaseModel):
         errors: list[ErrorDB.Error]
+
+
+class SetWatch(BaseModel):
+    class Request(BaseModel):
+        id: int
+        watch: WatchStatus
+
+    class Response(BaseModel):
+        pass

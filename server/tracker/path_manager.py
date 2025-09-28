@@ -41,8 +41,19 @@ class PathManager:
     def tv_file(self, tv: TV, filename: str, by: str = "id"):
         return os.path.join(self.tv_dir(tv, by), filename)
 
+    def tv_url(self, tv: TV, filename: str, by: str = "id"):
+        if by == "id":
+            return f"/resource/by-id/{tv.id}/{filename}"
+        elif by == "name":
+            return f"/resource/by-name/{tv.name}/{filename}"
+        else:
+            raise ValueError(f"unknown tv url by {by}")
+
     def tv_cover(self, tv: TV, by: str = "id"):
         return self.tv_file(tv, tv.local.cover, by)
 
     def episode(self, tv: TV, episode_idx: int, by: str = "id"):
         return self.tv_file(tv, tv.local.episodes[episode_idx].filename, by)
+
+    def episode_url(self, tv: TV, episode_idx: int, by: str = "id"):
+        return self.tv_url(tv, tv.local.episodes[episode_idx].filename, by)

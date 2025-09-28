@@ -20,6 +20,25 @@ export namespace db {
         Watched = "watched",
         Dropped = "dropped",
     }
+
+    export interface WatchStatus {
+        watched_episode: number
+        watched_episode_time: number
+        watched_episode_time_ratio: number
+    }
+}
+
+export namespace get_tv {
+    export interface Episode {
+        name: string
+        url: string
+    }
+    export interface Response {
+        name: string
+        tag: db.WatchTag
+        watch: db.WatchStatus
+        episodes: Episode[]
+    }
 }
 
 export namespace search_tv {

@@ -69,6 +69,19 @@ class Tracker:
         return RemoveTV.Response()
 
     @api
+    async def get_tv(self, request: GetTV.Request):
+        tv = self.db_manager.tv(request.id)
+        return GetTV.Response(
+            name=tv.name,
+            tag=tv.tag,
+            watch=tv.watch,
+            episodes=[
+                GetTV.Episode(
+                    name=e.name,
+                    url=self.path.tv_url(tv, e.filename))
+                for e in tv.local.episodes])
+
+    @api
     async def get_download_status(self, request: GetDownloadStatus.Request):
         status = self.downloader.get_status()
         return GetDownloadStatus.Response(
@@ -99,6 +112,13 @@ class Tracker:
     async def get_errors(self, request: GetErrors.Request):
         error_db = self.db_manager.error()
         return GetErrors.Response(errors=error_db.errors)
+
+    @api
+    async def set_watch(self, request: SetWatch.Request):
+        tv = self.db_manager.tv(request.id)
+        tv.watch = request.watch
+        self.db_manager.tv_dirty(tv)
+        return SetWatch.Response()
 
 
 if __name__ == "__main__":
@@ -134,6 +154,11 @@ if __name__ == "__main__":
         tracker = Tracker(config)
         async with tracker:
             return await tracker.get_errors(GetErrors.Request())
+
+    async def test5():
+        tracker = Tracker(config)
+        async with tracker:
+            return await tracker.get_tv(GetTV.Request(id=2))
 
     result = asyncio.run(locals()[sys.argv[1]]()).model_dump_json(indent=2)
     print(result)
