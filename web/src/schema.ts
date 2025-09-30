@@ -15,8 +15,8 @@ export namespace db {
     }
 
     export enum WatchTag {
-        Wanted = "wanted",
         Watching = "watching",
+        Wanted = "wanted",
         Watched = "watched",
         Dropped = "dropped",
     }
