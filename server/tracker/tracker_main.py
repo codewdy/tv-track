@@ -10,6 +10,7 @@ from downloader.download_manager import DownloadManager
 from .error_manager import ErrorManager
 from service.api_service import api, mock
 from .source_updater import SourceUpdater
+from datetime import datetime
 
 
 class Tracker:
@@ -59,6 +60,7 @@ class Tracker:
                 tvs=[])
         tv_ids = self.db_manager.db().tv.keys()
         tvs = [self.db_manager.tv(tv_id) for tv_id in tv_ids]
+        tvs.sort(key=lambda tv: tv.touch_time, reverse=True)
         return Monitor.Response(
             is_new=request.version != version,
             version=version,
@@ -67,7 +69,8 @@ class Tracker:
                     id=tv.id,
                     name=tv.name,
                     tag=tv.tag,
-                    watch=tv.watch)
+                    watched_episodes=tv.watch.watched_episode,
+                    total_episodes=len(tv.local.episodes))
                 for tv in tvs])
 
     @api
@@ -138,6 +141,7 @@ class Tracker:
     async def set_watch(self, request: SetWatch.Request):
         tv = self.db_manager.tv(request.id)
         tv.watch = request.watch
+        tv.touch_time = datetime.now()
         self.db_manager.tv_dirty(tv)
         return SetWatch.Response()
 

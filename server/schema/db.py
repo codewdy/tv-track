@@ -54,6 +54,7 @@ class TV(BaseModel):
     source: Source
     local: LocalStore = LocalStore()
     watch: WatchStatus = WatchStatus()
+    touch_time: Optional[datetime] = datetime(1970, 1, 1)
 
 
 class DB(BaseModel):

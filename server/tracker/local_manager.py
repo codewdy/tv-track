@@ -6,6 +6,7 @@ from schema.db import TV, LocalStore, Source, WatchTag, WatchStatus
 from utils.context import Context
 from .db_manager import DBManager
 from downloader.download_manager import DownloadManager
+from datetime import datetime
 
 
 def _get_ext(url: str):
@@ -95,6 +96,7 @@ class LocalManager:
         download_name = f"{tv.name} - {tv.source.episodes[episode_id].name}"
         Context.info(f"download finished: {download_name}")
         episode.download = LocalStore.DownloadStatus.SUCCESS
+        tv.touch_time = datetime.now()
         self.db.tv_dirty(tv)
 
     def on_download_error(self, tv_id: int, episode_id: int, error: str):

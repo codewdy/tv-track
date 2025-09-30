@@ -9,7 +9,7 @@ import axios from 'axios';
 import type { AxiosResponse } from 'axios'
 import type { monitor } from '../schema'
 
-const tvs = ref([])
+const tvs = ref<monitor.TV[]>([])
 const message = useMessage()
 let timer: any = null
 let version: string = ""

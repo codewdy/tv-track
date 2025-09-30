@@ -9,7 +9,8 @@ class Monitor(BaseModel):
         id: int
         name: str
         tag: WatchTag
-        watch: WatchStatus
+        watched_episodes: int
+        total_episodes: int
 
     class Request(BaseModel):
         version: str
