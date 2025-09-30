@@ -28,6 +28,11 @@ const router = createRouter({
       name: 'error-log',
       component: () => import('../components/ErrorLog/ErrorLog.vue'),
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('../components/NotFound.vue'),
+    },
   ],
 })
 
