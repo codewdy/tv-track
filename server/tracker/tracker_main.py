@@ -11,6 +11,7 @@ from .error_manager import ErrorManager
 from service.api_service import api, mock
 from .source_updater import SourceUpdater
 from datetime import datetime
+from schema.db import TV
 
 
 class Tracker:
@@ -61,17 +62,39 @@ class Tracker:
         tv_ids = self.db_manager.db().tv.keys()
         tvs = [self.db_manager.tv(tv_id) for tv_id in tv_ids]
         tvs.sort(key=lambda tv: tv.touch_time, reverse=True)
+
+        def gen_tv(tv: TV):
+            for i, e in enumerate(tv.local.episodes):
+                if e.download != "success":
+                    total_episodes = i
+                    break
+            else:
+                total_episodes = len(tv.local.episodes)
+            return Monitor.TV(
+                id=tv.id,
+                name=tv.name,
+                tag=tv.tag,
+                watched_episodes=tv.watch.watched_episode +
+                (1 if tv.watch.watched_episode_time_ratio >
+                 self.config.tracker.watched_ratio else 0),
+                total_episodes=total_episodes)
         return Monitor.Response(
             is_new=request.version != version,
             version=version,
-            tvs=[
-                Monitor.TV(
-                    id=tv.id,
-                    name=tv.name,
-                    tag=tv.tag,
-                    watched_episodes=tv.watch.watched_episode,
-                    total_episodes=len(tv.local.episodes))
-                for tv in tvs])
+            tvs=[gen_tv(tv) for tv in tvs])
+
+    @api
+    async def get_tv(self, request: GetTV.Request):
+        tv = self.db_manager.tv(request.id)
+        return GetTV.Response(
+            name=tv.name,
+            tag=tv.tag,
+            watch=tv.watch,
+            episodes=[
+                GetTV.Episode(
+                    name=e.name,
+                    url=self.path.tv_url(tv, e.filename))
+                for e in tv.local.episodes])
 
     @api
     async def search_tv(self, request: SearchTV.Request):

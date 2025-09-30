@@ -7,8 +7,9 @@
                 {{ item.name }}
             </n-tag>
         </n-space>
-        <VideoPlayer v-if="episodes !== null" :url="episodes[episode_idx]?.url ?? ''"
-            v-model:current_time="current_time" :time="time" @pause="onPause" @done="onDone" />
+        <VideoPlayer v-if="episodes !== null" :url="episodes[episode_idx]?.url ?? ''" :time="time"
+            v-model:current_time="current_time" v-model:current_time_ratio="current_time_ratio" @pause="onPause"
+            @done="onDone" />
     </n-space>
 </template>
 
@@ -43,7 +44,7 @@ function updateWatched(idx: number, time: number, ratio: number) {
         watch: {
             watched_episode: idx,
             watched_episode_time: time,
-            watched_episode_ratio: ratio,
+            watched_episode_time_ratio: ratio,
         }
     }).catch(err => {
         message.error("更新观看时间失败: " + err.message)
@@ -93,6 +94,7 @@ function reload(id: number) {
         time.value = res.data.watch.watched_episode_time
         current_time.value = res.data.watch.watched_episode_time
         current_time_ratio.value = res.data.watch.watched_episode_time_ratio
+        console.log(res.data)
     })
 }
 

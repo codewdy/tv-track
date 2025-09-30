@@ -17,6 +17,7 @@ class LoggerConfig(BaseModel):
 class TrackerConfig(BaseModel):
     resource_dir: str = "test-data"
     save_interval: TimeDelta = to_timedelta("1m")
+    watched_ratio: float = 0.9
 
 
 class DownloadConfig(BaseModel):

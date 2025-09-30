@@ -11,7 +11,8 @@
     },
     "tracker": {
         "resource_dir": "test-data",
-        "save_interval": "1m"
+        "save_interval": "1m",
+        "watched_ratio": 0.9
     },
     "download": {
         "concurrent": 5,
