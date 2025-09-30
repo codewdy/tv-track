@@ -50,6 +50,27 @@ class Tracker:
         self.db_manager.save()
 
     @api
+    async def monitor(self, request: Monitor.Request):
+        version = self.db_manager.version()
+        if request.version == version:
+            return Monitor.Response(
+                is_new=False,
+                version=version,
+                tvs=[])
+        tv_ids = self.db_manager.db().tv.keys()
+        tvs = [self.db_manager.tv(tv_id) for tv_id in tv_ids]
+        return Monitor.Response(
+            is_new=request.version != version,
+            version=version,
+            tvs=[
+                Monitor.TV(
+                    id=tv.id,
+                    name=tv.name,
+                    tag=tv.tag,
+                    watch=tv.watch)
+                for tv in tvs])
+
+    @api
     async def search_tv(self, request: SearchTV.Request):
         return SearchTV.Response(source=await self.searchers.search(request.keyword))
 

@@ -4,6 +4,22 @@ from .db import Source, ErrorDB, WatchTag, WatchStatus
 from typing import Optional
 
 
+class Monitor(BaseModel):
+    class TV(BaseModel):
+        id: int
+        name: str
+        tag: WatchTag
+        watch: WatchStatus
+
+    class Request(BaseModel):
+        version: str
+
+    class Response(BaseModel):
+        is_new: bool
+        version: str
+        tvs: list["Monitor.TV"]
+
+
 class SearchTV(BaseModel):
     class Request(BaseModel):
         keyword: str

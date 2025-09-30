@@ -5,6 +5,7 @@ from schema.db import DB, TV, ErrorDB
 from utils.path import atomic_file_write
 from .path_manager import PathManager
 import os
+import uuid
 
 
 @dataclass
@@ -17,6 +18,7 @@ class DBManagerImpl:
     def __init__(self, save_interval):
         self.rows = {}
         self.dirty = set()
+        self._version = str(uuid.uuid4())
         self.save_timer = Timer(self.async_save, save_interval)
 
     async def start(self):
@@ -26,6 +28,9 @@ class DBManagerImpl:
     async def stop(self):
         await self.save_timer.stop()
         self.save()
+
+    def version(self):
+        return self._version
 
     async def async_save(self):
         self.save()
@@ -47,6 +52,7 @@ class DBManagerImpl:
             self.dirty.remove(key)
 
     def mark_dirty(self, key):
+        self._version = str(uuid.uuid4())
         self.dirty.add(key)
 
     def save(self):
@@ -80,6 +86,9 @@ class DBManager:
 
     async def stop(self):
         await self.impl.stop()
+
+    def version(self):
+        return self.impl.version()
 
     def tv(self, tv_id):
         return self.impl.get_row(tv_id)

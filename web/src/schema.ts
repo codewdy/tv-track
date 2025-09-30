@@ -28,6 +28,24 @@ export namespace db {
     }
 }
 
+export namespace monitor {
+    export interface TV {
+        id: number
+        name: string
+        tag: db.WatchTag
+        watch: db.WatchStatus
+    }
+    export interface Request {
+        version: string
+    }
+
+    export interface Response {
+        is_new: boolean
+        version: string
+        tvs: TV[]
+    }
+}
+
 export namespace get_tv {
     export interface Episode {
         name: string
