@@ -30,7 +30,7 @@ class SourceUpdater:
         await asyncio.gather(*[self.update_tv(tv_id) for tv_id in tv_list])
 
     async def update_tv(self, tv_id):
-        with Context.handle_error_context():
+        with Context.handle_error_context(f"update tv {tv_id} error"):
             source = self.db.tv(tv_id).source
             new_source = await self.searchers.update(source)
             tv = self.db.tv(tv_id)

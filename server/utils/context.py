@@ -30,8 +30,8 @@ class ContextMeta(type):
     def add_error_handler(cls, type, handler):
         cls.current.error_handler.add_handler(type, handler)
 
-    def handle_error_context(cls, type: str = "error", rethrow=False):
-        return cls.current.error_handler.handle_error_context(type, rethrow=rethrow)
+    def handle_error_context(cls, title, type: str = "error", rethrow=False):
+        return cls.current.error_handler.handle_error_context(title, type, rethrow=rethrow)
 
     def info(cls, msg, *args, **kwargs):
         cls.current.logger.info(msg, *args, **kwargs)

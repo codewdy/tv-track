@@ -165,7 +165,7 @@ class Tracker:
 
     @mock
     async def mock_get_errors(self, request: GetErrors.Request):
-        with Context.handle_error_context(type="critical"):
+        with Context.handle_error_context(f"mock_get_errors error", type="critical"):
             raise ValueError("critical ABC")
         return await self.get_errors(request)
 

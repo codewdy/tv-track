@@ -15,11 +15,11 @@ class ErrorHandler:
             handler(title, error)
 
     @contextmanager
-    def handle_error_context(self, type: str = "error", rethrow=False):
+    def handle_error_context(self, title, type: str = "error", rethrow=False):
         try:
             yield
         except Exception as e:
-            self.handle_error(type, repr(e), traceback.format_exc())
+            self.handle_error(type, title, traceback.format_exc())
             if rethrow:
                 raise e
 
@@ -30,6 +30,6 @@ if __name__ == "__main__":
     async def test():
         eh = ErrorHandler()
         eh.add_handler("error", print)
-        with eh.handle_error_context():
+        with eh.handle_error_context("test error"):
             raise RuntimeError("test error")
     asyncio.run(test())
