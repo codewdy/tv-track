@@ -31,9 +31,9 @@ class Tracker:
             ensure_path(path)
         self.context = Context(
             use_browser=True, config=self.config)
-        self.context.add_error_handler(
+        self.context.error_handler.add_handler(
             "error", self.error_manager.handle_error)
-        self.context.add_error_handler(
+        self.context.error_handler.add_handler(
             "critical", self.error_manager.handle_critical_error)
         await self.context.__aenter__()
         await self.db_manager.start()
@@ -59,9 +59,7 @@ class Tracker:
         version = self.db_manager.version()
         if request.version == version:
             return Monitor.Response(
-                is_new=False,
-                version=version,
-                tvs=[])
+                is_new=False)
         tv_ids = self.db_manager.db().tv.keys()
         tvs = [self.db_manager.tv(tv_id) for tv_id in tv_ids]
         tvs.sort(key=lambda tv: tv.touch_time, reverse=True)
@@ -84,7 +82,9 @@ class Tracker:
         return Monitor.Response(
             is_new=request.version != version,
             version=version,
-            tvs=[gen_tv(tv) for tv in tvs])
+            tvs=[gen_tv(tv) for tv in tvs],
+            critical_errors=len(self.db_manager.error().critical_errors),
+            errors=len(self.db_manager.error().errors))
 
     @api
     async def get_tv(self, request: GetTV.Request):
@@ -161,7 +161,23 @@ class Tracker:
     @api
     async def get_errors(self, request: GetErrors.Request):
         error_db = self.db_manager.error()
-        return GetErrors.Response(errors=error_db.errors)
+        return GetErrors.Response(critical_errors=reversed(error_db.critical_errors), errors=reversed(error_db.errors))
+
+    @mock
+    async def mock_get_errors(self, request: GetErrors.Request):
+        with Context.handle_error_context(type="critical"):
+            raise ValueError("critical ABC")
+        return await self.get_errors(request)
+
+    @api
+    async def clear_errors(self, request: ClearErrors.Request):
+        error_db = self.db_manager.error()
+        error_db.critical_errors = [
+            e for e in error_db.critical_errors if e.id not in request.ids]
+        error_db.errors = [
+            e for e in error_db.errors if e.id not in request.ids]
+        self.db_manager.error_dirty()
+        return ClearErrors.Response()
 
     @api
     async def set_watch(self, request: SetWatch.Request):

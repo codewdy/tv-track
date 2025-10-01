@@ -44,6 +44,8 @@ export namespace monitor {
         is_new: boolean
         version: string
         tvs: TV[]
+        critical_errors: number
+        errors: number
     }
 }
 
@@ -79,5 +81,18 @@ export namespace get_download_status {
     export interface Response {
         downloading: DownloadTask[]
         pending: DownloadTask[]
+    }
+}
+
+export namespace get_errors {
+    export interface Error {
+        id: number
+        timestamp: string
+        title: string
+        error: string
+    }
+    export interface Response {
+        critical_errors: Error[]
+        errors: Error[]
     }
 }

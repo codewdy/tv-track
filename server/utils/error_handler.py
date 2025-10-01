@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 import traceback
 from collections import defaultdict
 
@@ -10,16 +10,16 @@ class ErrorHandler:
     def add_handler(self, type, handler):
         self.handlers[type].append(handler)
 
-    def handle_error(self, type, error):
+    def handle_error(self, type, title, error):
         for handler in self.handlers[type]:
-            handler(error)
+            handler(title, error)
 
-    @asynccontextmanager
-    async def handle_error_context(self, type: str = "error", rethrow=False):
+    @contextmanager
+    def handle_error_context(self, type: str = "error", rethrow=False):
         try:
             yield
         except Exception as e:
-            self.handle_error(type, traceback.format_exc())
+            self.handle_error(type, repr(e), traceback.format_exc())
             if rethrow:
                 raise e
 
@@ -30,6 +30,6 @@ if __name__ == "__main__":
     async def test():
         eh = ErrorHandler()
         eh.add_handler("error", print)
-        async with eh.handle_error_context():
+        with eh.handle_error_context():
             raise RuntimeError("test error")
     asyncio.run(test())

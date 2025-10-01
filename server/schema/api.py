@@ -17,8 +17,10 @@ class Monitor(BaseModel):
 
     class Response(BaseModel):
         is_new: bool
-        version: str
-        tvs: list["Monitor.TV"]
+        version: str = ""
+        tvs: list["Monitor.TV"] = []
+        critical_errors: int = 0
+        errors: int = 0
 
 
 class SearchTV(BaseModel):
@@ -80,7 +82,16 @@ class GetErrors(BaseModel):
         pass
 
     class Response(BaseModel):
+        critical_errors: list[ErrorDB.Error]
         errors: list[ErrorDB.Error]
+
+
+class ClearErrors(BaseModel):
+    class Request(BaseModel):
+        ids: list[int]
+
+    class Response(BaseModel):
+        pass
 
 
 class SetWatch(BaseModel):

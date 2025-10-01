@@ -19,7 +19,7 @@ class SearchFunctor:
         self.keyword = keyword
 
     async def __call__(self, searcher):
-        async with Context.handle_error_context():
+        with Context.handle_error_context():
             return await searcher.search(self.keyword)
         return []
 
@@ -39,7 +39,7 @@ class Searchers:
         return sum(results, [])
 
     async def update(self, source):
-        async with Context.handle_error_context():
+        with Context.handle_error_context():
             return await self.searcher_dict[source.source_key].update(source)
         return source
 

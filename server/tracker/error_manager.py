@@ -9,24 +9,26 @@ class ErrorManager:
         self.config = config
         self.db = db
 
-    def handle_error(self, error: str):
+    def handle_error(self, title: str, error: str):
         error_db = self.db.error()
         error_db.errors.append(ErrorDB.Error(
             id=error_db.next_id,
             timestamp=datetime.now(),
+            title=title,
             error=error))
         error_db.next_id += 1
         if len(error_db.errors) > self.config.error.max_error_count:
             error_db.errors.pop(0)
         self.db.error_dirty()
 
-    def handle_critical_error(self, error: str):
+    def handle_critical_error(self, title: str, error: str):
         error_db = self.db.error()
-        error_db.critical.append(ErrorDB.Error(
+        error_db.critical_errors.append(ErrorDB.Error(
             id=error_db.next_id,
             timestamp=datetime.now(),
+            title=title,
             error=error))
         error_db.next_id += 1
-        if len(error_db.critical) > self.config.error.max_error_count:
-            error_db.critical.pop(0)
+        if len(error_db.critical_errors) > self.config.error.max_error_count:
+            error_db.critical_errors.pop(0)
         self.db.error_dirty()

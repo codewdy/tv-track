@@ -10,6 +10,8 @@ import type { AxiosResponse } from 'axios'
 import type { monitor } from '../schema'
 
 const tvs = ref<monitor.TV[]>([])
+const critical_errors = ref<number>(0)
+const errors = ref<number>(0)
 const message = useMessage()
 let timer: any = null
 let version: string = ""
@@ -23,6 +25,8 @@ function reload() {
         if (data.is_new) {
             version = data.version
             tvs.value = data.tvs
+            critical_errors.value = data.critical_errors
+            errors.value = data.errors
         }
     })
 }
@@ -39,6 +43,8 @@ onUnmounted(() => {
 })
 
 provide('tvs', tvs)
+provide('critical_errors', critical_errors)
+provide('errors', errors)
 provide('update_monitor', reload)
 
 </script>

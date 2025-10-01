@@ -2,12 +2,13 @@
     <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="240" :collapsed="collapsed"
         show-trigger @collapse="collapsed = true" @expand="collapsed = false">
         <n-menu :collapsed="collapsed" :collapsed-width="64" :collapsed-icon-size="22" :options="menuOptions"
-            :expand-icon="expandIcon" :value="value()" :default-expanded-keys="['tv-view', ...WatchTagKeys]" />
+            :expand-icon="expandIcon" :value="value()" :default-expanded-keys="['tv-view', ...WatchTagKeys]" :indent="5"
+            :root-indent="20" />
     </n-layout-sider>
 </template>
 
 <script setup lang="ts">
-import { NMenu, NIcon, NLayoutSider, NBadge } from 'naive-ui'
+import { NMenu, NIcon, NLayoutSider, NBadge, NSpace, NFlex } from 'naive-ui'
 import { ref, h, computed, inject } from 'vue'
 import {
     CaretDownOutline, LayersOutline, SettingsOutline, HomeOutline,
@@ -16,14 +17,16 @@ import {
 } from '@vicons/ionicons5'
 import { WatchTagName, WatchTagKeys } from '@/constant'
 import type { monitor, db } from '@/schema'
-import type { Ref } from 'vue'
+import type { Ref, VNode, VNodeProps } from 'vue'
 
 const tvs = inject<Ref<monitor.TV[]>>('tvs') as Ref<monitor.TV[]>
+const critical_errors = inject<Ref<number>>('critical_errors') as Ref<number>
+const errors = inject<Ref<number>>('errors') as Ref<number>
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
 
-function createItem(to: string, v: string, icon: any) {
+function createItem(to: string, v: string | (() => VNode), icon: any) {
     return {
         label: () => h(RouterLink, { to: to }, v),
         key: to,
@@ -32,7 +35,19 @@ function createItem(to: string, v: string, icon: any) {
 }
 
 function createTVItem(tv: monitor.TV) {
-    return createItem("/tv-view/" + tv.id, tv.name, CaretForwardCircleOutline)
+    return {
+        label: () => h(RouterLink, { to: "/tv-view/" + tv.id }, tv.name),
+        key: "/tv-view/" + tv.id,
+        icon: () => h(NBadge, { value: tv.total_episodes - tv.watched_episodes }, h(NIcon, null, { default: () => h(CaretForwardCircleOutline) }))
+    }
+}
+
+function createErrorSign(name: string, critical_errors: number, errors: number) {
+    return h(NSpace, { vertical: false }, [
+        h("p", null, name),
+        h(NBadge, { value: critical_errors }),
+        h(NBadge, { value: errors, type: "warning" }),
+    ])
 }
 
 function createTagGroup(tag: string) {
@@ -48,7 +63,7 @@ const menuOptions = computed(() => [
     createItem('/', '动画列表', HomeOutline),
     createItem('/add-tv', '添加TV', SettingsOutline),
     createItem('/download', '下载进度', ArrowDownCircleOutline),
-    createItem('/error-log', '错误日志', WarningOutline),
+    createItem('/error-log', () => createErrorSign('错误日志', critical_errors.value, errors.value), WarningOutline),
     {
         label: 'TV',
         key: 'tv-view',

@@ -39,14 +39,14 @@ class DownloadManager:
         downloader = TaskDownloader(task)
         self.downloaders.append(downloader)
         try:
-            async with Context.handle_error_context(type="critical", rethrow=True):
+            with Context.handle_error_context(type="critical", rethrow=True):
                 await downloader.run()
                 if task.on_finished:
-                    async with Context.handle_error_context():
+                    with Context.handle_error_context():
                         task.on_finished()
         except Exception as e:
             error = traceback.format_exc()
-            async with Context.handle_error_context():
+            with Context.handle_error_context():
                 task.on_error(error)
         self.downloaders.remove(downloader)
 

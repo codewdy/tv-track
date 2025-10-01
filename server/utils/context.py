@@ -63,8 +63,10 @@ class Context(metaclass=ContextMeta):
         self.error_handler = ErrorHandler()
         self.logger = get_logger(
             config.logger.level, config.logger.filename, config.logger.rotate_day)
-        self.error_handler.add_handler("error", self.logger.error)
-        self.error_handler.add_handler("critical", self.logger.critical)
+        self.error_handler.add_handler(
+            "error", lambda title, error: self.logger.error(f"{title}: {error}"))
+        self.error_handler.add_handler(
+            "critical", lambda title, error: self.logger.critical(f"{title}: {error}"))
 
     async def __aenter__(self):
         self._current_holder.context = self
