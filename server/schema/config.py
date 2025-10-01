@@ -39,6 +39,7 @@ class ErrorConfig(BaseModel):
 
 class MonitorConfig(BaseModel):
     check_smart_interval: TimeDelta = to_timedelta("1d")
+    check_zpool_interval: TimeDelta = to_timedelta("1d")
 
 
 class Config(BaseModel):

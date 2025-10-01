@@ -29,6 +29,7 @@
         "notrack_timeout": "30d"
     },
     "monitor": {
-        "check_smart_interval": "1d"
+        "check_smart_interval": "1d",
+        "check_zpool_interval": "1d"
     }
 }
