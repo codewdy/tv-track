@@ -60,7 +60,7 @@ function createTagGroup(tag: string) {
 }
 
 const menuOptions = computed(() => [
-    createItem('/', '动画列表', HomeOutline),
+    createItem('/', 'TV列表', HomeOutline),
     createItem('/add-tv', '添加TV', SettingsOutline),
     createItem('/download', '下载进度', ArrowDownCircleOutline),
     createItem('/error-log', () => createErrorSign('错误日志', critical_errors.value, errors.value), WarningOutline),
