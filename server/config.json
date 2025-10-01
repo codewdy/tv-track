@@ -27,5 +27,8 @@
     "source_updater": {
         "update_interval": "1h",
         "notrack_timeout": "30d"
+    },
+    "monitor": {
+        "check_smart_interval": "1d"
     }
 }

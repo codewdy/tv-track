@@ -12,6 +12,7 @@ from service.api_service import api, mock
 from .source_updater import SourceUpdater
 from datetime import datetime
 from schema.db import TV
+from monitor.monitors import Monitors
 
 
 class Tracker:
@@ -23,6 +24,7 @@ class Tracker:
         self.local_manager = LocalManager(
             config, self.db_manager, self.downloader)
         self.error_manager = ErrorManager(config, self.db_manager)
+        self.monitors = Monitors(config)
         self.source_updater = SourceUpdater(
             config, self.db_manager, self.local_manager)
 
@@ -39,6 +41,7 @@ class Tracker:
         await self.db_manager.start()
         await self.local_manager.start()
         await self.source_updater.start()
+        await self.monitors.start()
         self.searchers = Searchers()
 
     async def stop(self):
