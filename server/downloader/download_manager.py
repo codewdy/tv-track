@@ -39,7 +39,7 @@ class DownloadManager:
         downloader = TaskDownloader(task)
         self.downloaders.append(downloader)
         try:
-            async with Context.handle_error_context(rethrow=True):
+            async with Context.handle_error_context(type="critical", rethrow=True):
                 await downloader.run()
                 if task.on_finished:
                     async with Context.handle_error_context():

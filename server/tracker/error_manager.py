@@ -16,6 +16,17 @@ class ErrorManager:
             timestamp=datetime.now(),
             error=error))
         error_db.next_id += 1
-        if error_db.next_id > self.config.error.max_error_count:
+        if len(error_db.errors) > self.config.error.max_error_count:
             error_db.errors.pop(0)
+        self.db.error_dirty()
+
+    def handle_critical_error(self, error: str):
+        error_db = self.db.error()
+        error_db.critical.append(ErrorDB.Error(
+            id=error_db.next_id,
+            timestamp=datetime.now(),
+            error=error))
+        error_db.next_id += 1
+        if len(error_db.critical) > self.config.error.max_error_count:
+            error_db.critical.pop(0)
         self.db.error_dirty()

@@ -27,11 +27,11 @@ class ContextMeta(type):
     def browser(cls):
         return cls.current.browser
 
-    def add_error_handler(cls, handler):
-        cls.current.error_handler.add_handler(handler)
+    def add_error_handler(cls, type, handler):
+        cls.current.error_handler.add_handler(type, handler)
 
-    def handle_error_context(cls, rethrow=False):
-        return cls.current.error_handler.handle_error_context(rethrow=rethrow)
+    def handle_error_context(cls, type: str = "error", rethrow=False):
+        return cls.current.error_handler.handle_error_context(type, rethrow=rethrow)
 
     def info(cls, msg, *args, **kwargs):
         cls.current.logger.info(msg, *args, **kwargs)
@@ -63,7 +63,8 @@ class Context(metaclass=ContextMeta):
         self.error_handler = ErrorHandler()
         self.logger = get_logger(
             config.logger.level, config.logger.filename, config.logger.rotate_day)
-        self.error_handler.add_handler(self.logger.error)
+        self.error_handler.add_handler("error", self.logger.error)
+        self.error_handler.add_handler("critical", self.logger.critical)
 
     async def __aenter__(self):
         self._current_holder.context = self

@@ -31,7 +31,10 @@ class Tracker:
             ensure_path(path)
         self.context = Context(
             use_browser=True, config=self.config)
-        self.context.error_handler.add_handler(self.error_manager.handle_error)
+        self.context.add_error_handler(
+            "error", self.error_manager.handle_error)
+        self.context.add_error_handler(
+            "critical", self.error_manager.handle_critical_error)
         await self.context.__aenter__()
         await self.db_manager.start()
         await self.local_manager.start()

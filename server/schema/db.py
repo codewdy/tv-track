@@ -1,3 +1,4 @@
+from logging import critical
 from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
@@ -68,5 +69,6 @@ class ErrorDB(BaseModel):
         id: int
         timestamp: datetime
         error: str
+    critical: list["ErrorDB.Error"] = []
     errors: list["ErrorDB.Error"] = []
     next_id: int = 1
