@@ -7,11 +7,12 @@ import { onMounted, onUnmounted, ref, provide } from 'vue'
 import { useMessage } from 'naive-ui'
 import axios from 'axios';
 import type { AxiosResponse } from 'axios'
-import type { monitor } from '../schema'
+import type { monitor, get_config } from '../schema'
 
 const tvs = ref<monitor.TV[]>([])
 const critical_errors = ref<number>(0)
 const errors = ref<number>(0)
+const watched_ratio = ref<number>(0)
 const message = useMessage()
 let timer: any = null
 let version: string = ""
@@ -28,6 +29,13 @@ function reload() {
             critical_errors.value = data.critical_errors
             errors.value = data.errors
         }
+    })
+    axios.post('/api/get_config', {}).catch(err => {
+        message.error("获取配置失败: " + err.message)
+    }).then((response) => {
+        response = response as AxiosResponse<get_config.Response>
+        let data = response.data
+        watched_ratio.value = data.watched_ratio
     })
 }
 
@@ -46,6 +54,7 @@ provide('tvs', tvs)
 provide('critical_errors', critical_errors)
 provide('errors', errors)
 provide('update_monitor', reload)
+provide('watched_ratio', watched_ratio)
 
 </script>
 

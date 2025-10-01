@@ -15,16 +15,18 @@
 
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { onMounted, ref, watch, inject } from 'vue';
 import VideoPlayer from './VideoPlayer.vue';
 import { NH1, NTag, NSpace, useMessage } from 'naive-ui';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
-import type { get_tv } from '@/schema';
+import type { get_tv, monitor } from '@/schema';
 import type { AxiosResponse } from 'axios';
+import type { Ref } from 'vue'
 
 const route = useRoute()
 const message = useMessage()
+const tvs = inject<Ref<monitor.TV[]>>('tvs') as Ref<monitor.TV[]>
 
 const episodes = ref<get_tv.Episode[] | null>(null)
 
@@ -39,6 +41,13 @@ const current_time_ratio = ref<number>(0)
 let latest_update_time = 0
 
 function updateWatched(idx: number, time: number, ratio: number) {
+    let my_tv = tvs.value.find(tv => tv.id == tv_id.value)
+    if (my_tv !== undefined) {
+        my_tv.watch.watched_episode = idx
+        my_tv.watch.watched_episode_time = time
+        my_tv.watch.watched_episode_time_ratio = ratio
+        tvs.value = [my_tv, ...tvs.value.filter(tv => tv.id != tv_id.value)]
+    }
     axios.post('/api/set_watch', {
         id: tv_id.value,
         watch: {
@@ -91,10 +100,10 @@ function reload(id: number) {
         name.value = res.data.name
         episodes.value = res.data.episodes
         episode_idx.value = res.data.watch.watched_episode
+        latest_update_time = res.data.watch.watched_episode_time
         time.value = res.data.watch.watched_episode_time
         current_time.value = res.data.watch.watched_episode_time
         current_time_ratio.value = res.data.watch.watched_episode_time_ratio
-        console.log(res.data)
     })
 }
 

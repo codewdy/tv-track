@@ -18,11 +18,13 @@ import {
 import { WatchTagName, WatchTagKeys } from '@/constant'
 import type { monitor, db } from '@/schema'
 import type { Ref, VNode, VNodeProps } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import { watched_episode } from '@/utils'
 
 const tvs = inject<Ref<monitor.TV[]>>('tvs') as Ref<monitor.TV[]>
 const critical_errors = inject<Ref<number>>('critical_errors') as Ref<number>
 const errors = inject<Ref<number>>('errors') as Ref<number>
-import { RouterLink, useRoute } from 'vue-router'
+const watched_ratio = inject<Ref<number>>('watched_ratio') as Ref<number>
 
 const route = useRoute()
 
@@ -38,7 +40,7 @@ function createTVItem(tv: monitor.TV) {
     return {
         label: () => h(RouterLink, { to: "/tv-view/" + tv.id }, tv.name),
         key: "/tv-view/" + tv.id,
-        icon: () => h(NBadge, { value: tv.total_episodes - tv.watched_episodes }, h(NIcon, null, { default: () => h(CaretForwardCircleOutline) }))
+        icon: () => h(NBadge, { value: tv.total_episodes - watched_episode(tv.watch, watched_ratio.value) }, h(NIcon, null, { default: () => h(CaretForwardCircleOutline) }))
     }
 }
 

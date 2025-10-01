@@ -9,7 +9,7 @@ class Monitor(BaseModel):
         id: int
         name: str
         tag: WatchTag
-        watched_episodes: int
+        watch: WatchStatus
         total_episodes: int
 
     class Request(BaseModel):
@@ -21,6 +21,14 @@ class Monitor(BaseModel):
         tvs: list["Monitor.TV"] = []
         critical_errors: int = 0
         errors: int = 0
+
+
+class GetConfig(BaseModel):
+    class Request(BaseModel):
+        pass
+
+    class Response(BaseModel):
+        watched_ratio: float
 
 
 class SearchTV(BaseModel):

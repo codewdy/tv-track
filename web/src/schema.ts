@@ -33,7 +33,7 @@ export namespace monitor {
         id: number
         name: string
         tag: db.WatchTag
-        watched_episodes: number
+        watch: db.WatchStatus
         total_episodes: number
     }
     export interface Request {
@@ -94,5 +94,11 @@ export namespace get_errors {
     export interface Response {
         critical_errors: Error[]
         errors: Error[]
+    }
+}
+
+export namespace get_config {
+    export interface Response {
+        watched_ratio: number
     }
 }

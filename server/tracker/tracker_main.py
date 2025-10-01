@@ -78,9 +78,7 @@ class Tracker:
                 id=tv.id,
                 name=tv.name,
                 tag=tv.tag,
-                watched_episodes=tv.watch.watched_episode +
-                (1 if tv.watch.watched_episode_time_ratio >
-                 self.config.tracker.watched_ratio else 0),
+                watch=tv.watch,
                 total_episodes=total_episodes)
         return Monitor.Response(
             is_new=request.version != version,
@@ -189,6 +187,10 @@ class Tracker:
         tv.touch_time = datetime.now()
         self.db_manager.tv_dirty(tv)
         return SetWatch.Response()
+
+    @api
+    async def get_config(self, request: GetConfig.Request):
+        return GetConfig.Response(watched_ratio=self.config.tracker.watched_ratio)
 
 
 if __name__ == "__main__":
