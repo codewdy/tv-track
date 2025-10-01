@@ -17,6 +17,13 @@ args = parser.parse_args()
 
 config = Config.model_validate_json(open(args.config).read())
 
+abs_path = os.path.abspath(args.config)
+config.tracker.resource_dir = os.path.join(
+    os.path.dirname(abs_path), config.tracker.resource_dir)
+if config.logger.filename:
+    config.logger.filename = os.path.join(
+        os.path.dirname(abs_path), config.logger.filename)
+
 tracker = Tracker(config)
 
 if config.service.auth_username and config.service.auth_password:
