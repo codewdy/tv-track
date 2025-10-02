@@ -98,7 +98,8 @@ class Tracker:
             episodes=[
                 GetTV.Episode(
                     name=e.name,
-                    url=self.path.tv_url(tv, e.filename))
+                    url=self.path.tv_url(tv, e.filename),
+                    ready=e.download == "success")
                 for e in tv.local.episodes])
 
     @api
@@ -119,19 +120,6 @@ class Tracker:
     async def remove_tv(self, request: RemoveTV.Request):
         await self.local_manager.remove_tv(request.id)
         return RemoveTV.Response()
-
-    @api
-    async def get_tv(self, request: GetTV.Request):
-        tv = self.db_manager.tv(request.id)
-        return GetTV.Response(
-            name=tv.name,
-            tag=tv.tag,
-            watch=tv.watch,
-            episodes=[
-                GetTV.Episode(
-                    name=e.name,
-                    url=self.path.tv_url(tv, e.filename))
-                for e in tv.local.episodes])
 
     @api
     async def get_download_status(self, request: GetDownloadStatus.Request):

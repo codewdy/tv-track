@@ -54,6 +54,7 @@ export namespace get_tv {
     export interface Episode {
         name: string
         url: string
+        ready: boolean
     }
     export interface Response {
         name: string

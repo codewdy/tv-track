@@ -3,7 +3,7 @@
         <NH1> {{ name }} </NH1>
         <n-space>
             <n-tag v-for="(item, index) in episodes" @click="changeEpisode(index)" :checked="index == episode_idx"
-                checkable>
+                checkable :disabled="!item.ready">
                 {{ item.name }}
             </n-tag>
         </n-space>
@@ -67,7 +67,7 @@ watch(() => current_time.value, (newTime) => {
 })
 
 function changeEpisode(idx: number) {
-    if (idx == episode_idx.value) {
+    if (idx == episode_idx.value || !episodes.value?.[idx].ready) {
         return
     }
     latest_update_time = 0

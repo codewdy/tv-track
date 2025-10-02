@@ -62,6 +62,7 @@ class GetTV(BaseModel):
     class Episode(BaseModel):
         name: str
         url: str
+        ready: bool
 
     class Request(BaseModel):
         id: int
