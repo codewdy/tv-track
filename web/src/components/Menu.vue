@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { NMenu, NIcon, NLayoutSider, NBadge, NSpace, NFlex } from 'naive-ui'
+import { NMenu, NIcon, NLayoutSider, NBadge, NSpace, NEllipsis } from 'naive-ui'
 import { ref, h, computed, inject } from 'vue'
 import {
     CaretDownOutline, LayersOutline, SettingsOutline, HomeOutline,
@@ -38,7 +38,7 @@ function createItem(to: string, v: string | (() => VNode), icon: any) {
 
 function createTVItem(tv: monitor.TV) {
     return {
-        label: () => h(RouterLink, { to: "/tv-view/" + tv.id }, tv.name),
+        label: () => h(NEllipsis, { "max-width": 160 }, h(RouterLink, { to: "/tv-view/" + tv.id }, tv.name)),
         key: "/tv-view/" + tv.id,
         icon: () => h(NBadge, {
             value: tv.tag === "watching" ? tv.total_episodes - watched_episode(tv.watch, watched_ratio.value) : 0
