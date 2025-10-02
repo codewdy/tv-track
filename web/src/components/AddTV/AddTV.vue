@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, inject } from 'vue'
 import { NDivider, NButton, useMessage, NSpace, NCheckbox } from 'naive-ui'
 import TVName from './TVName.vue'
 import SearchSource from './SearchSource.vue'
@@ -38,6 +38,7 @@ import type { db } from '@/schema'
 import axios from 'axios'
 
 const message = useMessage()
+const update_monitor = inject('update_monitor') as () => void
 
 const raw_name = ref<string>("")
 const name = ref<string | null>(null)
@@ -65,11 +66,13 @@ function addTV() {
         message.error("添加失败: " + err.message)
     }).then(res => {
         message.success("添加成功")
+        raw_name.value = ""
         name.value = null
         source.value = null
         tracking.value = false
         watch_tag.value = null
         key.value++
+        update_monitor()
     })
 
 }
