@@ -25,6 +25,10 @@ function update_tv(tv_id: number, updater: (tv: monitor.TV) => void) {
     }
 }
 
+function remove_tv(tv_id: number) {
+    tvs.value = tvs.value.filter(t => t.id != tv_id)
+}
+
 function reload() {
     axios.post('/api/monitor', { version: version }).catch(err => {
         message.error("获取状态失败: " + err.message)
@@ -64,8 +68,7 @@ provide('errors', errors)
 provide('update_monitor', reload)
 provide('watched_ratio', watched_ratio)
 provide('update_tv', update_tv)
-
-
+provide('remove_tv', remove_tv)
 
 </script>
 

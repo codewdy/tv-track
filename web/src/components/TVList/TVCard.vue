@@ -11,16 +11,19 @@
             </n-h2>
 
             <p class="card-watch"> 观看： {{ watched_episode(tv.watch, watched_ratio) }} / {{ tv.total_episodes }}</p>
-            <n-dropdown trigger="hover" :options="options" @select="updateTag">
-                <n-button>{{ WatchTagName[tv.tag] }}</n-button>
-            </n-dropdown>
+            <n-space>
+                <n-dropdown trigger="hover" :options="options" @select="updateTag">
+                    <n-button>{{ WatchTagName[tv.tag] }}</n-button>
+                </n-dropdown>
+                <n-button type="error" @click="deleteTV">删除</n-button>
+            </n-space>
         </n-card>
     </n-space>
 </template>
 
 <script setup lang="ts">
 import { ref, inject } from 'vue'
-import { NH2, NCard, NDropdown, NButton, NSpace, useMessage } from 'naive-ui'
+import { NH2, NCard, NDropdown, NButton, NSpace, useMessage, useDialog } from 'naive-ui'
 import { WatchTagName, WatchTagKeys } from '@/constant'
 import { watched_episode } from '@/utils'
 import type { monitor, db } from '@/schema'
@@ -28,7 +31,9 @@ import type { Ref } from 'vue'
 import axios from 'axios'
 
 const message = useMessage()
+const dialog = useDialog()
 const update_tv = inject('update_tv') as (tv_id: number, updater: (tv: monitor.TV) => void) => void
+const remove_tv = inject('remove_tv') as (tv_id: number) => void
 const { tv } = defineProps<{
     tv: monitor.TV,
 }>()
@@ -54,6 +59,25 @@ function updateTag(tag: string) {
     })
 }
 
+function deleteTV() {
+    dialog.create({
+        title: '删除确认',
+        content: '是否确认删除: ' + tv.name,
+        positiveText: '删除',
+        negativeText: '算了',
+        draggable: true,
+        onPositiveClick: () => {
+            remove_tv(tv.id)
+            axios.post('/api/remove_tv', {
+                id: tv.id
+            }).catch(err => {
+                message.error("删除失败: " + err.message)
+            })
+        },
+        onNegativeClick: () => {
+        }
+    })
+}
 
 </script>
 
