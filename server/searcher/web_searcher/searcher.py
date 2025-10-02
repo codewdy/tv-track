@@ -22,6 +22,7 @@ class Searcher:
                     results.append(Source(
                         source_key=self.key,
                         name=f"{subject.name} - {self.name} - {channel.name}",
+                        title=subject.name,
                         channel_name=channel.name,
                         url=subject.url,
                         cover_url=subject.cover_url,
@@ -38,16 +39,10 @@ class Searcher:
             channels = await self.channel_searcher.search(source.url)
             for channel in channels:
                 if channel.name == source.channel_name:
-                    return Source(
-                        source_key=source.source_key,
-                        name=source.name,
-                        channel_name=channel.name,
-                        url=source.url,
-                        cover_url=source.cover_url,
-                        tracking=source.tracking,
-                        episodes=[Source.Episode(
-                            name=e.name, url=e.url) for e in channel.episodes],
-                    )
+                    rst = source.model_copy()
+                    rst.episodes = [Source.Episode(
+                        name=e.name, url=e.url) for e in channel.episodes]
+                    return rst
             else:
                 raise RuntimeError(
                     f"channel not found: {source.channel_name}")

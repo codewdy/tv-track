@@ -4,7 +4,7 @@
         <n-divider title-placement="left">
             输入名字
         </n-divider>
-        <TVName v-model:result="name" :key="key" />
+        <TVName v-model:name="raw_name" v-model:result="name" :key="key" />
         <n-divider title-placement="left">
             选择TV源
         </n-divider>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { NDivider, NButton, useMessage, NSpace, NCheckbox } from 'naive-ui'
 import TVName from './TVName.vue'
 import SearchSource from './SearchSource.vue'
@@ -39,11 +39,18 @@ import axios from 'axios'
 
 const message = useMessage()
 
+const raw_name = ref<string>("")
 const name = ref<string | null>(null)
 const source = ref<db.Source | null>(null)
 const tracking = ref<boolean>(false)
 const watch_tag = ref<string | null>(null)
 const key = ref<number>(1)
+
+watch(source, (newSource: db.Source | null) => {
+    if (newSource) {
+        raw_name.value = newSource.title
+    }
+})
 
 function addTV() {
     if (!name.value || !source.value || !watch_tag.value) {

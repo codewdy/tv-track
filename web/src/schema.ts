@@ -7,6 +7,7 @@ export namespace db {
     export interface Source {
         source_key: string
         name: string
+        title: string
         channel_name: string
         url: string
         cover_url: string

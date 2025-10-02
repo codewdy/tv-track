@@ -10,6 +10,7 @@ class Source(BaseModel):
         url: str
     source_key: str
     name: str
+    title: str
     channel_name: str
     url: str
     cover_url: str

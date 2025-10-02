@@ -12,7 +12,9 @@ import type { monitor } from '@/schema'
 import type { Ref } from 'vue'
 
 const tvs = inject('tvs') as Ref<monitor.TV[]>
-const name = ref<string>('')
+const name = defineModel<string>("name", {
+    default: ''
+})
 
 const error = computed(() => {
     return validateName(name.value)
