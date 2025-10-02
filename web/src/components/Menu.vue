@@ -40,7 +40,9 @@ function createTVItem(tv: monitor.TV) {
     return {
         label: () => h(RouterLink, { to: "/tv-view/" + tv.id }, tv.name),
         key: "/tv-view/" + tv.id,
-        icon: () => h(NBadge, { value: tv.total_episodes - watched_episode(tv.watch, watched_ratio.value) }, h(NIcon, null, { default: () => h(CaretForwardCircleOutline) }))
+        icon: () => h(NBadge, {
+            value: tv.tag === "watching" ? tv.total_episodes - watched_episode(tv.watch, watched_ratio.value) : 0
+        }, h(NIcon, null, { default: () => h(CaretForwardCircleOutline) }))
     }
 }
 
