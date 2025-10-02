@@ -17,6 +17,14 @@ const message = useMessage()
 let timer: any = null
 let version: string = ""
 
+function update_tv(tv_id: number, updater: (tv: monitor.TV) => void) {
+    let tv = tvs.value.find((tv) => tv.id === tv_id)
+    if (tv) {
+        updater(tv)
+        tvs.value = [tv, ...tvs.value.filter(t => t.id != tv_id)]
+    }
+}
+
 function reload() {
     axios.post('/api/monitor', { version: version }).catch(err => {
         message.error("获取状态失败: " + err.message)
@@ -55,6 +63,9 @@ provide('critical_errors', critical_errors)
 provide('errors', errors)
 provide('update_monitor', reload)
 provide('watched_ratio', watched_ratio)
+provide('update_tv', update_tv)
+
+
 
 </script>
 

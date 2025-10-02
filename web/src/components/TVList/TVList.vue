@@ -1,6 +1,7 @@
 <template>
     <n-space vertical>
         <n-input v-model:value="search_keyword" placeholder="搜索" />
+        <n-divider />
         <n-collapse :default-expanded-names="WatchTagKeys">
             <n-collapse-item v-for="tag in WatchTagKeys" :key="tag" :title="WatchTagName[tag]" :name="tag">
                 <n-space>
@@ -14,7 +15,7 @@
 <script setup lang="ts">
 import { ref, inject, computed } from 'vue'
 import TVCard from './TVCard.vue'
-import { NSpace, NCollapse, NCollapseItem, NInput } from "naive-ui"
+import { NSpace, NCollapse, NCollapseItem, NInput, NDivider } from "naive-ui"
 import type { monitor } from '@/schema'
 import type { Ref } from 'vue'
 import { WatchTagName, WatchTagKeys } from '@/constant'

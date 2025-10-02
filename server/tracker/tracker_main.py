@@ -193,6 +193,14 @@ class Tracker:
     async def get_config(self, request: GetConfig.Request):
         return GetConfig.Response(watched_ratio=self.config.tracker.watched_ratio)
 
+    @api
+    async def set_tag(self, request: SetTag.Request):
+        tv = self.db_manager.tv(request.id)
+        tv.tag = request.tag
+        tv.touch_time = datetime.now()
+        self.db_manager.tv_dirty(tv)
+        return SetTag.Response()
+
 
 if __name__ == "__main__":
     import asyncio

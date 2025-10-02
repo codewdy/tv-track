@@ -110,3 +110,12 @@ class SetWatch(BaseModel):
 
     class Response(BaseModel):
         pass
+
+
+class SetTag(BaseModel):
+    class Request(BaseModel):
+        id: int
+        tag: WatchTag
+
+    class Response(BaseModel):
+        pass

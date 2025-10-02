@@ -11,7 +11,7 @@
             </n-h2>
 
             <p class="card-watch"> 观看： {{ watched_episode(tv.watch, watched_ratio) }} / {{ tv.total_episodes }}</p>
-            <n-dropdown trigger="hover" :options="options">
+            <n-dropdown trigger="hover" :options="options" @select="updateTag">
                 <n-button>{{ WatchTagName[tv.tag] }}</n-button>
             </n-dropdown>
         </n-card>
@@ -23,21 +23,36 @@ import { ref, inject } from 'vue'
 import { NH2, NCard, NDropdown, NButton, NSpace, useMessage } from 'naive-ui'
 import { WatchTagName, WatchTagKeys } from '@/constant'
 import { watched_episode } from '@/utils'
-import type { monitor } from '@/schema'
+import type { monitor, db } from '@/schema'
 import type { Ref } from 'vue'
+import axios from 'axios'
 
 const message = useMessage()
-const tvs = inject('tvs')
+const update_tv = inject('update_tv') as (tv_id: number, updater: (tv: monitor.TV) => void) => void
 const { tv } = defineProps<{
     tv: monitor.TV,
 }>()
 const watched_ratio = inject<Ref<number>>('watched_ratio') as Ref<number>
 
-
 const options = WatchTagKeys.map(status => ({
     label: WatchTagName[status],
     key: status
 }));
+
+function updateTag(tag: string) {
+    if (tv.tag === tag) {
+        return
+    }
+    axios.post('/api/set_tag', {
+        id: tv.id,
+        tag: tag as db.WatchTag
+    }).catch(err => {
+        message.error("设置标签失败: " + err.message)
+    })
+    update_tv(tv.id, (tv) => {
+        tv.tag = tag as db.WatchTag
+    })
+}
 
 
 </script>
