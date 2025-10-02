@@ -1,7 +1,7 @@
 <template>
     <n-spin :spinning="searching">
         <n-space vertical>
-            <n-input v-model:value="keyword" placeholder="搜索关键字" />
+            <n-input v-model:value="keyword" placeholder="搜索关键字" @keyup.enter="search" />
             <n-button @click="search">搜索</n-button>
             <n-select v-model:value="selected_index" :options="options" />
             <n-layout has-sider v-show="selected">
