@@ -11,6 +11,7 @@ class Monitor(BaseModel):
         tag: WatchTag
         watch: WatchStatus
         total_episodes: int
+        icon_url: str
 
     class Request(BaseModel):
         version: str

@@ -35,6 +35,7 @@ export namespace monitor {
         tag: db.WatchTag
         watch: db.WatchStatus
         total_episodes: number
+        icon_url: string
     }
     export interface Request {
         version: string

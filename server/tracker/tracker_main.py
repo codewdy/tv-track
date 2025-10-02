@@ -79,7 +79,8 @@ class Tracker:
                 name=tv.name,
                 tag=tv.tag,
                 watch=tv.watch,
-                total_episodes=total_episodes)
+                total_episodes=total_episodes,
+                icon_url=self.path.cover_url(tv))
         return Monitor.Response(
             is_new=request.version != version,
             version=version,

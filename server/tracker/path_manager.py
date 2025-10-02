@@ -52,6 +52,9 @@ class PathManager:
     def tv_cover(self, tv: TV, by: str = "id"):
         return self.tv_file(tv, tv.local.cover, by)
 
+    def cover_url(self, tv: TV, by: str = "id"):
+        return self.tv_url(tv, tv.local.cover, by)
+
     def episode(self, tv: TV, episode_idx: int, by: str = "id"):
         return self.tv_file(tv, tv.local.episodes[episode_idx].filename, by)
 
