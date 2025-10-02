@@ -2,7 +2,7 @@
     <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="240" :collapsed="collapsed"
         show-trigger @collapse="collapsed = true" @expand="collapsed = false">
         <n-menu :collapsed="collapsed" :collapsed-width="64" :collapsed-icon-size="22" :options="menuOptions"
-            :expand-icon="expandIcon" :value="value()" :default-expanded-keys="['tv-view', ...WatchTagKeys]" :indent="5"
+            :expand-icon="expandIcon" :value="value()" :default-expanded-keys="['tv-view', 'watching']" :indent="5"
             :root-indent="20" />
     </n-layout-sider>
 </template>
