@@ -8,13 +8,13 @@ class Source(BaseModel):
     class Episode(BaseModel):
         name: str
         url: str
-    source_key: str
-    name: str
-    title: str
-    channel_name: str
-    url: str
-    cover_url: str
-    tracking: bool
+    source_key: str = ""
+    name: str = ""
+    title: str = ""
+    channel_name: str = ""
+    url: str = ""
+    cover_url: str = ""
+    tracking: bool = False
     episodes: list["Source.Episode"] = []
     latest_update: Optional[datetime] = None
 
@@ -26,9 +26,9 @@ class LocalStore(BaseModel):
         FAILED = "failed"
 
     class Episode(BaseModel):
-        name: str
-        filename: str
-        download: "LocalStore.DownloadStatus"
+        name: str = ""
+        filename: str = ""
+        download: "LocalStore.DownloadStatus" = "running"
         download_error: Optional[str] = None
 
     episodes: list["LocalStore.Episode"] = []
@@ -49,10 +49,10 @@ class WatchStatus(BaseModel):
 
 
 class TV(BaseModel):
-    id: int
-    name: str
+    id: int = 0
+    name: str = ""
     tag: WatchTag = WatchTag.Wanted
-    source: Source
+    source: Source = Source()
     local: LocalStore = LocalStore()
     watch: WatchStatus = WatchStatus()
     touch_time: Optional[datetime] = datetime(1970, 1, 1)
