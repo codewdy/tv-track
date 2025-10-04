@@ -1,0 +1,46 @@
+{
+    "searchers": [
+        {
+            "key": "girigirilove",
+            "name": "girigiri愛動漫",
+            "subject_searcher": {
+                "search_url": "https://bgm.girigirilove.com/search/-------------/?wd={keyword}",
+                "type": "web_b",
+                "a": "body > .box-width .mask2 .search-list .detail-info > a",
+                "cover": "body > .box-width .mask2 .search-list .detail-pic img",
+                "cover_attr": "data-src"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "select_channel_names": ".anthology-tab > .swiper-wrapper a",
+                "select_episode_lists": ".anthology-list-box",
+                "select_episodes_from_list": "a",
+                "select_episode_links_from_list": ""
+            },
+            "resource_searcher": {
+                "type": "browser"
+            }
+        },
+        {
+            "key": "renrenpro",
+            "name": "人人影视Pro",
+            "subject_searcher": {
+                "search_url": "https://www.renren.pro/search?wd={keyword}",
+                "type": "web_b",
+                "a": "main .content .module .module-list .video-info-header h3 a",
+                "cover": "main .content .module .module-list .video-cover img",
+                "cover_attr": "data-src"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "select_channel_names": "",
+                "select_episode_lists": ".module-blocklist",
+                "select_episodes_from_list": "a",
+                "select_episode_links_from_list": ""
+            },
+            "resource_searcher": {
+                "type": "browser"
+            }
+        }
+    ]
+}

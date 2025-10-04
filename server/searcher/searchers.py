@@ -1,12 +1,19 @@
-from .web_searcher.searcher_list import searcher_list as web_searcher_list
 from functools import cache
 import asyncio
 from utils.context import Context
+from .searcher import Searcher
+from pathlib import Path
+import json
+
+
+def searcher_config():
+    with open(Path(__file__).parent / "searcher.json", "r") as f:
+        return json.load(f)
 
 
 @cache
 def searcher_list():
-    return web_searcher_list()
+    return [Searcher(config) for config in searcher_config()["searchers"]]
 
 
 @cache

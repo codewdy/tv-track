@@ -1,16 +1,19 @@
-from .subject_searcher import SubjectSearcher
-from .channel_searcher import ChannelSearcher
-from .resource_searcher import ResourceSearcher
+from .resource_searcher.resource_searcher import create_resource_searcher
+from .subject_searcher.subject_searcher import create_subject_searcher
+from .channel_searcher.channel_searcher import create_channel_searcher
 from schema.db import Source
 
 
 class Searcher:
     def __init__(self, config):
+        self.resource_searcher = create_resource_searcher(
+            config["resource_searcher"])
+        self.subject_searcher = create_subject_searcher(
+            config["subject_searcher"])
+        self.channel_searcher = create_channel_searcher(
+            config["channel_searcher"])
         self.key = config["key"]
         self.name = config["name"]
-        self.subject_searcher = SubjectSearcher(config["subjectSearcher"])
-        self.channel_searcher = ChannelSearcher(config["channelSearcher"])
-        self.resource_searcher = ResourceSearcher(config["resourceSearcher"])
 
     async def search(self, keyword):
         try:
