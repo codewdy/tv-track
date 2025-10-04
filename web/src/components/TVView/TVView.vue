@@ -1,15 +1,27 @@
 <template>
     <n-space vertical>
-        <NH1> {{ name }} </NH1>
-        <n-space>
-            <n-tag v-for="(item, index) in episodes" @click="changeEpisode(index)" :checked="index == episode_idx"
-                checkable :disabled="!item.ready">
-                {{ item.name }}
-            </n-tag>
-        </n-space>
+        <NH1> {{ name }} - {{ episodes?.[episode_idx]?.name ?? "" }} </NH1>
+        <n-collapse>
+            <n-collapse-item title="选集" name="select">
+                <n-space>
+                    <n-tag v-for="(item, index) in episodes" @click="changeEpisode(index)"
+                        :checked="index == episode_idx" checkable :disabled="!item.ready">
+                        {{ item.name }}
+                    </n-tag>
+                </n-space>
+            </n-collapse-item>
+        </n-collapse>
         <VideoPlayer v-if="episodes !== null" :url="episodes[episode_idx]?.url ?? ''" :time="time"
             v-model:current_time="current_time" v-model:current_time_ratio="current_time_ratio" @pause="onPause"
             @done="onDone" />
+        <n-collapse>
+            <n-collapse-item title="设置" name="setting">
+                <n-space>
+                    <WatchTag :tv_id="tv_id" />
+                    <DeleteButton :tv_id="tv_id" />
+                </n-space>
+            </n-collapse-item>
+        </n-collapse>
     </n-space>
 </template>
 
@@ -17,11 +29,13 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, inject } from 'vue';
 import VideoPlayer from './VideoPlayer.vue';
-import { NH1, NTag, NSpace, useMessage } from 'naive-ui';
+import { NH1, NH2, NTag, NSpace, useMessage, NCollapse, NCollapseItem } from 'naive-ui';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import type { get_tv, monitor } from '@/schema';
 import type { AxiosResponse } from 'axios';
+import WatchTag from '@/components/common/WatchTag.vue'
+import DeleteButton from '@/components/common/DeleteButton.vue'
 
 const route = useRoute()
 const message = useMessage()
