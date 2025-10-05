@@ -13,7 +13,6 @@ class BaiduASubjectSearcher(BaiduSubjectSearcher):
         self.cover_selector = config["cover_selector"]
 
     async def parse(self, src: str):
-        await asyncio.sleep(0.1)
         soup = await request(src)
         url = soup.select_one(self.url_selector).get("href")
         name = to_text(soup.select_one(self.name_selector))

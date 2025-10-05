@@ -7,7 +7,6 @@ class WebResourceSearcher:
         pass
 
     async def search(self, url):
-        await asyncio.sleep(0.1)
         soup = await request(url)
         result = self.parse(url, soup)
         return result

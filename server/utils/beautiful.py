@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from utils.context import Context
+import asyncio
 
 
 HEADERS = {
@@ -13,8 +14,12 @@ HEADERS = {
 }
 
 
-async def request(url, headers=HEADERS):
+async def request(url, headers=HEADERS, retry=3):
     async with Context.client.get(url, headers=headers) as response:
+        if response.status == 429:
+            if retry > 0:
+                await asyncio.sleep(5)
+                return await request(url, headers, retry - 1)
         if response.status != 200:
             raise RuntimeError(
                 f"cannot get result status_code={response.status}"
