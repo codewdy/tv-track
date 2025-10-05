@@ -48,7 +48,7 @@ class Searcher:
                     return rst
             else:
                 raise RuntimeError(
-                    f"channel not found: {source.channel_name}")
+                    f"channel not found: {source.channel_name} channel found: {[i.name for i in channels]}")
         except:
             raise RuntimeError("update error: ", self.name, source.name)
 
