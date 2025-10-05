@@ -3,3 +3,4 @@ __pycache__/
 test-data
 tracker.log*
 result.json
+config.json
