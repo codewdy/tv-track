@@ -1,9 +1,9 @@
 from .web_a import WebASubjectSearcher
-from .web_b import WebBSubjectSearcher
+from .baidu_a import BaiduASubjectSearcher
 
 types = {
     "web_a": WebASubjectSearcher,
-    "web_b": WebBSubjectSearcher,
+    "baidu_a": BaiduASubjectSearcher,
 }
 
 

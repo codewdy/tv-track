@@ -1,8 +1,8 @@
-from utils.beautiful import request
 import asyncio
+from utils.beautiful import request, to_text
 
 
-class WebChannelSearcher:
+class WebResourceSearcher:
     def __init__(self, config):
         pass
 

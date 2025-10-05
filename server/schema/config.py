@@ -54,3 +54,4 @@ class Config(BaseModel):
     download: DownloadConfig = DownloadConfig()
     source_updater: SourceUpdaterConfig = SourceUpdaterConfig()
     monitor: MonitorConfig = MonitorConfig()
+    api_key: APIKey = APIKey()

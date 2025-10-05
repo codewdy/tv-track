@@ -52,7 +52,9 @@ class ContextMeta(type):
 class Context(metaclass=ContextMeta):
     _current_holder = threading.local()
 
-    def __init__(self, config: Config = Config(), use_client=True, use_browser=False):
+    def __init__(self, config: Config = None, use_client=True, use_browser=False):
+        if config is None:
+            config = Config.model_validate_json(open("config.json").read())
         self.tmp_dir = config.download.tmp_dir
         self.use_client = use_client
         self.use_browser = use_browser
@@ -67,6 +69,7 @@ class Context(metaclass=ContextMeta):
             "error", lambda title, error: self.logger.error(f"{title}: {error}"))
         self.error_handler.add_handler(
             "critical", lambda title, error: self.logger.critical(f"{title}: {error}"))
+        self.config = config
 
     async def __aenter__(self):
         self._current_holder.context = self

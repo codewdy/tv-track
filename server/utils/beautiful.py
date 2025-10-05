@@ -3,8 +3,18 @@ from bs4.element import NavigableString
 from utils.context import Context
 
 
-async def request(url):
-    async with Context.client.get(url) as response:
+HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',
+    "Referer": "https://www.baidu.com/",
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "zh-CN,zh;q=0.9"
+}
+
+
+async def request(url, headers=HEADERS):
+    async with Context.client.get(url, headers=headers) as response:
         if response.status != 200:
             raise RuntimeError(
                 f"cannot get result status_code={response.status}"

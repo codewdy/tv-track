@@ -5,7 +5,7 @@
             "name": "girigiri愛動漫",
             "subject_searcher": {
                 "search_url": "https://bgm.girigirilove.com/search/-------------/?wd={keyword}",
-                "type": "web_b",
+                "type": "web_a",
                 "a": "body > .box-width .mask2 .search-list .detail-info > a",
                 "cover": "body > .box-width .mask2 .search-list .detail-pic img",
                 "cover_attr": "data-src"
@@ -26,7 +26,7 @@
             "name": "人人影视Pro",
             "subject_searcher": {
                 "search_url": "https://www.renren.pro/search?wd={keyword}",
-                "type": "web_b",
+                "type": "web_a",
                 "a": "main .content .module .module-list .video-info-header h3 a",
                 "cover": "main .content .module .module-list .video-cover img",
                 "cover_attr": "data-src"
@@ -40,6 +40,31 @@
             },
             "resource_searcher": {
                 "type": "browser"
+            }
+        },
+        {
+            "key": "souerp",
+            "name": "索尔影院",
+            "subject_searcher": {
+                "type": "baidu_a",
+                "search_template": "site:souerp.com.cn v-detail {keyword}",
+                "filter": "^https://www.souerp.com.cn/v-detail",
+                "match_point": 0.5,
+                "url_selector": ".movie-poster a",
+                "name_selector": ".movie-info h1",
+                "cover_selector": ".movie-poster a img"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "select_channel_names": ".tab-nav button",
+                "select_episode_lists": ".tab-content",
+                "select_episodes_from_list": "a",
+                "select_episode_links_from_list": ""
+            },
+            "resource_searcher": {
+                "type": "web_a",
+                "regex": "^var player_aaaa=(.*)$",
+                "attr": "url"
             }
         }
     ]

@@ -7,23 +7,23 @@ import urllib
 class WebASubjectSearcher(WebSubjectSearcher):
     def __init__(self, config):
         super().__init__(config)
-        self.select_names = config["select_names"]
-        self.select_links = config["select_links"]
+        self.a = config["a"]
+        self.cover = config["cover"]
+        self.cover_attr = config["cover_attr"]
 
     def parse(self, src, soup):
-        text = [to_text(i) for i in soup.select(self.select_names)]
-        href = [
-            i["href"]
-            for i in soup.select(self.select_links)
-            if i.has_attr("href") and i["href"] != ""
-        ]
+        tokens = soup.select(self.a)
+        covers = soup.select(self.cover)
 
-        if len(text) != len(href):
+        if len(tokens) != len(covers):
             raise RuntimeError(
-                f"cannot parse search result len(text)={len(text)} len(href)={len(href)}"
+                f"cannot parse search result len(tokens)={len(tokens)} len(covers)={len(covers)}"
             )
 
         return [
-            {"name": name, "link": urllib.parse.urljoin(src, href)}
-            for name, href in zip(text, href)
+            Subject(
+                name=to_text(token),
+                url=urllib.parse.urljoin(src, token["href"]),
+                cover_url=urllib.parse.urljoin(src, cover[self.cover_attr]))
+            for token, cover in zip(tokens, covers)
         ]
