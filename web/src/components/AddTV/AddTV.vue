@@ -2,17 +2,14 @@
     <div style="max-width: 800px;">
         <p> 添加TV </p>
         <n-divider title-placement="left">
-            输入名字
-        </n-divider>
-        <TVName v-model:name="raw_name" v-model:result="name" :key="key" />
-        <n-divider title-placement="left">
             选择TV源
         </n-divider>
-        <SearchSource v-model:result="source" :key="key" />
+        <SearchSource v-model:result="source" />
         <n-divider title-placement="left">
-            额外信息
+            信息
         </n-divider>
         <n-space vertical>
+            <TVName v-model:name="raw_name" v-model:result="name" :key="key" />
             <n-space>
                 <p>选择标签:</p>
                 <WatchTag v-model:result="watch_tag" :key="key" style="width: 100px;" />
@@ -68,7 +65,6 @@ function addTV() {
         message.success("添加成功")
         raw_name.value = ""
         name.value = null
-        source.value = null
         tracking.value = false
         watch_tag.value = null
         key.value++
