@@ -42,6 +42,10 @@ class MonitorConfig(BaseModel):
     check_zpool_interval: TimeDelta = to_timedelta("1d")
 
 
+class APIKey(BaseModel):
+    serp_api: str = ""
+
+
 class Config(BaseModel):
     service: ServiceConfig = ServiceConfig()
     logger: LoggerConfig = LoggerConfig()

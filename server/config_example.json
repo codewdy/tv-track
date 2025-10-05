@@ -31,5 +31,8 @@
     "monitor": {
         "check_smart_interval": "1d",
         "check_zpool_interval": "1d"
+    },
+    "api_key": {
+        "serp_api": ""
     }
 }
