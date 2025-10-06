@@ -2,7 +2,7 @@
     <n-space vertical>
         <TVViewHead v-model:tv="tv" :updateWatched="updateWatched" />
         <TVViewWatch v-model:tv="tv" :updateWatched="updateWatched" />
-        <TVViewSetting :tv_id="tv_id" />
+        <TVViewSetting v-model:tv="tv" :tv_id="tv_id" :reload="reload" />
     </n-space>
 </template>
 

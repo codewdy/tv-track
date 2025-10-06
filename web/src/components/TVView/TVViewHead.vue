@@ -8,7 +8,7 @@
             <n-breadcrumb-item :clickable="true" separator="">
                 <n-dropdown :options="options" trigger="click" :menu-props="dorpdown_menu" @select="changeEpisode">
                     <div class="trigger">
-                        {{ tv.episodes[tv.watch.watched_episode]?.name ?? "" }}
+                        {{ to_text(tv.episodes[tv.watch.watched_episode]) }}
                     </div>
                 </n-dropdown>
             </n-breadcrumb-item>
@@ -57,7 +57,10 @@ function changeEpisode(index: number) {
     updateWatched(index, 0, 0)
 }
 
-function to_text(item: get_tv.Episode) {
+function to_text(item: get_tv.Episode | undefined) {
+    if (!item) {
+        return ""
+    }
     const STATUS = {
         "running": " (*)",
         "success": "",

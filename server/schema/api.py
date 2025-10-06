@@ -120,3 +120,13 @@ class SetTag(BaseModel):
 
     class Response(BaseModel):
         pass
+
+
+class SetDownloadStatus(BaseModel):
+    class Request(BaseModel):
+        id: int
+        episode_idx: int
+        status: LocalStore.DownloadStatus
+
+    class Response(BaseModel):
+        pass

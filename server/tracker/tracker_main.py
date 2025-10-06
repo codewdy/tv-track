@@ -189,6 +189,16 @@ class Tracker:
         self.db_manager.tv_dirty(tv)
         return SetTag.Response()
 
+    @api
+    async def set_download_status(self, request: SetDownloadStatus.Request):
+        tv = self.db_manager.tv(request.id)
+        tv.local.episodes[request.episode_idx].download = request.status
+        tv.touch_time = datetime.now()
+        self.db_manager.tv_dirty(tv)
+        if request.status == LocalStore.DownloadStatus.RUNNING:
+            self.local_manager.submit_download(tv.id, request.episode_idx)
+        return SetDownloadStatus.Response()
+
 
 if __name__ == "__main__":
     import asyncio
