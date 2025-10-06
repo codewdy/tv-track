@@ -15,7 +15,7 @@ export namespace db {
         episodes: Episode[]
     }
 
-    export enum WatchTag {
+    export const enum WatchTag {
         Watching = "watching",
         Wanted = "wanted",
         Watched = "watched",

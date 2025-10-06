@@ -1,104 +1,59 @@
 <template>
     <n-space vertical>
-        <NH1> {{ name }} - {{ episodes?.[episode_idx]?.name ?? "" }} </NH1>
-        <n-collapse>
-            <n-collapse-item title="选集" name="select">
-                <n-space>
-                    <n-tag v-for="(item, index) in episodes" @click="changeEpisode(index)"
-                        :checked="index == episode_idx" checkable :disabled="!item.ready">
-                        {{ item.name }}
-                    </n-tag>
-                </n-space>
-            </n-collapse-item>
-        </n-collapse>
-        <VideoPlayer v-if="episodes !== null" :url="episodes[episode_idx]?.url ?? ''" :time="time"
-            v-model:current_time="current_time" v-model:current_time_ratio="current_time_ratio" @pause="onPause"
-            @done="onDone" />
-        <n-collapse>
-            <n-collapse-item title="设置" name="setting">
-                <n-space>
-                    <WatchTag :tv_id="tv_id" />
-                    <DeleteButton :tv_id="tv_id" />
-                </n-space>
-            </n-collapse-item>
-        </n-collapse>
+        <TVViewHead v-model:tv="tv" :updateWatched="updateWatched" />
+        <TVViewWatch v-model:tv="tv" :updateWatched="updateWatched" />
+        <TVViewSetting :tv_id="tv_id" />
     </n-space>
 </template>
 
-
 <script setup lang="ts">
-import { onMounted, ref, watch, inject } from 'vue';
-import VideoPlayer from './VideoPlayer.vue';
-import { NH1, NH2, NTag, NSpace, useMessage, NCollapse, NCollapseItem } from 'naive-ui';
+import { inject, ref, onMounted, watch } from 'vue';
+import type { db, get_tv, monitor } from '@/schema';
 import axios from 'axios';
-import { useRoute } from 'vue-router';
-import type { get_tv, monitor } from '@/schema';
 import type { AxiosResponse } from 'axios';
-import WatchTag from '@/components/common/WatchTag.vue'
-import DeleteButton from '@/components/common/DeleteButton.vue'
+import { useMessage, NSpace } from 'naive-ui'
+import { useRoute } from 'vue-router';
+import TVViewWatch from './TVViewWatch.vue';
+import TVViewSetting from './TVViewSetting.vue';
+import TVViewHead from './TVViewHead.vue';
 
 const route = useRoute()
 const message = useMessage()
-const update_tv = inject('update_tv') as (tv_id: number, updater: (tv: monitor.TV) => void) => void
-
-
-const episodes = ref<get_tv.Episode[] | null>(null)
 
 const tv_id = ref<number>(0)
-const name = ref<string>("")
-const episode_idx = ref<number>(0)
-const time = ref<number>(0)
+const tv = ref<get_tv.Response>({
+    name: "",
+    tag: "watching" as db.WatchTag,
+    watch: {
+        watched_episode: 0,
+        watched_episode_time: 0,
+        watched_episode_time_ratio: 0,
+    },
+    episodes: [],
+})
 
-const current_time = ref<number>(0)
-const current_time_ratio = ref<number>(0)
+const update_tv = inject('update_tv') as (tv_id: number, updater: (tv: monitor.TV) => void) => void
 
-let latest_update_time = 0
-
-function updateWatched(idx: number, time: number, ratio: number) {
+function updateWatched(ep_id: number, time: number, ratio: number) {
+    console.log("updateWatched", ep_id, time, ratio)
+    if (isNaN(ratio)) {
+        ratio = 0
+    }
     update_tv(tv_id.value, (tv) => {
-        tv.watch.watched_episode = idx
+        tv.watch.watched_episode = ep_id
         tv.watch.watched_episode_time = time
         tv.watch.watched_episode_time_ratio = ratio
     })
     axios.post('/api/set_watch', {
         id: tv_id.value,
         watch: {
-            watched_episode: idx,
+            watched_episode: ep_id,
             watched_episode_time: time,
             watched_episode_time_ratio: ratio,
         }
     }).catch(err => {
         message.error("更新观看时间失败: " + err.message)
     })
-}
-
-
-watch(() => current_time.value, (newTime) => {
-    if (Math.abs(newTime - latest_update_time) > 5) {
-        updateWatched(episode_idx.value, newTime, current_time_ratio.value)
-        latest_update_time = newTime
-    }
-})
-
-function changeEpisode(idx: number) {
-    if (idx == episode_idx.value || !episodes.value?.[idx].ready) {
-        return
-    }
-    latest_update_time = 0
-    episode_idx.value = idx
-    time.value = 0
-    updateWatched(episode_idx.value, 0, 0)
-}
-
-function onPause() {
-    updateWatched(episode_idx.value, current_time.value, current_time_ratio.value)
-}
-
-function onDone() {
-    latest_update_time = 0
-    episode_idx.value++
-    time.value = -1
-    updateWatched(episode_idx.value, 0, 0)
 }
 
 function reload(id: number) {
@@ -109,13 +64,7 @@ function reload(id: number) {
     }).then(res => {
         res = res as AxiosResponse<get_tv.Response>
         tv_id.value = id
-        name.value = res.data.name
-        episodes.value = res.data.episodes
-        episode_idx.value = res.data.watch.watched_episode
-        latest_update_time = res.data.watch.watched_episode_time
-        time.value = res.data.watch.watched_episode_time
-        current_time.value = res.data.watch.watched_episode_time
-        current_time_ratio.value = res.data.watch.watched_episode_time_ratio
+        tv.value = res.data
     })
 }
 
@@ -126,5 +75,6 @@ watch(() => route.params.tv_id, (newId) => {
 onMounted(() => {
     reload(parseInt(route.params.tv_id as string))
 })
+
 
 </script>
