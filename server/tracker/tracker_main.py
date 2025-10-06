@@ -99,7 +99,7 @@ class Tracker:
                 GetTV.Episode(
                     name=e.name,
                     url=self.path.tv_url(tv, e.filename),
-                    ready=e.download == "success")
+                    download_status=e.download)
                 for e in tv.local.episodes])
 
     @api

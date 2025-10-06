@@ -58,7 +58,12 @@ function changeEpisode(index: number) {
 }
 
 function to_text(item: get_tv.Episode) {
-    return item.name + (item.ready ? "" : " (x)")
+    const STATUS = {
+        "running": " (-)",
+        "success": "",
+        "failed": " (x)"
+    }
+    return item.name + STATUS[item.download_status]
 }
 
 function dorpdown_menu(option: DropdownOption | undefined, options: (DropdownOption | DropdownGroupOption)[]) {

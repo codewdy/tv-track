@@ -1,6 +1,6 @@
 from re import L
 from pydantic import BaseModel
-from .db import Source, ErrorDB, WatchTag, WatchStatus
+from .db import Source, ErrorDB, WatchTag, WatchStatus, LocalStore
 from typing import Optional
 
 
@@ -62,7 +62,7 @@ class GetTV(BaseModel):
     class Episode(BaseModel):
         name: str
         url: str
-        ready: bool
+        download_status: LocalStore.DownloadStatus
 
     class Request(BaseModel):
         id: int
