@@ -59,7 +59,7 @@ function changeEpisode(index: number) {
 
 function to_text(item: get_tv.Episode) {
     const STATUS = {
-        "running": " (-)",
+        "running": " (*)",
         "success": "",
         "failed": " (x)"
     }
