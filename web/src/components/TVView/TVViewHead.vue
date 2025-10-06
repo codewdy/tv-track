@@ -19,8 +19,8 @@
             <n-collapse-item title="选集" name="select">
                 <n-space>
                     <n-tag v-for="(item, index) in tv.episodes" @click="changeEpisode(index)"
-                        :checked="index == tv.watch.watched_episode" checkable :disabled="!item.ready">
-                        {{ item.name }}
+                        :checked="index == tv.watch.watched_episode" checkable>
+                        {{ to_text(item) }}
                     </n-tag>
                 </n-space>
             </n-collapse-item>
@@ -33,7 +33,7 @@
 import { computed } from 'vue'
 import type { get_tv } from '@/schema';
 import type { DropdownOption, DropdownGroupOption } from 'naive-ui'
-import { NH1, NTag, NSpace, NCollapse, NCollapseItem, NBreadcrumb, NBreadcrumbItem, NDropdown } from 'naive-ui';
+import { NH1, NTag, NSpace, NCollapse, NCollapseItem, NBreadcrumb, NBreadcrumbItem, NDropdown, NIcon } from 'naive-ui';
 
 const tv = defineModel<get_tv.Response>("tv", { required: true })
 const { updateWatched } = defineProps<{
@@ -44,9 +44,8 @@ const { updateWatched } = defineProps<{
 const options = computed(() => {
     return tv.value.episodes.map((item, index) => {
         return {
-            label: item.name,
-            key: index,
-            disabled: !item.ready
+            label: to_text(item),
+            key: index
         }
     }) ?? []
 })
@@ -56,6 +55,10 @@ function changeEpisode(index: number) {
     tv.value.watch.watched_episode_time = 0
     tv.value.watch.watched_episode_time_ratio = 0
     updateWatched(index, 0, 0)
+}
+
+function to_text(item: get_tv.Episode) {
+    return item.name + (item.ready ? "" : " (x)")
 }
 
 function dorpdown_menu(option: DropdownOption | undefined, options: (DropdownOption | DropdownGroupOption)[]) {
