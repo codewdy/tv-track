@@ -130,3 +130,23 @@ class SetDownloadStatus(BaseModel):
 
     class Response(BaseModel):
         pass
+
+
+class UpdateEpisodeSource(BaseModel):
+    class Request(BaseModel):
+        id: int
+        episode_idx: int
+        source: Source.Episode
+
+    class Response(BaseModel):
+        pass
+
+
+class UpdateSource(BaseModel):
+    class Request(BaseModel):
+        id: int
+        source: Source
+        update_downloaded: bool
+
+    class Response(BaseModel):
+        pass

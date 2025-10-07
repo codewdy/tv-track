@@ -31,6 +31,7 @@ class Searcher:
                         cover_url=subject.cover_url,
                         tracking=False,
                         episodes=[Source.Episode(
+                            source_key=self.key,
                             name=e.name, url=e.url) for e in channel.episodes],
                     ))
             return results
@@ -44,6 +45,7 @@ class Searcher:
                 if channel.name == source.channel_name:
                     rst = source.model_copy()
                     rst.episodes = [Source.Episode(
+                        source_key=self.key,
                         name=e.name, url=e.url) for e in channel.episodes]
                     return rst
             else:

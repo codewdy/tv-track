@@ -1,5 +1,6 @@
 export namespace db {
     export interface Episode {
+        source_key: string
         name: string
         url: string
     }

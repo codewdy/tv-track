@@ -199,6 +199,29 @@ class Tracker:
             self.local_manager.submit_download(tv.id, request.episode_idx)
         return SetDownloadStatus.Response()
 
+    @api
+    async def update_episode_source(self, request: UpdateEpisodeSource.Request):
+        tv = self.db_manager.tv(request.id)
+        tv.source.episodes[request.episode_idx] = request.source
+        tv.touch_time = datetime.now()
+        tv.local.episodes[request.episode_idx].download = LocalStore.DownloadStatus.RUNNING
+        self.local_manager.submit_download(tv.id, request.episode_idx)
+        self.db_manager.tv_dirty(tv)
+        return UpdateEpisodeSource.Response()
+
+    @api
+    async def update_source(self, request: UpdateSource.Request):
+        tv = self.db_manager.tv(request.id)
+        tv.source = request.source
+        tv.touch_time = datetime.now()
+        for i, e in enumerate(tv.local.episodes):
+            if e.download != LocalStore.DownloadStatus.RUNNING or request.update_downloaded:
+                e.download = LocalStore.DownloadStatus.RUNNING
+                self.local_manager.submit_download(tv.id, i)
+        self.local_manager.update(tv.id)
+        self.db_manager.tv_dirty(tv)
+        return UpdateSource.Response()
+
 
 if __name__ == "__main__":
     import asyncio

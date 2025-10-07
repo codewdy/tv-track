@@ -114,7 +114,7 @@ class LocalManager:
         download_name = f"{tv.name} - {tv.source.episodes[episode_id].name}"
         Context.info(f"downloading {download_name}")
         self.downloader.submit(
-            sourceKey=tv.source.source_key,
+            sourceKey=episode.source_key or tv.source.source_key,
             url=episode.url,
             dst=self.path.episode(tv, episode_id),
             meta=download_name,

@@ -29,7 +29,7 @@
 import { ref, watch, inject } from 'vue'
 import { NDivider, NButton, useMessage, NSpace, NCheckbox } from 'naive-ui'
 import TVName from './TVName.vue'
-import SearchSource from './SearchSource.vue'
+import SearchSource from '@/components/common/SearchSource.vue'
 import WatchTag from './WatchTag.vue'
 import type { db } from '@/schema'
 import axios from 'axios'

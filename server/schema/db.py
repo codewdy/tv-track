@@ -6,8 +6,9 @@ from datetime import datetime
 
 class Source(BaseModel):
     class Episode(BaseModel):
-        name: str
-        url: str
+        source_key: str = ""
+        name: str = ""
+        url: str = ""
     source_key: str = ""
     name: str = ""
     title: str = ""
