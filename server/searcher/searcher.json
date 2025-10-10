@@ -6,8 +6,9 @@
             "subject_searcher": {
                 "search_url": "https://bgm.girigirilove.com/search/-------------/?wd={keyword}",
                 "type": "web_a",
-                "a": "body > .box-width .mask2 .search-list .detail-info > a",
-                "cover": "body > .box-width .mask2 .search-list .detail-pic img",
+                "token": ".thumb-txt",
+                "a": ".thumb-menu a:first-child",
+                "cover": ".public-list-exp img",
                 "cover_attr": "data-src"
             },
             "channel_searcher": {
@@ -27,6 +28,7 @@
             "subject_searcher": {
                 "search_url": "https://www.renren.pro/search?wd={keyword}",
                 "type": "web_a",
+                "token": "main .content .module .module-list .video-info-header h3 a",
                 "a": "main .content .module .module-list .video-info-header h3 a",
                 "cover": "main .content .module .module-list .video-cover img",
                 "cover_attr": "data-src"
