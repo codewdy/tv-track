@@ -52,3 +52,18 @@ class Searchers:
 
     async def get_video(self, sourceKey, url):
         return await self.searcher_dict[sourceKey].get_video(url)
+
+    async def self_test(self):
+        await asyncio.gather(
+            *map(
+                lambda s: s.self_test(),
+                self.searcher_list,
+            )
+        )
+
+
+if __name__ == "__main__":
+    async def run():
+        async with Context(use_browser=True) as ctx:
+            await Searchers().self_test()
+    asyncio.run(run())

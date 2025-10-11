@@ -20,6 +20,9 @@
             },
             "resource_searcher": {
                 "type": "browser"
+            },
+            "self_test": {
+                "keyword": "三月的狮子"
             }
         },
         {
@@ -42,6 +45,9 @@
             },
             "resource_searcher": {
                 "type": "browser"
+            },
+            "self_test": {
+                "keyword": "生活大爆炸"
             }
         },
         {
@@ -67,6 +73,9 @@
                 "type": "web_a",
                 "regex": "^var player_aaaa=(.*)$",
                 "attr": "url"
+            },
+            "self_test": {
+                "keyword": "生活大爆炸"
             }
         }
     ]

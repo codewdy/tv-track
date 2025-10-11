@@ -2,6 +2,7 @@ from .resource_searcher.resource_searcher import create_resource_searcher
 from .subject_searcher.subject_searcher import create_subject_searcher
 from .channel_searcher.channel_searcher import create_channel_searcher
 from schema.db import Source
+from utils.context import Context
 
 
 class Searcher:
@@ -14,6 +15,7 @@ class Searcher:
             config["channel_searcher"])
         self.key = config["key"]
         self.name = config["name"]
+        self.self_test_keyword = config["self_test"]["keyword"]
 
     async def search(self, keyword):
         try:
@@ -56,6 +58,14 @@ class Searcher:
 
     async def get_video(self, url):
         return await self.resource_searcher.search(url)
+
+    async def self_test(self):
+        with Context.handle_error_context(f"self test {self.key} error", type="critical"):
+            rst = await self.search(self.self_test_keyword)
+            example_video = await self.get_video(rst[0].episodes[0].url)
+            if example_video is None:
+                raise RuntimeError("self test error: ", self.name,
+                                   self.self_test_keyword)
 
 
 if __name__ == "__main__":
