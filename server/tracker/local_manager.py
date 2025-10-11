@@ -56,7 +56,6 @@ class LocalManager:
             os.remove(self.path.tv_dir(tv, by="name"))
         del db.tv[tv.id]
         db.removed[tv.id] = tv.name
-        self.db.tv_del(tv)
         self.db.db_dirty()
 
     async def update(self, tv_id: int):
