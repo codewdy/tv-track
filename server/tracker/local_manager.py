@@ -7,6 +7,7 @@ from utils.context import Context
 from .db_manager import DBManager
 from downloader.download_manager import DownloadManager
 from datetime import datetime
+import shutil
 
 
 def _get_ext(url: str):
@@ -57,6 +58,22 @@ class LocalManager:
         del db.tv[tv.id]
         db.removed[tv.id] = tv.name
         self.db.db_dirty()
+
+    async def update_source(self, tv_id: int, source: Source, update_downloaded: bool = False):
+        tv = self.db.tv(tv_id)
+        tv.source = source
+        tv.touch_time = datetime.now()
+        if update_downloaded:
+            tv.local = LocalStore()
+            shutil.rmtree(self.path.tv_dir(tv, by="id"))
+            os.makedirs(self.path.tv_dir(tv, by="id"), exist_ok=True)
+        else:
+            for i, e in enumerate(tv.local.episodes):
+                if e.download != LocalStore.DownloadStatus.RUNNING:
+                    e.download = LocalStore.DownloadStatus.RUNNING
+                    self.submit_download(tv.id, i)
+        await self.update(tv.id)
+        self.db.tv_dirty(tv)
 
     async def update(self, tv_id: int):
         tv = self.db.tv(tv_id)

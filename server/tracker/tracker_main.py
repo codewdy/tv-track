@@ -11,7 +11,7 @@ from .error_manager import ErrorManager
 from service.api_service import api, mock
 from .source_updater import SourceUpdater
 from datetime import datetime
-from schema.db import TV
+from schema.db import TV, LocalStore
 from monitor.monitors import Monitors
 
 
@@ -211,15 +211,7 @@ class Tracker:
 
     @api
     async def update_source(self, request: UpdateSource.Request):
-        tv = self.db_manager.tv(request.id)
-        tv.source = request.source
-        tv.touch_time = datetime.now()
-        for i, e in enumerate(tv.local.episodes):
-            if e.download != LocalStore.DownloadStatus.RUNNING or request.update_downloaded:
-                e.download = LocalStore.DownloadStatus.RUNNING
-                self.local_manager.submit_download(tv.id, i)
-        self.local_manager.update(tv.id)
-        self.db_manager.tv_dirty(tv)
+        await self.local_manager.update_source(request.id, request.source, request.update_downloaded)
         return UpdateSource.Response()
 
 
