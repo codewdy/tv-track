@@ -59,6 +59,34 @@
             }
         },
         {
+            "key": "renrenpro",
+            "name": "人人影视Pro",
+            "subject_searcher": {
+                "search_url": "https://www.renren.pro/search?wd={keyword}",
+                "type": "web_a",
+                "token": "main .content .module .module-list .video-info-header h3 a",
+                "a": "main .content .module .module-list .video-info-header h3 a",
+                "cover": "main .content .module .module-list .video-cover img",
+                "cover_attr": "data-src"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "select_channel_names": "",
+                "select_episode_lists": ".module-blocklist",
+                "select_episodes_from_list": "a",
+                "select_episode_links_from_list": "",
+                "filter": ""
+            },
+            "resource_searcher": {
+                "type": "browser",
+                "pattern": "https?://.*\\.(mp4|m3u8)",
+                "file_type": "auto"
+            },
+            "self_test": {
+                "keyword": "生活大爆炸"
+            }
+        },
+        {
             "key": "freeok",
             "name": "freeok",
             "subject_searcher": {
@@ -75,7 +103,7 @@
                 "select_episode_lists": ".his-tab-list",
                 "select_episodes_from_list": "a span",
                 "select_episode_links_from_list": "a",
-                "filter": "无广"
+                "filter": ""
             },
             "resource_searcher": {
                 "type": "browser",
