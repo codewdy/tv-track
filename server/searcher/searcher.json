@@ -16,7 +16,8 @@
                 "select_channel_names": ".anthology-tab > .swiper-wrapper a",
                 "select_episode_lists": ".anthology-list-box",
                 "select_episodes_from_list": "a",
-                "select_episode_links_from_list": ""
+                "select_episode_links_from_list": "",
+                "filter": ""
             },
             "resource_searcher": {
                 "type": "browser"
@@ -41,7 +42,8 @@
                 "select_channel_names": "",
                 "select_episode_lists": ".module-blocklist",
                 "select_episodes_from_list": "a",
-                "select_episode_links_from_list": ""
+                "select_episode_links_from_list": "",
+                "filter": ""
             },
             "resource_searcher": {
                 "type": "browser"
@@ -67,7 +69,8 @@
                 "select_channel_names": ".tab-nav button",
                 "select_episode_lists": ".tab-content",
                 "select_episodes_from_list": "a",
-                "select_episode_links_from_list": ""
+                "select_episode_links_from_list": "",
+                "filter": ""
             },
             "resource_searcher": {
                 "type": "web_a",
@@ -76,6 +79,32 @@
             },
             "self_test": {
                 "keyword": "生活大爆炸"
+            }
+        },
+        {
+            "key": "freeok",
+            "name": "freeok",
+            "subject_searcher": {
+                "search_url": "https://www.freeok.fun/so1so/-------------.html?wd={keyword}",
+                "type": "web_a",
+                "token": ".module-card-item-title a",
+                "a": ".module-card-item-title a",
+                "cover": ".module-item-pic img",
+                "cover_attr": "data-original"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "select_channel_names": ".module-tab-item",
+                "select_episode_lists": ".his-tab-list",
+                "select_episodes_from_list": "a span",
+                "select_episode_links_from_list": "a",
+                "filter": "无广"
+            },
+            "resource_searcher": {
+                "type": "browser"
+            },
+            "self_test": {
+                "keyword": "三月的狮子"
             }
         }
     ]

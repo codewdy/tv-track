@@ -9,6 +9,7 @@ class WebAChannelSearcher(WebChannelSearcher):
         self,
         config,
     ):
+        super().__init__(config)
         self.select_channel_names = config["select_channel_names"]
         self.select_episode_lists = config["select_episode_lists"]
         self.select_episodes_from_list = config["select_episodes_from_list"]
