@@ -10,7 +10,10 @@ class WebChannelSearcher:
     async def search(self, url):
         soup = await request(url)
         result = self.parse(url, soup)
-        result = [
+        result_filtered = [
             channel for channel in result
             if self.filter.search(channel.name)]
-        return result
+        if len(result_filtered) == 0:
+            return result
+        else:
+            return result_filtered
