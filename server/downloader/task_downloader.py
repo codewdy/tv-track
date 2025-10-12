@@ -12,11 +12,16 @@ class TaskDownloader:
         self.searchers = Searchers()
 
     def get_downloader(self, video_url):
-        if video_url.endswith(".mp4"):
-            return MP4Downloader(video_url, self.download_task.dst)
-        elif video_url.endswith(".m3u8"):
-            return M3U8Downloader(video_url, self.download_task.dst)
-        raise ValueError(f"Unknown task type: {self.download_task.type}")
+        if video_url.type == "mp4":
+            return MP4Downloader(video_url.url, self.download_task.dst)
+        elif video_url.type == "m3u8":
+            return M3U8Downloader(video_url.url, self.download_task.dst)
+        elif video_url.type == "auto":
+            if video_url.url.endswith(".mp4"):
+                return MP4Downloader(video_url.url, self.download_task.dst)
+            elif video_url.url.endswith(".m3u8"):
+                return M3U8Downloader(video_url.url, self.download_task.dst)
+        raise ValueError(f"Unknown task type: {video_url.type}")
 
     async def run_once(self):
         self.status = "searching task"
@@ -50,12 +55,12 @@ if __name__ == "__main__":
     from downloader.download_task import DownloadTask
 
     download_task = DownloadTask(
-        sourceKey="girigirilove",
-        url="https://anime.girigirilove.com/playGV26626-1-1/",
+        sourceKey="736dm",
+        url="https://www.736dm.com/play/7065-1-2.html",
         dst="/tmp/oceans-4.mp4",
         retry=3,
         retry_interval=1.5,
-        timeout=10,
+        timeout=1000,
     )
 
     async def run():

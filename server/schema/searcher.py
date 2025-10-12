@@ -13,3 +13,8 @@ class Channel(BaseModel):
         url: str
     name: str
     episodes: list["Channel.Episode"]
+
+
+class Resource(BaseModel):
+    url: str
+    type: str

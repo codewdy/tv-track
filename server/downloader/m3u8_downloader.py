@@ -95,12 +95,11 @@ if __name__ == "__main__":
     import asyncio
     import aiohttp
     from downloader.download_tracker import DownloadTracker
+    import sys
 
     async def test():
         async with Context() as ctx:
-            downloader = M3U8Downloader(
-                "https://m3u8.girigirilove.com/zijian/oldanime/2025/07/cht/GrandBlueS2CHT/01/playlist.m3u8",
-                "/tmp/oceans-2.mp4")
+            downloader = M3U8Downloader(sys.argv[-2], sys.argv[-1])
             task = asyncio.create_task(downloader.run())
             while True:
                 await asyncio.sleep(1)

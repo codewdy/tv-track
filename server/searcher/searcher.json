@@ -20,7 +20,9 @@
                 "filter": ""
             },
             "resource_searcher": {
-                "type": "browser"
+                "type": "browser",
+                "pattern": "https?://.*\\.(mp4|m3u8)",
+                "file_type": "auto"
             },
             "self_test": {
                 "keyword": "三月的狮子"
@@ -46,7 +48,9 @@
                 "filter": ""
             },
             "resource_searcher": {
-                "type": "browser"
+                "type": "browser",
+                "pattern": "https?://.*\\.(mp4|m3u8)",
+                "file_type": "auto"
             },
             "self_test": {
                 "keyword": "生活大爆炸"
@@ -75,7 +79,8 @@
             "resource_searcher": {
                 "type": "web_a",
                 "regex": "^var player_aaaa=(.*)$",
-                "attr": "url"
+                "attr": "url",
+                "file_type": "auto"
             },
             "self_test": {
                 "keyword": "生活大爆炸"
@@ -101,7 +106,37 @@
                 "filter": "无广"
             },
             "resource_searcher": {
-                "type": "browser"
+                "type": "browser",
+                "pattern": "https?://.*\\.(mp4|m3u8)",
+                "file_type": "auto"
+            },
+            "self_test": {
+                "keyword": "三月的狮子"
+            }
+        },
+        {
+            "key": "736dm",
+            "name": "736dm",
+            "subject_searcher": {
+                "search_url": "https://www.736dm.com/search/-------------.html?wd={keyword}",
+                "type": "web_a",
+                "token": ".detail .title a",
+                "a": ".detail .title a",
+                "cover": ".thumb a",
+                "cover_attr": "data-original"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "select_channel_names": ".nav-tabs a",
+                "select_episode_lists": ".stui-content__playlist",
+                "select_episodes_from_list": "a",
+                "select_episode_links_from_list": "",
+                "filter": ""
+            },
+            "resource_searcher": {
+                "type": "browser",
+                "pattern": "mime_type=video_mp4",
+                "file_type": "mp4"
             },
             "self_test": {
                 "keyword": "三月的狮子"
