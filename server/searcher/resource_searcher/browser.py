@@ -43,7 +43,7 @@ class BrowserResourceSearcher:
         parsed_url = urlparse(video_url)
         query_params = parse_qs(parsed_url.query)
         if "url" in query_params:
-            return query_params["url"][0]
+            video_url = query_params["url"][0]
         return Resource(url=video_url, type=self.file_type)
 
 
