@@ -21,6 +21,9 @@ class PathManager:
     def error_json(self):
         return os.path.join(self.local_path, "error.json")
 
+    def ad_block_json(self):
+        return os.path.join(self.local_path, "ad_block.json")
+
     def tv_dir_by_id(self, tv_id: int):
         return os.path.join(self.local_path, "by-id", str(tv_id))
 

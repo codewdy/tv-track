@@ -74,3 +74,7 @@ class ErrorDB(BaseModel):
     critical_errors: list["ErrorDB.Error"] = []
     errors: list["ErrorDB.Error"] = []
     next_id: int = 1
+
+
+class AdBlockDB(BaseModel):
+    ts_black_list: set[str] = set()

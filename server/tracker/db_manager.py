@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pydantic import BaseModel
 from utils.timer import Timer
-from schema.db import DB, TV, ErrorDB
+from schema.db import DB, TV, ErrorDB, AdBlockDB
 from utils.path import atomic_file_write
 from .path_manager import PathManager
 import os
@@ -77,6 +77,13 @@ class DBManager:
             self.impl.load_row("error", self.path.error_json(), ErrorDB)
         else:
             self.impl.new_row("error", self.path.error_json(), ErrorDB())
+        if os.path.exists(self.path.ad_block_json()):
+            self.impl.load_row(
+                "ad_block", self.path.ad_block_json(), AdBlockDB)
+        else:
+            self.impl.new_row(
+                "ad_block", self.path.ad_block_json(), AdBlockDB())
+
         for tv_id, tv_name in self.db().tv.items():
             self.impl.load_row(tv_id, self.path.tv_json(tv_id), TV)
 
@@ -116,6 +123,12 @@ class DBManager:
 
     def error_dirty(self):
         self.impl.mark_dirty("error")
+
+    def ad_block(self):
+        return self.impl.get_row("ad_block")
+
+    def ad_block_dirty(self):
+        self.impl.mark_dirty("ad_block")
 
     def save(self):
         self.impl.save()

@@ -48,6 +48,12 @@ class ContextMeta(type):
     def tempdir(cls):
         return TempManager(cls.current.tmp_dir)
 
+    def set_meta(cls, key, value):
+        cls.current.meta[key] = value
+
+    def get_meta(cls, key, default=None):
+        return cls.current.meta.get(key, default)
+
 
 class Context(metaclass=ContextMeta):
     _current_holder = threading.local()
@@ -70,6 +76,7 @@ class Context(metaclass=ContextMeta):
         self.error_handler.add_handler(
             "critical", lambda title, error: self.logger.critical(f"{title}: {error}"))
         self.config = config
+        self.meta = {}
 
     async def __aenter__(self):
         self._current_holder.context = self

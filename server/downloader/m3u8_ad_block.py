@@ -1,0 +1,82 @@
+import asyncio
+import av
+import dataclasses
+import hashlib
+from utils.context import Context
+
+
+@dataclasses.dataclass
+class TSFingerPrint:
+    md5: str = ""
+    time_base: int = 0
+    duration: int = 0
+
+    def finger_print_tuple(self):
+        return self.time_base, self.duration
+
+
+class M3U8AdBlocker:
+
+    async def process_lines(self, lines):
+        db_manager = Context.get_meta("db_manager")
+        lines = list(lines)
+        ts = []
+        for i, line in enumerate(lines):
+            if line.startswith("#"):
+                continue
+            ts.append(i)
+
+        loop = asyncio.get_running_loop()
+        finger_prints = await loop.run_in_executor(None, self.get_finger_prints, [lines[t].strip() for t in ts])
+
+        finger_print_count = {}
+        for fp in finger_prints:
+            if fp.finger_print_tuple() not in finger_print_count:
+                finger_print_count[fp.finger_print_tuple()] = 0
+            finger_print_count[fp.finger_print_tuple()] += 1
+
+        main_finger_print = max(finger_print_count, key=finger_print_count.get)
+
+        if db_manager is not None:
+            ts_black_list = db_manager.ad_block().ts_black_list
+            for t, fp in zip(ts, finger_prints):
+                if fp.md5 in ts_black_list:
+                    lines[t] = "#" + lines[t]
+                if fp.finger_print_tuple() != main_finger_print and str(t):
+                    lines[t] = "#" + lines[t]
+                    ts_black_list.add(fp.md5)
+                    db_manager.ad_block_dirty()
+        else:
+            for t, fp in zip(ts, finger_prints):
+                if fp.finger_print_tuple() != main_finger_print:
+                    lines[t] = "#" + lines[t]
+
+        return lines
+
+    async def process_file(self, file):
+        with open(file, "r") as f:
+            lines = f.readlines()
+        lines = await self.process_lines(lines)
+        with open(file, "w") as f:
+            f.writelines(lines)
+
+    def get_finger_prints(self, files):
+        return [self.get_finger_print(file) for file in files]
+
+    def get_finger_print(self, file):
+        rst = TSFingerPrint()
+        with av.open(file) as container:
+            in_stream = container.streams.video[0]
+            for packet in container.demux(in_stream):
+                if packet.dts is None:
+                    continue
+                rst.time_base = int(1 / in_stream.time_base)
+                rst.duration = packet.duration
+                break
+        rst.md5 = hashlib.md5(open(file, "rb").read()).hexdigest()
+        return rst
+
+
+if __name__ == "__main__":
+    asyncio.run(M3U8AdBlocker().process_file(
+        "/tmp/tv_track/00b47a44-7c97-47b4-9d50-5c0327725ec0/src.m3u8"))

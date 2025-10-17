@@ -5,6 +5,7 @@ import urllib
 import re
 import asyncio
 from utils.context import Context
+from .m3u8_ad_block import M3U8AdBlocker
 
 
 class M3U8Downloader:
@@ -12,6 +13,7 @@ class M3U8Downloader:
         self.src = src
         self.dst = dst
         self.status = "preparing"
+        self.ad_block = M3U8AdBlocker()
 
     def select_sub_list(self, lines):
         r = re.compile(r"RESOLUTION=([0-9]+)x([0-9]+)")
@@ -59,8 +61,11 @@ class M3U8Downloader:
                 else:
                     newlines.append(fragments[current_fragment] + "\n")
                     current_fragment += 1
+        newlines = await self.ad_block.process_lines(newlines)
+
         with open(src_m3u8, "w") as f:
             f.writelines(newlines)
+
         await run_cmd(
             "ffmpeg", "-y", "-allowed_extensions", "ALL", "-i", src_m3u8, "-acodec", "copy", "-vcodec", "copy",
             "-bsf:a", "aac_adtstoasc", dst)

@@ -39,6 +39,7 @@ class Tracker:
             "critical", self.error_manager.handle_critical_error)
         await self.context.__aenter__()
         await self.db_manager.start()
+        self.context.meta["db_manager"] = self.db_manager
         await self.local_manager.start()
         await self.source_updater.start()
         await self.monitors.start()
