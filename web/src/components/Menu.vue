@@ -15,7 +15,6 @@ import {
     CaretForwardCircleOutline, ArrowDownCircleOutline, WarningOutline,
     ExtensionPuzzleOutline
 } from '@vicons/ionicons5'
-import { WatchTagName, WatchTagKeys } from '@/constant'
 import type { monitor, db } from '@/schema'
 import type { Ref, VNode, VNodeProps } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -25,6 +24,9 @@ const tvs = inject<Ref<monitor.TV[]>>('tvs') as Ref<monitor.TV[]>
 const critical_errors = inject<Ref<number>>('critical_errors') as Ref<number>
 const errors = inject<Ref<number>>('errors') as Ref<number>
 const watched_ratio = inject<Ref<number>>('watched_ratio') as Ref<number>
+const tags = inject<Ref<string[]>>('tags') as Ref<string[]>
+const tag_to_name = inject<Ref<{ [id: string]: string; }>>('tag_to_name') as Ref<{ [id: string]: string; }>
+
 
 const route = useRoute()
 
@@ -56,7 +58,7 @@ function createErrorSign(name: string, critical_errors: number, errors: number) 
 
 function createTagGroup(tag: string) {
     return {
-        label: WatchTagName[tag],
+        label: tag_to_name.value[tag] || tag,
         key: tag,
         icon: () => h(NIcon, null, { default: () => h(ExtensionPuzzleOutline) }),
         children: tvs.value.filter(tv => tv.tag === tag).map(createTVItem)
@@ -72,7 +74,7 @@ const menuOptions = computed(() => [
         label: 'TV',
         key: 'tv-view',
         icon: () => h(NIcon, null, { default: () => h(LayersOutline) }),
-        children: WatchTagKeys.map(createTagGroup)
+        children: tags.value.map(createTagGroup)
     }
 ])
 const collapsed = ref(false)

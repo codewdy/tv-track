@@ -2,7 +2,7 @@ from utils.path import atomic_file_write
 from .path_manager import PathManager
 import os
 from schema.config import Config
-from schema.db import TV, LocalStore, Source, WatchTag, WatchStatus
+from schema.db import TV, LocalStore, Source
 from utils.context import Context
 from .db_manager import DBManager
 from downloader.download_manager import DownloadManager
@@ -33,7 +33,7 @@ class LocalManager:
         self.path = PathManager(config)
         self.downloader = downloader
 
-    async def add_tv(self, name: str, source: Source, tag: WatchTag):
+    async def add_tv(self, name: str, source: Source, tag: str):
         db = self.db.db()
         for tv_id, tv_name in db.tv.items():
             if tv_name == name:

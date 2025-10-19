@@ -1,4 +1,4 @@
-import { db } from "@/schema"
+import type { db } from "@/schema"
 
 export function watched_episode(watch: db.WatchStatus, watched_ratio: number) {
     return watch.watched_episode +

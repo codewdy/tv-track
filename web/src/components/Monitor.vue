@@ -13,6 +13,9 @@ const tvs = ref<monitor.TV[]>([])
 const critical_errors = ref<number>(0)
 const errors = ref<number>(0)
 const watched_ratio = ref<number>(0)
+const tags = ref<string[]>([])
+const tag_to_name = ref<{ [id: string]: string; }>({})
+
 const message = useMessage()
 let timer: any = null
 let version: string = ""
@@ -42,16 +45,25 @@ function reload() {
             errors.value = data.errors
         }
     })
+}
+
+function load_config() {
     axios.post('/api/get_config', {}).catch(err => {
         message.error("获取配置失败: " + err.message)
     }).then((response) => {
         response = response as AxiosResponse<get_config.Response>
         let data = response.data
         watched_ratio.value = data.watched_ratio
+        tags.value = data.tags.map((t: get_config.TagConfig) => t.tag)
+        tag_to_name.value = data.tags.reduce((acc: { [id: string]: string; }, cur: get_config.TagConfig) => {
+            acc[cur.tag] = cur.name
+            return acc
+        }, {})
     })
 }
 
 onMounted(() => {
+    load_config()
     reload()
     timer = setInterval(() => {
         reload()
@@ -67,6 +79,8 @@ provide('critical_errors', critical_errors)
 provide('errors', errors)
 provide('update_monitor', reload)
 provide('watched_ratio', watched_ratio)
+provide('tags', tags)
+provide('tag_to_name', tag_to_name)
 provide('update_tv', update_tv)
 provide('remove_tv', remove_tv)
 

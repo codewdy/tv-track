@@ -1,6 +1,7 @@
 from re import L
 from pydantic import BaseModel
-from .db import Source, ErrorDB, WatchTag, WatchStatus, LocalStore
+from .db import Source, ErrorDB, WatchStatus, LocalStore
+from .config import TagConfig
 from typing import Optional
 
 
@@ -8,7 +9,7 @@ class Monitor(BaseModel):
     class TV(BaseModel):
         id: int
         name: str
-        tag: WatchTag
+        tag: str
         watch: WatchStatus
         total_episodes: int
         icon_url: str
@@ -30,6 +31,7 @@ class GetConfig(BaseModel):
 
     class Response(BaseModel):
         watched_ratio: float
+        tags: list[TagConfig]
 
 
 class SearchTV(BaseModel):
@@ -44,7 +46,7 @@ class AddTV(BaseModel):
     class Request(BaseModel):
         name: str
         source: Source
-        tag: WatchTag
+        tag: str
 
     class Response(BaseModel):
         id: int
@@ -69,7 +71,7 @@ class GetTV(BaseModel):
 
     class Response(BaseModel):
         name: str
-        tag: WatchTag
+        tag: str
         watch: WatchStatus
         episodes: list["GetTV.Episode"]
 
@@ -116,7 +118,7 @@ class SetWatch(BaseModel):
 class SetTag(BaseModel):
     class Request(BaseModel):
         id: int
-        tag: WatchTag
+        tag: str
 
     class Response(BaseModel):
         pass

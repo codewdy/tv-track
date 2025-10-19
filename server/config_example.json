@@ -12,7 +12,29 @@
     "tracker": {
         "resource_dir": "test-data",
         "save_interval": "1m",
-        "watched_ratio": 0.9
+        "watched_ratio": 0.9,
+        "tags": [
+            {
+                "tag": "watching",
+                "name": "在看"
+            },
+            {
+                "tag": "wanted",
+                "name": "想看"
+            },
+            {
+                "tag": "watched",
+                "name": "看完"
+            },
+            {
+                "tag": "dropped",
+                "name": "搁置"
+            },
+            {
+                "tag": "saved",
+                "name": "归档"
+            }
+        ]
     },
     "download": {
         "concurrent": 5,

@@ -180,7 +180,9 @@ class Tracker:
 
     @api
     async def get_config(self, request: GetConfig.Request):
-        return GetConfig.Response(watched_ratio=self.config.tracker.watched_ratio)
+        return GetConfig.Response(
+            watched_ratio=self.config.tracker.watched_ratio,
+            tags=self.config.tracker.tags)
 
     @api
     async def set_tag(self, request: SetTag.Request):

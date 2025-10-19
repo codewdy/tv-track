@@ -3,19 +3,21 @@
 </template>
 
 <script setup lang="ts">
-import { db } from '@/schema'
-import { WatchTagName } from '@/constant'
-import { computed, ref } from 'vue';
+import { computed, inject } from 'vue';
 import { NSelect } from 'naive-ui';
+import type { Ref } from 'vue'
+
+const tags = inject('tags') as Ref<string[]>
+const tag_to_name = inject('tag_to_name') as Ref<{ [id: string]: string; }>
 
 const result = defineModel<string | null>("result", {
-    default: db.WatchTag.Wanted
+    default: null
 })
 
 const watch_tag_selection = computed(() => {
-    return Object.entries(WatchTagName).map(([key, value]) => ({
-        label: value,
-        value: key,
+    return tags.value.map((tag: string) => ({
+        label: tag_to_name.value[tag],
+        value: tag,
     }))
 })
 

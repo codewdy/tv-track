@@ -2,8 +2,8 @@
     <n-space vertical>
         <n-input v-model:value="search_keyword" placeholder="搜索" />
         <n-divider />
-        <n-collapse :default-expanded-names="WatchTagKeys">
-            <n-collapse-item v-for="tag in WatchTagKeys" :key="tag" :title="WatchTagName[tag]" :name="tag">
+        <n-collapse :default-expanded-names="tags">
+            <n-collapse-item v-for="tag in tags" :key="tag" :title="tag_to_name[tag]" :name="tag">
                 <n-space>
                     <TVCard :tv="tv" v-for="tv in filtered_tvs.filter(t => t.tag === tag)" :key="tv.id" />
                 </n-space>
@@ -18,9 +18,10 @@ import TVCard from './TVCard.vue'
 import { NSpace, NCollapse, NCollapseItem, NInput, NDivider } from "naive-ui"
 import type { monitor } from '@/schema'
 import type { Ref } from 'vue'
-import { WatchTagName, WatchTagKeys } from '@/constant'
 
 const tvs = inject('tvs') as Ref<monitor.TV[]>
+const tags = inject('tags') as Ref<string[]>
+const tag_to_name = inject('tag_to_name') as Ref<{ [id: string]: string; }>
 
 const search_keyword = ref('')
 

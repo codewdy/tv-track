@@ -1,6 +1,19 @@
 from pydantic import BaseModel
 from .dtype import TimeDelta, to_timedelta
 
+_DEFUALT_TAG = [
+    {"tag": "watching", "name": "在看"},
+    {"tag": "wanted", "name": "想看"},
+    {"tag": "watched", "name": "看完"},
+    {"tag": "dropped", "name": "搁置"},
+    {"tag": "saved", "name": "归档"},
+]
+
+
+class TagConfig(BaseModel):
+    tag: str = ""
+    name: str = ""
+
 
 class ServiceConfig(BaseModel):
     port: int = 0
@@ -18,6 +31,7 @@ class TrackerConfig(BaseModel):
     resource_dir: str = "test-data"
     save_interval: TimeDelta = to_timedelta("1m")
     watched_ratio: float = 0.9
+    tags: list[TagConfig] = _DEFUALT_TAG
 
 
 class DownloadConfig(BaseModel):

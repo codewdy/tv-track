@@ -16,13 +16,6 @@ export namespace db {
         episodes: Episode[]
     }
 
-    export const enum WatchTag {
-        Watching = "watching",
-        Wanted = "wanted",
-        Watched = "watched",
-        Dropped = "dropped",
-    }
-
     export interface WatchStatus {
         watched_episode: number
         watched_episode_time: number
@@ -34,7 +27,7 @@ export namespace monitor {
     export interface TV {
         id: number
         name: string
-        tag: db.WatchTag
+        tag: string
         watch: db.WatchStatus
         total_episodes: number
         icon_url: string
@@ -60,7 +53,7 @@ export namespace get_tv {
     }
     export interface Response {
         name: string
-        tag: db.WatchTag
+        tag: string
         watch: db.WatchStatus
         episodes: Episode[]
     }
@@ -102,7 +95,12 @@ export namespace get_errors {
 }
 
 export namespace get_config {
+    export interface TagConfig {
+        tag: string
+        name: string
+    }
     export interface Response {
         watched_ratio: number
+        tags: TagConfig[]
     }
 }

@@ -23,7 +23,7 @@ const message = useMessage()
 const tv_id = ref<number>(0)
 const tv = ref<get_tv.Response>({
     name: "",
-    tag: "watching" as db.WatchTag,
+    tag: "",
     watch: {
         watched_episode: 0,
         watched_episode_time: 0,
