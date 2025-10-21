@@ -53,11 +53,12 @@ class TaskDownloader:
 if __name__ == "__main__":
     import asyncio
     from downloader.download_task import DownloadTask
+    import sys
 
     download_task = DownloadTask(
-        sourceKey="736dm",
-        url="https://www.736dm.com/play/7065-1-2.html",
-        dst="/tmp/oceans-4.mp4",
+        sourceKey=sys.argv[-3],
+        url=sys.argv[-2],
+        dst=sys.argv[-1],
         retry=3,
         retry_interval=1.5,
         timeout=1000,

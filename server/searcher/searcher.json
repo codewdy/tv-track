@@ -17,7 +17,7 @@
                 "select_episode_lists": ".anthology-list-box",
                 "select_episodes_from_list": "a",
                 "select_episode_links_from_list": "",
-                "filter": ""
+                "filter": []
             },
             "resource_searcher": {
                 "type": "browser",
@@ -45,7 +45,7 @@
                 "select_episode_lists": ".module-blocklist",
                 "select_episodes_from_list": "a",
                 "select_episode_links_from_list": "",
-                "filter": ""
+                "filter": []
             },
             "resource_searcher": {
                 "type": "browser",
@@ -69,11 +69,14 @@
             },
             "channel_searcher": {
                 "type": "web_a",
-                "select_channel_names": ".module-tab-item",
+                "select_channel_names": ".module-tab-item span",
                 "select_episode_lists": ".his-tab-list",
                 "select_episodes_from_list": "a span",
                 "select_episode_links_from_list": "a",
-                "filter": ""
+                "filter": [
+                    "超清有广①",
+                    "超清无广"
+                ]
             },
             "resource_searcher": {
                 "type": "browser",

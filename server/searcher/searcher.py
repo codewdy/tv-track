@@ -89,7 +89,7 @@ if __name__ == "__main__":
             example_video = await searcher.get_video(rst[0].episodes[0].url)
             rst = {
                 "source": [i.model_dump(mode="json") for i in rst],
-                "example_video": example_video,
+                "example_video": example_video.model_dump(mode="json"),
             }
             print(rst)
             with open("result.json", "w") as f:
