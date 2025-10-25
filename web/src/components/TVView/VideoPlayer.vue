@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import XGPlayer, { Events } from 'xgplayer';
 import 'xgplayer/dist/index.min.css';
-import { watch, onMounted, ref, defineProps, defineEmits, defineModel } from 'vue';
+import { watch, onMounted, onUnmounted, ref, defineProps, defineEmits, defineModel } from 'vue';
 
 const { url = '', width = 800, time = 0 } = defineProps(['url', 'width', 'time'])
 const current_time = defineModel('current_time', { default: 0 })
@@ -77,6 +77,12 @@ onMounted(() => {
         localStorage.setItem('video_player_muted', player.muted.toString())
     })
 })
+
+onUnmounted(() => {
+    player?.destroy()
+    player = null
+})
+
 </script>
 
 <style scoped></style>
