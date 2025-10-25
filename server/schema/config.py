@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from .dtype import TimeDelta, to_timedelta
+from .dtype import TVTrackBaseModel
+from .dtype import TimeDelta
 
 _DEFUALT_TAG = [
     {"tag": "watching", "name": "在看"},
@@ -9,59 +9,91 @@ _DEFUALT_TAG = [
     {"tag": "saved", "name": "归档"},
 ]
 
+_DEFUALT_SYSTEM_MONITOR = [
+    {"key": "top", "name": "top", "cmd": "top -bn1", "interval": 3},
+    {"key": "disk", "name": "磁盘", "cmd": "df -h", "interval": 0},
+]
 
-class TagConfig(BaseModel):
+_DEFUALT_SYSTEM_OPERATION = [
+    {"key": "restart-service", "name": "重启服务",
+        "cmd": "sudo systemctl restart tv-track"},
+    {"key": "restart-system", "name": "重启系统",
+        "cmd": "sudo reboot"},
+    {"key": "shutdown-system", "name": "关闭系统",
+        "cmd": "sudo shutdown now"},
+]
+
+
+class TagConfig(TVTrackBaseModel):
     tag: str = ""
     name: str = ""
 
 
-class ServiceConfig(BaseModel):
+class SystemMonitorConfig(TVTrackBaseModel):
+    key: str
+    name: str
+    cmd: str
+    interval: int
+
+
+class SystemOperationConfig(TVTrackBaseModel):
+    key: str
+    name: str
+    cmd: str
+
+
+class ServiceConfig(TVTrackBaseModel):
     port: int = 0
     auth_username: str = ""
     auth_password: str = ""
 
 
-class LoggerConfig(BaseModel):
+class LoggerConfig(TVTrackBaseModel):
     level: str = "INFO"
     filename: str = ""
     rotate_day: int = 7
 
 
-class TrackerConfig(BaseModel):
+class TrackerConfig(TVTrackBaseModel):
     resource_dir: str = "test-data"
-    save_interval: TimeDelta = to_timedelta("1m")
+    save_interval: TimeDelta = "1m"
     watched_ratio: float = 0.9
     tags: list[TagConfig] = _DEFUALT_TAG
 
 
-class DownloadConfig(BaseModel):
+class DownloadConfig(TVTrackBaseModel):
     concurrent: int = 5
     retry: int = 5
-    retry_interval: TimeDelta = to_timedelta("1m")
-    timeout: TimeDelta = to_timedelta("1h")
+    retry_interval: TimeDelta = "1m"
+    timeout: TimeDelta = "1h"
     tmp_dir: str = "/tmp/tv_track"
 
 
-class SourceUpdaterConfig(BaseModel):
-    update_interval: TimeDelta = to_timedelta("1h")
-    notrack_timeout: TimeDelta = to_timedelta("30d")
+class SourceUpdaterConfig(TVTrackBaseModel):
+    update_interval: TimeDelta = "1h"
+    notrack_timeout: TimeDelta = "30d"
 
 
-class ErrorConfig(BaseModel):
+class ErrorConfig(TVTrackBaseModel):
     max_error_count: int = 1000
 
 
-class MonitorConfig(BaseModel):
-    check_smart_interval: TimeDelta = to_timedelta("1d")
-    check_zpool_interval: TimeDelta = to_timedelta("1d")
-    check_searcher_interval: TimeDelta = to_timedelta("1d")
+class MonitorConfig(TVTrackBaseModel):
+    check_smart_interval: TimeDelta = "1d"
+    check_zpool_interval: TimeDelta = "1d"
+    check_searcher_interval: TimeDelta = "1d"
 
 
-class APIKey(BaseModel):
+class SystemStatusConfig(TVTrackBaseModel):
+    monitor: list[SystemMonitorConfig] = _DEFUALT_SYSTEM_MONITOR
+    operation: list[SystemOperationConfig] = _DEFUALT_SYSTEM_OPERATION
+
+
+class APIKey(TVTrackBaseModel):
     serp_api: str = ""
 
 
-class Config(BaseModel):
+class Config(TVTrackBaseModel):
     service: ServiceConfig = ServiceConfig()
     logger: LoggerConfig = LoggerConfig()
     error: ErrorConfig = ErrorConfig()
@@ -69,4 +101,5 @@ class Config(BaseModel):
     download: DownloadConfig = DownloadConfig()
     source_updater: SourceUpdaterConfig = SourceUpdaterConfig()
     monitor: MonitorConfig = MonitorConfig()
+    system_status: SystemStatusConfig = SystemStatusConfig()
     api_key: APIKey = APIKey()

@@ -29,6 +29,16 @@ const router = createRouter({
       component: () => import('../components/ErrorLog/ErrorLog.vue'),
     },
     {
+      path: '/system-monitor/:monitor_key',
+      name: 'system-monitor',
+      component: () => import('../components/SystemMonitor/SystemMonitor.vue'),
+    },
+    {
+      path: '/system-operation',
+      name: 'system-operation',
+      component: () => import('../components/SystemMonitor/SystemOperation.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'NotFound',
       component: () => import('../components/NotFound.vue'),

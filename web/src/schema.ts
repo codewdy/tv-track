@@ -99,8 +99,33 @@ export namespace get_config {
         tag: string
         name: string
     }
+    export interface SystemMonitor {
+        key: string
+        name: string
+    }
     export interface Response {
         watched_ratio: number
         tags: TagConfig[]
+        system_monitor: SystemMonitor[]
+    }
+}
+
+export namespace get_system_monitor {
+    export interface Request {
+        key: string
+    }
+    export interface Response {
+        interval: number
+        result: string
+    }
+}
+
+export namespace get_system_operation {
+    export interface Unit {
+        key: string
+        name: string
+    }
+    export interface Response {
+        result: Unit[]
     }
 }

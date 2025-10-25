@@ -54,6 +54,39 @@
         "check_smart_interval": "1d",
         "check_zpool_interval": "1d"
     },
+    "system_status": {
+        "monitor": [
+            {
+                "key": "top",
+                "name": "top",
+                "cmd": "top -bn1",
+                "interval": 3
+            },
+            {
+                "key": "disk",
+                "name": "磁盘",
+                "cmd": "df -h",
+                "interval": 0
+            }
+        ],
+        "operation": [
+            {
+                "key": "restart-service",
+                "name": "重启服务",
+                "cmd": "sudo systemctl restart tv-track"
+            },
+            {
+                "key": "restart-system",
+                "name": "重启系统",
+                "cmd": "sudo reboot"
+            },
+            {
+                "key": "shutdown-system",
+                "name": "关闭系统",
+                "cmd": "sudo shutdown now"
+            }
+        ]
+    },
     "api_key": {
         "serp_api": ""
     }

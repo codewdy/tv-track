@@ -15,7 +15,7 @@ import {
     CaretForwardCircleOutline, ArrowDownCircleOutline, WarningOutline,
     ExtensionPuzzleOutline
 } from '@vicons/ionicons5'
-import type { monitor, db } from '@/schema'
+import type { monitor, db, get_config } from '@/schema'
 import type { Ref, VNode, VNodeProps } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { watched_episode } from '@/utils'
@@ -26,6 +26,7 @@ const errors = inject<Ref<number>>('errors') as Ref<number>
 const watched_ratio = inject<Ref<number>>('watched_ratio') as Ref<number>
 const tags = inject<Ref<string[]>>('tags') as Ref<string[]>
 const tag_to_name = inject<Ref<{ [id: string]: string; }>>('tag_to_name') as Ref<{ [id: string]: string; }>
+const system_monitor = inject<Ref<get_config.SystemMonitor[]>>('system_monitor') as Ref<get_config.SystemMonitor[]>
 
 
 const route = useRoute()
@@ -70,6 +71,15 @@ const menuOptions = computed(() => [
     createItem('/add-tv', '添加TV', SettingsOutline),
     createItem('/download', '下载进度', ArrowDownCircleOutline),
     createItem('/error-log', () => createErrorSign('错误日志', critical_errors.value, errors.value), WarningOutline),
+    {
+        label: '系统监控',
+        key: 'system-monitor',
+        icon: () => h(NIcon, null, { default: () => h(ExtensionPuzzleOutline) }),
+        children: [
+            createItem('/system-operation', '系统操作', ExtensionPuzzleOutline),
+            ...system_monitor.value.map(item => createItem('/system-monitor/' + item.key, item.name, ExtensionPuzzleOutline))
+        ]
+    },
     {
         label: 'TV',
         key: 'tv-view',

@@ -13,6 +13,7 @@ from .source_updater import SourceUpdater
 from datetime import datetime
 from schema.db import TV, LocalStore
 from monitor.monitors import Monitors
+from utils.run_cmd import run_cmd
 
 
 class Tracker:
@@ -182,7 +183,12 @@ class Tracker:
     async def get_config(self, request: GetConfig.Request):
         return GetConfig.Response(
             watched_ratio=self.config.tracker.watched_ratio,
-            tags=self.config.tracker.tags)
+            tags=self.config.tracker.tags,
+            system_monitor=[
+                GetConfig.SystemMonitor(
+                    key=cfg.key,
+                    name=cfg.name)
+                for cfg in self.config.system_status.monitor])
 
     @api
     async def set_tag(self, request: SetTag.Request):
@@ -216,6 +222,41 @@ class Tracker:
     async def update_source(self, request: UpdateSource.Request):
         await self.local_manager.update_source(request.id, request.source, request.update_downloaded)
         return UpdateSource.Response()
+
+    @api
+    async def get_system_monitor(self, request: GetSystemMonitor.Request):
+        cfg = None
+        for m in self.config.system_status.monitor:
+            if m.key == request.key:
+                cfg = m
+                break
+        if cfg is None:
+            raise ValueError(f"monitor {request.key} not found")
+        stdout, stderr = await run_cmd(*cfg.cmd.split())
+        return GetSystemMonitor.Response(
+            interval=cfg.interval,
+            result=stdout)
+
+    @api
+    async def get_system_operation(self, request: GetSystemOperation.Request):
+        return GetSystemOperation.Response(
+            result=[
+                GetSystemOperation.Unit(
+                    key=m.key,
+                    name=m.name)
+                for m in self.config.system_status.operation])
+
+    @api
+    async def run_system_operation(self, request: RunSystemOperation.Request):
+        cfg = None
+        for m in self.config.system_status.operation:
+            if m.key == request.key:
+                cfg = m
+                break
+        if cfg is None:
+            raise ValueError(f"operation {request.key} not found")
+        await run_cmd(*cfg.cmd.split())
+        return RunSystemOperation.Response()
 
 
 if __name__ == "__main__":
@@ -256,6 +297,21 @@ if __name__ == "__main__":
         tracker = Tracker(config)
         async with tracker:
             return await tracker.get_tv(GetTV.Request(id=2))
+
+    async def test6():
+        tracker = Tracker(config)
+        async with tracker:
+            return await tracker.get_config(GetConfig.Request())
+
+    async def test7():
+        tracker = Tracker(config)
+        async with tracker:
+            return await tracker.get_system_monitor(GetSystemMonitor.Request(key="top"))
+
+    async def test8():
+        tracker = Tracker(config)
+        async with tracker:
+            return await tracker.run_system_operation(RunSystemOperation.Request(key="restart-service"))
 
     result = asyncio.run(locals()[sys.argv[1]]()).model_dump_json(indent=2)
     print(result)

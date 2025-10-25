@@ -15,6 +15,7 @@ const errors = ref<number>(0)
 const watched_ratio = ref<number>(0)
 const tags = ref<string[]>([])
 const tag_to_name = ref<{ [id: string]: string; }>({})
+const system_monitor = ref<get_config.SystemMonitor[]>([])
 
 const message = useMessage()
 let timer: any = null
@@ -59,6 +60,7 @@ function load_config() {
             acc[cur.tag] = cur.name
             return acc
         }, {})
+        system_monitor.value = data.system_monitor
     })
 }
 
@@ -83,6 +85,7 @@ provide('tags', tags)
 provide('tag_to_name', tag_to_name)
 provide('update_tv', update_tv)
 provide('remove_tv', remove_tv)
+provide('system_monitor', system_monitor)
 
 </script>
 

@@ -1,20 +1,20 @@
-from pydantic import BaseModel
+from .dtype import TVTrackBaseModel
 
 
-class Subject(BaseModel):
+class Subject(TVTrackBaseModel):
     name: str
     url: str
     cover_url: str
 
 
-class Channel(BaseModel):
-    class Episode(BaseModel):
+class Channel(TVTrackBaseModel):
+    class Episode(TVTrackBaseModel):
         name: str
         url: str
     name: str
     episodes: list["Channel.Episode"]
 
 
-class Resource(BaseModel):
+class Resource(TVTrackBaseModel):
     url: str
     type: str

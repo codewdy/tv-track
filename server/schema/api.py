@@ -1,12 +1,13 @@
 from re import L
-from pydantic import BaseModel
+from symtable import SymbolTable
+from .dtype import TVTrackBaseModel
 from .db import Source, ErrorDB, WatchStatus, LocalStore
 from .config import TagConfig
 from typing import Optional
 
 
-class Monitor(BaseModel):
-    class TV(BaseModel):
+class Monitor(TVTrackBaseModel):
+    class TV(TVTrackBaseModel):
         id: int
         name: str
         tag: str
@@ -14,10 +15,10 @@ class Monitor(BaseModel):
         total_episodes: int
         icon_url: str
 
-    class Request(BaseModel):
+    class Request(TVTrackBaseModel):
         version: str
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         is_new: bool
         version: str = ""
         tvs: list["Monitor.TV"] = []
@@ -25,51 +26,56 @@ class Monitor(BaseModel):
         errors: int = 0
 
 
-class GetConfig(BaseModel):
-    class Request(BaseModel):
+class GetConfig(TVTrackBaseModel):
+    class SystemMonitor(TVTrackBaseModel):
+        key: str
+        name: str
+
+    class Request(TVTrackBaseModel):
         pass
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         watched_ratio: float
         tags: list[TagConfig]
+        system_monitor: list["GetConfig.SystemMonitor"]
 
 
-class SearchTV(BaseModel):
-    class Request(BaseModel):
+class SearchTV(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         keyword: str
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         source: list[Source]
 
 
-class AddTV(BaseModel):
-    class Request(BaseModel):
+class AddTV(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         name: str
         source: Source
         tag: str
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         id: int
 
 
-class RemoveTV(BaseModel):
-    class Request(BaseModel):
+class RemoveTV(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         id: int
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         pass
 
 
-class GetTV(BaseModel):
-    class Episode(BaseModel):
+class GetTV(TVTrackBaseModel):
+    class Episode(TVTrackBaseModel):
         name: str
         url: str
         download_status: LocalStore.DownloadStatus
 
-    class Request(BaseModel):
+    class Request(TVTrackBaseModel):
         id: int
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         name: str
         tag: str
         watch: WatchStatus
@@ -77,78 +83,107 @@ class GetTV(BaseModel):
 
 
 class GetDownloadStatus:
-    class DownloadTask(BaseModel):
+    class DownloadTask(TVTrackBaseModel):
         resource: str
         status: str
 
-    class Request(BaseModel):
+    class Request(TVTrackBaseModel):
         pass
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         downloading: list['GetDownloadStatus.DownloadTask']
         pending: list['GetDownloadStatus.DownloadTask']
 
 
-class GetErrors(BaseModel):
-    class Request(BaseModel):
+class GetErrors(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         pass
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         critical_errors: list[ErrorDB.Error]
         errors: list[ErrorDB.Error]
 
 
-class ClearErrors(BaseModel):
-    class Request(BaseModel):
+class ClearErrors(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         ids: list[int]
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         pass
 
 
-class SetWatch(BaseModel):
-    class Request(BaseModel):
+class SetWatch(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         id: int
         watch: WatchStatus
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         pass
 
 
-class SetTag(BaseModel):
-    class Request(BaseModel):
+class SetTag(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         id: int
         tag: str
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         pass
 
 
-class SetDownloadStatus(BaseModel):
-    class Request(BaseModel):
+class SetDownloadStatus(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         id: int
         episode_idx: int
         status: LocalStore.DownloadStatus
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         pass
 
 
-class UpdateEpisodeSource(BaseModel):
-    class Request(BaseModel):
+class UpdateEpisodeSource(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         id: int
         episode_idx: int
         source: Source.Episode
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
         pass
 
 
-class UpdateSource(BaseModel):
-    class Request(BaseModel):
+class UpdateSource(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
         id: int
         source: Source
         update_downloaded: bool
 
-    class Response(BaseModel):
+    class Response(TVTrackBaseModel):
+        pass
+
+
+class GetSystemMonitor(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
+        key: str
+
+    class Response(TVTrackBaseModel):
+        result: str
+        interval: int
+
+
+class GetSystemOperation(TVTrackBaseModel):
+    class Unit(TVTrackBaseModel):
+        key: str
+        name: str
+
+    class Request(TVTrackBaseModel):
+        pass
+
+    class Response(TVTrackBaseModel):
+        result: list["GetSystemOperation.Unit"]
+
+
+class RunSystemOperation(TVTrackBaseModel):
+    class Request(TVTrackBaseModel):
+        key: str
+
+    class Response(TVTrackBaseModel):
         pass

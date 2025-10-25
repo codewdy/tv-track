@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from .dtype import TVTrackBaseModel
 from enum import Enum
 from typing import Optional
 from datetime import datetime
 
 
-class Source(BaseModel):
-    class Episode(BaseModel):
+class Source(TVTrackBaseModel):
+    class Episode(TVTrackBaseModel):
         source_key: str = ""
         name: str = ""
         url: str = ""
@@ -20,13 +20,13 @@ class Source(BaseModel):
     latest_update: Optional[datetime] = None
 
 
-class LocalStore(BaseModel):
+class LocalStore(TVTrackBaseModel):
     class DownloadStatus(str, Enum):
         RUNNING = "running"
         SUCCESS = "success"
         FAILED = "failed"
 
-    class Episode(BaseModel):
+    class Episode(TVTrackBaseModel):
         name: str = ""
         filename: str = ""
         download: "LocalStore.DownloadStatus" = "running"
@@ -36,13 +36,13 @@ class LocalStore(BaseModel):
     cover: Optional[str] = None
 
 
-class WatchStatus(BaseModel):
+class WatchStatus(TVTrackBaseModel):
     watched_episode: int = 0
     watched_episode_time: float = 0
     watched_episode_time_ratio: float = 0
 
 
-class TV(BaseModel):
+class TV(TVTrackBaseModel):
     id: int = 0
     name: str = ""
     tag: str = ""
@@ -52,14 +52,14 @@ class TV(BaseModel):
     touch_time: Optional[datetime] = datetime(1970, 1, 1)
 
 
-class DB(BaseModel):
+class DB(TVTrackBaseModel):
     tv: dict[int, str] = {}
     removed: dict[int, str] = {}
     next_id: int = 1
 
 
-class ErrorDB(BaseModel):
-    class Error(BaseModel):
+class ErrorDB(TVTrackBaseModel):
+    class Error(TVTrackBaseModel):
         id: int
         timestamp: datetime
         title: str
@@ -69,5 +69,5 @@ class ErrorDB(BaseModel):
     next_id: int = 1
 
 
-class AdBlockDB(BaseModel):
+class AdBlockDB(TVTrackBaseModel):
     ts_black_list: set[str] = set()
