@@ -1,7 +1,7 @@
 <template>
     <VideoPlayer :url="tv.episodes[tv.watch.watched_episode]?.url ?? ''" :time="tv.watch.watched_episode_time"
-        v-model:current_time="current_time" v-model:current_time_ratio="current_time_ratio" @pause="onPause"
-        @done="onDone" />
+        v-model:current_time="current_time" v-model:current_time_ratio="current_time_ratio" v-model:playing="playing"
+        @pause="onPause" @done="onDone" />
 </template>
 
 <script setup lang="ts">
@@ -10,6 +10,7 @@ import VideoPlayer from './VideoPlayer.vue'
 import type { db, get_tv } from '@/schema';
 
 const tv = defineModel<get_tv.Response>("tv", { required: true })
+const playing = defineModel<boolean>("playing", { default: false })
 const { updateWatched } = defineProps<{
     updateWatched: (ep_id: number, time: number, ratio: number) => void
 }>()

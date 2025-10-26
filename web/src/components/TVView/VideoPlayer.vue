@@ -14,6 +14,7 @@ import { watch, onMounted, onUnmounted, ref, defineProps, defineEmits, defineMod
 const { url = '', width = 800, time = 0 } = defineProps(['url', 'width', 'time'])
 const current_time = defineModel('current_time', { default: 0 })
 const current_time_ratio = defineModel('current_time_ratio', { default: 0 })
+const playing = defineModel('playing', { default: false })
 const emit = defineEmits(['done', 'pause'])
 
 let player: XGPlayer | null = null;
@@ -31,6 +32,7 @@ watch(() => [url, time], ([newUrl, newTime]) => {
         if (autoplay && newUrl !== '') {
             player.play()
         }
+        playing.value = autoplay
     }
 })
 
@@ -56,7 +58,11 @@ onMounted(() => {
         current_time.value = player.currentTime
         current_time_ratio.value = player.currentTime / player.duration
     })
+    player.on(Events.PLAYING, () => {
+        playing.value = true
+    })
     player.on(Events.PAUSE, () => {
+        playing.value = false
         if (url !== '') {
             emit('pause')
         }

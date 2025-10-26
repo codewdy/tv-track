@@ -1,13 +1,13 @@
 <template>
     <n-space vertical>
         <TVViewHead v-model:tv="tv" :updateWatched="updateWatched" />
-        <TVViewWatch v-model:tv="tv" :updateWatched="updateWatched" />
+        <TVViewWatch v-model:tv="tv" v-model:playing="playing" :updateWatched="updateWatched" />
         <TVViewSetting v-model:tv="tv" :tv_id="tv_id" :reload="reload" />
     </n-space>
 </template>
 
 <script setup lang="ts">
-import { inject, ref, onMounted, watch } from 'vue';
+import { inject, ref, onMounted, onUnmounted, watch } from 'vue';
 import type { db, get_tv, monitor } from '@/schema';
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
@@ -20,6 +20,7 @@ import TVViewHead from './TVViewHead.vue';
 const route = useRoute()
 const message = useMessage()
 
+const playing = ref<boolean>(false)
 const tv_id = ref<number>(0)
 const tv = ref<get_tv.Response>({
     name: "",
@@ -35,7 +36,6 @@ const tv = ref<get_tv.Response>({
 const update_tv = inject('update_tv') as (tv_id: number, updater: (tv: monitor.TV) => void) => void
 
 function updateWatched(ep_id: number, time: number, ratio: number) {
-    console.log("updateWatched", ep_id, time, ratio)
     if (isNaN(ratio)) {
         ratio = 0
     }
@@ -68,12 +68,23 @@ function reload(id: number) {
     })
 }
 
+function handleVisibilityChange() {
+    if (document.visibilityState === "visible" && !(playing.value)) {
+        reload(parseInt(route.params.tv_id as string))
+    }
+}
+
 watch(() => route.params.tv_id, (newId) => {
     reload(parseInt(newId as string))
 })
 
 onMounted(() => {
     reload(parseInt(route.params.tv_id as string))
+    addEventListener("visibilitychange", handleVisibilityChange)
+})
+
+onUnmounted(() => {
+    removeEventListener("visibilitychange", handleVisibilityChange)
 })
 
 
