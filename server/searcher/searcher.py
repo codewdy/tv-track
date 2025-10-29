@@ -3,6 +3,7 @@ from .subject_searcher.subject_searcher import create_subject_searcher
 from .channel_searcher.channel_searcher import create_channel_searcher
 from schema.db import Source
 from utils.context import Context
+import asyncio
 
 
 class Searcher:
@@ -41,20 +42,25 @@ class Searcher:
             raise RuntimeError("search error: ", self.name, keyword)
 
     async def update(self, source: Source):
-        try:
-            channels = await self.channel_searcher.search(source.url)
-            for channel in channels:
-                if channel.name == source.channel_name:
-                    rst = source.model_copy()
-                    rst.episodes = [Source.Episode(
-                        source_key=self.key,
-                        name=e.name, url=e.url) for e in channel.episodes]
-                    return rst
-            else:
-                raise RuntimeError(
-                    f"channel not found: {source.channel_name} channel found: {[i.name for i in channels]}")
-        except:
-            raise RuntimeError("update error: ", self.name, source.name)
+        for i in range(3, 0, -1):
+            try:
+                channels = await self.channel_searcher.search(source.url)
+                for channel in channels:
+                    if channel.name == source.channel_name:
+                        rst = source.model_copy()
+                        rst.episodes = [Source.Episode(
+                            source_key=self.key,
+                            name=e.name, url=e.url) for e in channel.episodes]
+                        return rst
+                else:
+                    raise RuntimeError(
+                        f"channel not found: {source.channel_name} channel found: {[i.name for i in channels]}")
+            except:
+                if i == 1:
+                    raise RuntimeError(
+                        "update error: ", self.name, source.name)
+                else:
+                    await asyncio.sleep(5)
 
     async def get_video(self, url):
         return await self.resource_searcher.search(url)
@@ -86,10 +92,12 @@ if __name__ == "__main__":
     async def run():
         async with Context(use_browser=True) as ctx:
             rst = await searcher.search(keyword)
+            rst1 = await searcher.update(rst[0])
             example_video = await searcher.get_video(rst[0].episodes[0].url)
             rst = {
                 "source": [i.model_dump(mode="json") for i in rst],
                 "example_video": example_video.model_dump(mode="json"),
+                "update": rst1.model_dump(mode="json"),
             }
             print(rst)
             with open("result.json", "w") as f:
