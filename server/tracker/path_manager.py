@@ -52,6 +52,16 @@ class PathManager:
         else:
             raise ValueError(f"unknown tv url by {by}")
 
+    def audio_url(self, tv: TV, filename: str, by: str = "id"):
+        if filename.endswith(".mp4"):
+            filename = filename[:-4] + ".m4a"
+        if by == "id":
+            return f"/audio/by-id/{tv.id}/{filename}"
+        elif by == "name":
+            return f"/audio/by-name/{tv.name}/{filename}"
+        else:
+            raise ValueError(f"unknown audio url by {by}")
+
     def tv_cover(self, tv: TV, by: str = "id"):
         return self.tv_file(tv, tv.local.cover, by)
 
@@ -63,3 +73,6 @@ class PathManager:
 
     def episode_url(self, tv: TV, episode_idx: int, by: str = "id"):
         return self.tv_url(tv, tv.local.episodes[episode_idx].filename, by)
+
+    def episode_audio_url(self, tv: TV, episode_idx: int, by: str = "id"):
+        return self.audio_url(tv, tv.local.episodes[episode_idx].filename, by)

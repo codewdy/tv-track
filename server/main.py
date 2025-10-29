@@ -7,6 +7,7 @@ from tracker.tracker_main import Tracker
 import os
 import sys
 from service.api_service import create_routes
+from service.audio_handler import audio_routes
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -33,8 +34,10 @@ if config.service.auth_username and config.service.auth_password:
 else:
     app = web.Application()
 app.add_routes(create_routes(tracker, mock=args.mock))
+app.add_routes(audio_routes(
+    '/audio', config.tracker.resource_dir, tracker))
 app.add_routes([web.static('/resource', config.tracker.resource_dir)])
 app.add_routes(web_routes(
     '/', os.path.join(os.path.dirname(__file__), '../web/dist'), 'index.html'))
 
-run_app(app, config.service.port, tracker.start, tracker.save)
+run_app(app, config.service.port, tracker.start, tracker.sync_stop)

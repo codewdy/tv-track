@@ -1,5 +1,6 @@
 import uuid
 import os
+import shutil
 from utils.run_cmd import run_cmd
 
 
@@ -15,7 +16,7 @@ class TempManager:
         self.allocated_files.append(path)
         return path
 
-    async def start(self):
+    def start(self):
         while True:
             name = str(uuid.uuid4())
             path = os.path.join(self.temp_dir, name)
@@ -26,23 +27,23 @@ class TempManager:
             self.dir = path
             return
 
-    async def close(self):
+    def close(self):
         if self.auto_remove:
             try:
-                await run_cmd("rm", "-rf", self.dir)
+                shutil.rmtree(self.dir)
             except ValueError:
                 for file in self.allocated_files:
                     try:
-                        await run_cmd("rm", "-rf", file)
+                        os.remove(file)
                     except ValueError:
                         pass
 
     async def __aenter__(self):
-        await self.start()
+        self.start()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.close()
+        self.close()
 
 
 if __name__ == "__main__":

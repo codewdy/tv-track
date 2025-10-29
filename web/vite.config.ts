@@ -15,7 +15,8 @@ export default defineConfig({
     port: 5173, // Or your desired port
     proxy: {
       '/api': 'http://localhost:6789',
-      '/resource': 'http://localhost:6789'
+      '/resource': 'http://localhost:6789',
+      '/audio': 'http://localhost:6789'
     },
   },
   resolve: {

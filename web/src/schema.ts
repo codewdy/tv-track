@@ -49,6 +49,7 @@ export namespace get_tv {
     export interface Episode {
         name: string
         url: string
+        audio_url: string
         download_status: "running" | "success" | "failed"
     }
     export interface Response {

@@ -70,6 +70,7 @@ class GetTV(TVTrackBaseModel):
     class Episode(TVTrackBaseModel):
         name: str
         url: str
+        audio_url: str
         download_status: LocalStore.DownloadStatus
 
     class Request(TVTrackBaseModel):

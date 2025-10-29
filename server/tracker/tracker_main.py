@@ -10,6 +10,7 @@ from downloader.download_manager import DownloadManager
 from .error_manager import ErrorManager
 from service.api_service import api, mock
 from .source_updater import SourceUpdater
+from .audio_manager import AudioManager
 from datetime import datetime
 from schema.db import TV, LocalStore
 from monitor.monitors import Monitors
@@ -28,6 +29,7 @@ class Tracker:
         self.monitors = Monitors(config)
         self.source_updater = SourceUpdater(
             config, self.db_manager, self.local_manager)
+        self.audio_manager = AudioManager()
 
     async def start(self):
         for path in self.path.required_path():
@@ -44,6 +46,7 @@ class Tracker:
         await self.local_manager.start()
         await self.source_updater.start()
         await self.monitors.start()
+        self.audio_manager.start()
         self.searchers = Searchers()
 
     async def stop(self):
@@ -56,8 +59,12 @@ class Tracker:
     async def __aexit__(self, exc_type, exc, tb):
         await self.stop()
 
-    def save(self):
+    def sync_stop(self):
         self.db_manager.save()
+        self.audio_manager.close()
+
+    async def get_audio(self, path: str):
+        return await self.audio_manager.get(path)
 
     @api
     async def monitor(self, request: Monitor.Request):
@@ -101,6 +108,7 @@ class Tracker:
                 GetTV.Episode(
                     name=e.name,
                     url=self.path.tv_url(tv, e.filename),
+                    audio_url=self.path.audio_url(tv, e.filename),
                     download_status=e.download)
                 for e in tv.local.episodes])
 
