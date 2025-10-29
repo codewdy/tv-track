@@ -54,6 +54,7 @@ onMounted(() => {
             crossOrigin: 'anonymous'
         },
         volume: parseFloat(localStorage.getItem('video_player_volume') || '0.6'),
+        replay: false,
     });
     player.muted = localStorage.getItem('video_player_muted') === 'true'
 
