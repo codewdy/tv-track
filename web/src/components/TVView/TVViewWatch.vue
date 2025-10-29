@@ -34,7 +34,7 @@ let video_url = computed(() => type.value === "video"
     : tv.value.episodes[tv.value.watch.watched_episode]?.audio_url ?? '')
 
 watch(() => type.value, (newType) => {
-    tv.value.watch.watched_episode_time = current_time.value
+    tv.value.watch.watched_episode_time = -current_time.value
 })
 
 watch(() => tv.value.watch, (newWatch: db.WatchStatus) => {
@@ -57,7 +57,7 @@ function onPause() {
 function onDone() {
     latest_update_time = 0
     tv.value.watch.watched_episode++
-    tv.value.watch.watched_episode_time = -1
+    tv.value.watch.watched_episode_time = -1000000
     tv.value.watch.watched_episode_time_ratio = 0
     updateWatched(tv.value.watch.watched_episode, 0, 0)
 }

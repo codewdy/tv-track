@@ -23,9 +23,13 @@ const videoRef = ref();
 watch(() => [url, time], ([newUrl, newTime]) => {
     if (player) {
         let autoplay = false;
-        if (newTime < 0) {
+        if (newTime === -1000000) {
             newTime = 0
             autoplay = true
+        }
+        if (newTime < 0) {
+            newTime = -newTime
+            autoplay = playing.value
         }
         player.src = newUrl || "http://"
         player.currentTime = newTime
