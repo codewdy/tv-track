@@ -72,6 +72,7 @@ class DownloadConfig(TVTrackBaseModel):
 class SourceUpdaterConfig(TVTrackBaseModel):
     update_interval: TimeDelta = "1h"
     notrack_timeout: TimeDelta = "30d"
+    max_error_times: int = 5
 
 
 class ErrorConfig(TVTrackBaseModel):

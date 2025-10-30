@@ -48,7 +48,8 @@
     },
     "source_updater": {
         "update_interval": "1h",
-        "notrack_timeout": "30d"
+        "notrack_timeout": "30d",
+        "max_error_times": 5
     },
     "monitor": {
         "check_smart_interval": "1d",

@@ -6,6 +6,7 @@ import asyncio
 from searcher.searchers import Searchers
 from utils.context import Context
 from datetime import datetime
+from collections import defaultdict
 
 
 class SourceUpdater:
@@ -16,6 +17,7 @@ class SourceUpdater:
         self.timer = Timer(
             self.update, self.config.source_updater.update_interval.total_seconds())
         self.searchers = Searchers()
+        self.error_times = defaultdict(int)
 
     async def start(self):
         await self.timer.start()
@@ -31,19 +33,25 @@ class SourceUpdater:
 
     async def update_tv(self, tv_id):
         with Context.handle_error_context(f"update tv {tv_id} error"):
-            source = self.db.tv(tv_id).source
-            new_source = await self.searchers.update(source)
-            tv = self.db.tv(tv_id)
-            if len(new_source.episodes) > len(source.episodes):
-                tv.source = new_source
-                tv.source.latest_update = datetime.now()
-                self.db.tv_dirty(tv)
-                await self.local.update(tv_id)
-            else:
-                if source.latest_update is None:
+            try:
+                source = self.db.tv(tv_id).source
+                new_source = await self.searchers.update(source)
+                tv = self.db.tv(tv_id)
+                if len(new_source.episodes) > len(source.episodes):
+                    tv.source = new_source
                     tv.source.latest_update = datetime.now()
                     self.db.tv_dirty(tv)
-                elif datetime.now() - source.latest_update > self.config.source_updater.notrack_timeout:
-                    Context.info(f"stop tracking {tv.name}, timeout")
-                    tv.source.tracking = False
-                    self.db.tv_dirty(tv)
+                    await self.local.update(tv_id)
+                else:
+                    if source.latest_update is None:
+                        tv.source.latest_update = datetime.now()
+                        self.db.tv_dirty(tv)
+                    elif datetime.now() - source.latest_update > self.config.source_updater.notrack_timeout:
+                        Context.info(f"stop tracking {tv.name}, timeout")
+                        tv.source.tracking = False
+                        self.db.tv_dirty(tv)
+                self.error_times[tv_id] = 0
+            except:
+                self.error_times[tv_id] += 1
+                if self.error_times[tv_id] >= self.config.source_updater.max_error_times:
+                    raise
