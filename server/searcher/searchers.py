@@ -46,9 +46,7 @@ class Searchers:
         return sum(results, [])
 
     async def update(self, source):
-        with Context.handle_error_context(f"update {source.source_key} {source.name} error"):
-            return await self.searcher_dict[source.source_key].update(source)
-        return source
+        return await self.searcher_dict[source.source_key].update(source)
 
     async def get_video(self, sourceKey, url):
         return await self.searcher_dict[sourceKey].get_video(url)
