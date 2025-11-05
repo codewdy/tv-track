@@ -81,7 +81,8 @@ class Context(metaclass=ContextMeta):
     async def __aenter__(self):
         self._current_holder.context = self
         if self.use_client:
-            self.client = aiohttp.ClientSession()
+            self.client = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=10))
             await self.client.__aenter__()
         if self.use_browser:
             self.playwright = async_playwright()
