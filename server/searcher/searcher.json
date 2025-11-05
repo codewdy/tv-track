@@ -6,9 +6,9 @@
             "subject_searcher": {
                 "search_url": "https://bgm.girigirilove.com/search/-------------/?wd={keyword}",
                 "type": "web_a",
-                "token": ".thumb-txt",
-                "a": ".thumb-menu a:first-child",
-                "cover": ".public-list-exp img",
+                "token": ".detail-info h3",
+                "a": ".detail-info > a:first-child",
+                "cover": ".detail-pic img",
                 "cover_attr": "data-src"
             },
             "channel_searcher": {
