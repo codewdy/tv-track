@@ -28,7 +28,7 @@
         {
             "key": "renrenpro",
             "name": "人人影视Pro",
-            "enable": false,
+            "enable": true,
             "subject_searcher": {
                 "search_url": "https://www.renren.pro/search?wd={keyword}",
                 "type": "web_a",
