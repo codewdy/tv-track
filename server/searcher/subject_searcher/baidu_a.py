@@ -6,11 +6,11 @@ import asyncio
 
 
 class BaiduASubjectSearcher(BaiduSubjectSearcher):
-    def __init__(self, config):
-        super().__init__(config)
-        self.url_selector = config["url_selector"]
-        self.name_selector = config["name_selector"]
-        self.cover_selector = config["cover_selector"]
+    def __init__(self, url_selector, name_selector, cover_selector, **kwargs):
+        super().__init__(**kwargs)
+        self.url_selector = url_selector
+        self.name_selector = name_selector
+        self.cover_selector = cover_selector
 
     async def parse(self, src: str):
         soup = await request(src)

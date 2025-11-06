@@ -4,8 +4,8 @@ import urllib
 
 
 class WebSubjectSearcher:
-    def __init__(self, config):
-        self.search_url = config["search_url"]
+    def __init__(self, search_url, **kwargs):
+        self.search_url = search_url
 
     def request_url(self, query):
         return self.search_url.format(keyword=urllib.parse.quote(query))

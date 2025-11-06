@@ -4,8 +4,8 @@ import re
 
 
 class WebChannelSearcher:
-    def __init__(self, config):
-        self.filter = [re.compile(i) for i in config["filter"]]
+    def __init__(self, filter=[], **kwargs):
+        self.filter = [re.compile(i) for i in filter]
 
     async def search(self, url):
         soup = await request(url)

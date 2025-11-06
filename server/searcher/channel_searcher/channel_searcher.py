@@ -6,7 +6,7 @@ types = {
 
 
 def create_channel_searcher(config):
-    return types[config["type"]](config)
+    return types[config["type"]](**config)
 
 
 if __name__ == "__main__":

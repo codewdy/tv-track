@@ -7,13 +7,17 @@ from schema.searcher import Channel
 class WebAChannelSearcher(WebChannelSearcher):
     def __init__(
         self,
-        config,
+        select_episode_lists,
+        select_episodes_from_list,
+        select_channel_names="",
+        select_episode_links_from_list="",
+        **kwargs
     ):
-        super().__init__(config)
-        self.select_channel_names = config["select_channel_names"]
-        self.select_episode_lists = config["select_episode_lists"]
-        self.select_episodes_from_list = config["select_episodes_from_list"]
-        self.select_episode_links_from_list = config["select_episode_links_from_list"]
+        super().__init__(**kwargs)
+        self.select_channel_names = select_channel_names
+        self.select_episode_lists = select_episode_lists
+        self.select_episodes_from_list = select_episodes_from_list
+        self.select_episode_links_from_list = select_episode_links_from_list
 
     def parse_episode_list(self, src, list):
         episodes_tag = [i for i in list.select(self.select_episodes_from_list)]

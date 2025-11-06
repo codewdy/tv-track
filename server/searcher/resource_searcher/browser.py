@@ -32,9 +32,9 @@ class RequestResourceHandler:
 
 
 class BrowserResourceSearcher:
-    def __init__(self, config):
-        self.pattern = re.compile(config["pattern"])
-        self.file_type = config["file_type"]
+    def __init__(self, pattern="https?://.*\\.(mp4|m3u8)", file_type="auto", **kwargs):
+        self.pattern = re.compile(pattern)
+        self.file_type = file_type
 
     async def search(self, url):
         video_url = await RequestResourceHandler.get(url, self.pattern)

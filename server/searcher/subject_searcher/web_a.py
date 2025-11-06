@@ -5,12 +5,12 @@ import urllib
 
 
 class WebASubjectSearcher(WebSubjectSearcher):
-    def __init__(self, config):
-        super().__init__(config)
-        self.token = config["token"]
-        self.a = config["a"]
-        self.cover = config["cover"]
-        self.cover_attr = config["cover_attr"]
+    def __init__(self, token, a, cover, cover_attr, **kwargs):
+        super().__init__(**kwargs)
+        self.token = token
+        self.a = a
+        self.cover = cover
+        self.cover_attr = cover_attr
 
     def parse(self, src, soup):
         tokens = soup.select(self.token)

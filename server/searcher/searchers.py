@@ -13,7 +13,7 @@ def searcher_config():
 
 @cache
 def searcher_list():
-    return [Searcher(config) for config in searcher_config()["searchers"]]
+    return [Searcher(config) for config in searcher_config()["searchers"] if config["enable"]]
 
 
 @cache

@@ -8,7 +8,7 @@ types = {
 
 
 def create_resource_searcher(config):
-    return types[config["type"]](config)
+    return types[config["type"]](**config)
 
 
 if __name__ == "__main__":

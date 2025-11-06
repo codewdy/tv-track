@@ -3,7 +3,7 @@ from utils.beautiful import request, to_text
 
 
 class WebResourceSearcher:
-    def __init__(self, config):
+    def __init__(self, **kwargs):
         pass
 
     async def search(self, url):

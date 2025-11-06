@@ -3,10 +3,10 @@ import re
 
 
 class BaiduSubjectSearcher:
-    def __init__(self, config):
-        self.search_template = config["search_template"]
-        self.filter = re.compile(config["filter"])
-        self.match_point = config["match_point"]
+    def __init__(self, search_template, filter=".*", match_point=0.6, **kwargs):
+        self.search_template = search_template
+        self.filter = re.compile(filter)
+        self.match_point = match_point
 
     def match(self, keyword: str, title: str):
         s = 0

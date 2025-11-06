@@ -6,11 +6,11 @@ from schema.searcher import Resource
 
 
 class WebAResourceSearcher(WebResourceSearcher):
-    def __init__(self, config):
-        super().__init__(config)
-        self.regex = re.compile(config["regex"])
-        self.attr = config["attr"]
-        self.file_type = config["file_type"]
+    def __init__(self, regex, attr, file_type, **kwargs):
+        super().__init__(**kwargs)
+        self.regex = re.compile(regex)
+        self.attr = attr
+        self.file_type = file_type
 
     def parse(self, src, soup):
         scripts = soup.select("script")
