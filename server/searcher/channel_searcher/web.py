@@ -4,16 +4,17 @@ import re
 
 
 class WebChannelSearcher:
-    def __init__(self, filter=[], **kwargs):
-        self.filter = [re.compile(i) for i in filter]
+    def __init__(self, filter=None, **kwargs):
+        if filter is None:
+            self.filter = None
+        else:
+            self.filter = re.compile(filter)
 
     async def search(self, url):
         soup = await request(url)
         result = self.parse(url, soup)
-        for filter in self.filter:
-            result_filtered = [
-                channel for channel in result
-                if filter.search(channel.name)]
-            if len(result_filtered) != 0:
-                return result_filtered
-        return result
+        if self.filter is None:
+            return result
+        else:
+            return [channel for channel in result
+                    if self.filter.search(channel.name)]

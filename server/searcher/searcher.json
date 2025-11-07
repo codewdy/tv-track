@@ -28,7 +28,7 @@
         {
             "key": "renrenpro",
             "name": "人人影视Pro",
-            "enable": true,
+            "enable": false,
             "subject_searcher": {
                 "search_url": "https://www.renren.pro/search?wd={keyword}",
                 "type": "web_a",
@@ -67,10 +67,7 @@
                 "select_episode_lists": ".his-tab-list",
                 "select_episodes_from_list": "a span",
                 "select_episode_links_from_list": "a",
-                "filter": [
-                    "超清有广①",
-                    "超清无广"
-                ]
+                "filter": "超清有广①|超清无广"
             },
             "resource_searcher": {
                 "type": "browser"
