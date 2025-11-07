@@ -1,9 +1,12 @@
 from .browser import BrowserResourceSearcher
 from .web_a import WebAResourceSearcher
+from .raw import RawResourceSearcher
+
 
 types = {
     "browser": BrowserResourceSearcher,
     "web_a": WebAResourceSearcher,
+    "raw": RawResourceSearcher,
 }
 
 

@@ -1,5 +1,14 @@
 from utils.context import Context
 
+HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',
+    "Referer": "https://www.baidu.com/",
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "zh-CN,zh;q=0.9"
+}
+
 
 class SimpleDownloader:
     def __init__(self, src, dst, download_tracker=None):
@@ -8,7 +17,7 @@ class SimpleDownloader:
         self.download_tracker = download_tracker
 
     async def run(self):
-        async with Context.client.get(self.src) as resp:
+        async with Context.client.get(self.src, headers=HEADERS) as resp:
             resp.raise_for_status()
             if self.download_tracker is not None:
                 self.download_tracker.add_fragment(resp.content_length)
