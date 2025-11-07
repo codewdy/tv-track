@@ -4,7 +4,7 @@ from .dtype import TVTrackBaseModel
 class Subject(TVTrackBaseModel):
     name: str
     url: str
-    cover_url: str
+    cover_url: str = ""
 
 
 class Channel(TVTrackBaseModel):
@@ -13,6 +13,7 @@ class Channel(TVTrackBaseModel):
         url: str
     name: str
     episodes: list["Channel.Episode"]
+    cover_url: str = ""
 
 
 class Resource(TVTrackBaseModel):

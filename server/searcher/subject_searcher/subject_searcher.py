@@ -1,9 +1,11 @@
 from .web_a import WebASubjectSearcher
 from .baidu_a import BaiduASubjectSearcher
+from .cms import CMSSubjectSearcher
 
 types = {
     "web_a": WebASubjectSearcher,
     "baidu_a": BaiduASubjectSearcher,
+    "cms": CMSSubjectSearcher,
 }
 
 

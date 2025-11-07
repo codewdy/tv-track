@@ -30,7 +30,7 @@ class Searcher:
                         title=subject.name,
                         channel_name=channel.name,
                         url=subject.url,
-                        cover_url=subject.cover_url,
+                        cover_url=subject.cover_url or channel.cover_url,
                         tracking=False,
                         episodes=[Source.Episode(
                             source_key=self.key,
