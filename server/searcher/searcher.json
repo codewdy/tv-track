@@ -26,30 +26,6 @@
             }
         },
         {
-            "key": "renrenpro",
-            "name": "人人影视Pro",
-            "enable": false,
-            "subject_searcher": {
-                "search_url": "https://www.renren.pro/search?wd={keyword}",
-                "type": "web_a",
-                "token": "main .content .module .module-list .video-info-header h3 a",
-                "a": "main .content .module .module-list .video-info-header h3 a",
-                "cover": "main .content .module .module-list .video-cover img",
-                "cover_attr": "data-src"
-            },
-            "channel_searcher": {
-                "type": "web_a",
-                "episode_lists": ".module-blocklist",
-                "episodes_from_list": "a"
-            },
-            "resource_searcher": {
-                "type": "browser"
-            },
-            "self_test": {
-                "keyword": "生活大爆炸"
-            }
-        },
-        {
             "key": "dytt",
             "name": "电影天堂",
             "enable": true,
@@ -68,6 +44,30 @@
             },
             "resource_searcher": {
                 "type": "raw"
+            },
+            "self_test": {
+                "keyword": "生活大爆炸"
+            }
+        },
+        {
+            "key": "renrenpro",
+            "name": "人人影视Pro",
+            "enable": true,
+            "subject_searcher": {
+                "search_url": "https://www.renren.pro/search?wd={keyword}",
+                "type": "web_a",
+                "token": "main .content .module .module-list .video-info-header h3 a",
+                "a": "main .content .module .module-list .video-info-header h3 a",
+                "cover": "main .content .module .module-list .video-cover img",
+                "cover_attr": "data-src"
+            },
+            "channel_searcher": {
+                "type": "web_a",
+                "episode_lists": ".module-blocklist",
+                "episodes_from_list": "a"
+            },
+            "resource_searcher": {
+                "type": "browser"
             },
             "self_test": {
                 "keyword": "生活大爆炸"
