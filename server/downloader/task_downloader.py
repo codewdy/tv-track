@@ -34,9 +34,8 @@ class TaskDownloader:
     async def run(self):
         for i in range(self.download_task.retry, 0, -1):
             try:
-                with Context.handle_error_context(f"download once {self.download_task.meta} error", rethrow=True):
-                    await asyncio.wait_for(self.run_once(), timeout=self.download_task.timeout)
-                    break
+                await asyncio.wait_for(self.run_once(), timeout=self.download_task.timeout)
+                break
             except Exception as e:
                 if i == 1:
                     raise
