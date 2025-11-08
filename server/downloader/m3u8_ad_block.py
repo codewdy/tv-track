@@ -98,21 +98,21 @@ class M3U8AdBlocker:
         rst = TSFingerPrint()
         try:
             avfile = av.open(file)
+            with avfile as container:
+                in_stream = container.streams.video[0]
+                for packet in container.demux(in_stream):
+                    if packet.dts is None:
+                        continue
+                    rst.time_base = int(1 / in_stream.time_base)
+                    rst.duration = packet.duration
+                    rst.width = in_stream.codec_context.width
+                    rst.height = in_stream.codec_context.height
+                    break
+            rst.md5 = hashlib.md5(open(file, "rb").read()).hexdigest()
+            return rst
         except:
             rst.parse_error = True
             return rst
-        with avfile as container:
-            in_stream = container.streams.video[0]
-            for packet in container.demux(in_stream):
-                if packet.dts is None:
-                    continue
-                rst.time_base = int(1 / in_stream.time_base)
-                rst.duration = packet.duration
-                rst.width = in_stream.codec_context.width
-                rst.height = in_stream.codec_context.height
-                break
-        rst.md5 = hashlib.md5(open(file, "rb").read()).hexdigest()
-        return rst
 
 
 if __name__ == "__main__":
