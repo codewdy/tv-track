@@ -1,4 +1,5 @@
 from utils.context import Context
+import aiohttp
 
 HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -17,7 +18,7 @@ class SimpleDownloader:
         self.download_tracker = download_tracker
 
     async def run(self):
-        async with Context.client.get(self.src, headers=HEADERS) as resp:
+        async with Context.client.get(self.src, headers=HEADERS, timeout=aiohttp.ClientTimeout(total=5*60)) as resp:
             resp.raise_for_status()
             if self.download_tracker is not None:
                 self.download_tracker.add_fragment(resp.content_length)
