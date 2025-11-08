@@ -75,7 +75,7 @@
         },
         {
             "key": "bfzy",
-            "name": "暴风资源",
+            "name": "暴风资源(720p)",
             "enable": true,
             "subject_searcher": {
                 "type": "cms",
