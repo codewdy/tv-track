@@ -33,6 +33,12 @@ class M3U8AdBlocker:
         loop = asyncio.get_running_loop()
         finger_prints = await loop.run_in_executor(None, self.get_finger_prints, [lines[t].strip() for t in ts])
 
+        parse_error_count = sum(
+            [1 if fp.parse_error else 0 for fp in finger_prints])
+        if (parse_error_count >= 3):
+            raise ValueError(
+                f"too many parse error in ad block.(parse_error_count={parse_error_count})")
+
         finger_print_count = {}
         for fp in finger_prints:
             if fp.parse_error:
@@ -63,24 +69,6 @@ class M3U8AdBlocker:
                 if fp.finger_print_tuple() != main_finger_print:
                     lines[t] = "#" + lines[t]
                     fp.filtered = True
-
-        first_ts = None
-        last_ts = None
-        for t, fp in zip(ts, finger_prints):
-            if fp.filtered:
-                continue
-            if first_ts is None:
-                first_ts = t
-            last_ts = t
-
-        for t, fp in zip(ts, finger_prints):
-            if fp.parse_error:
-                if t == first_ts or t == last_ts:
-                    lines[t] = "#" + lines[t]
-                    fp.filtered = True
-                else:
-                    raise ValueError(
-                        f"parse error ts {t} is not first or last ts.")
 
         return lines
 
