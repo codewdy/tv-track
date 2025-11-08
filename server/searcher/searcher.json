@@ -113,7 +113,7 @@
                 "episode_lists": ".his-tab-list",
                 "episodes_from_list": "a span",
                 "episode_links_from_list": "a",
-                "filter": "超清有广①|超清无广"
+                "filter": "超清有广①"
             },
             "resource_searcher": {
                 "type": "browser"
