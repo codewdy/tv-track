@@ -52,7 +52,7 @@
         {
             "key": "renrenpro",
             "name": "人人影视Pro",
-            "enable": true,
+            "enable": false,
             "subject_searcher": {
                 "search_url": "https://www.renren.pro/search?wd={keyword}",
                 "type": "web_a",
@@ -76,7 +76,7 @@
         {
             "key": "bfzy",
             "name": "暴风资源(720p)",
-            "enable": true,
+            "enable": false,
             "subject_searcher": {
                 "type": "cms",
                 "url": "https://bfzyapi.com/api.php/provide/vod/",
