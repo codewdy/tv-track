@@ -20,3 +20,14 @@ export interface MonitorResponse {
     critical_errors: number;
     errors: number;
 }
+
+export interface TagConfig {
+    tag: string;
+    name: string;
+}
+
+export interface ConfigResponse {
+    watched_ratio: number;
+    tags: TagConfig[];
+    system_monitor: { key: string; name: string }[];
+}
