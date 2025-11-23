@@ -43,6 +43,19 @@ export default function TVList() {
                 grouped.push({ title: 'Other', data: unknownTvs });
             }
 
+            if (sections.length === 0) {
+                const initialCollapsed = new Set<string>();
+                configData.tags.forEach(t => {
+                    if (t.tag !== 'watching') {
+                        initialCollapsed.add(t.name);
+                    }
+                });
+                if (unknownTvs.length > 0) {
+                    initialCollapsed.add('Other');
+                }
+                setCollapsedSections(initialCollapsed);
+            }
+
             setSections(grouped);
         } catch (err: any) {
             setError(err.message || 'Failed to load TV list');
