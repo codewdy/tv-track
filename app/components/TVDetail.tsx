@@ -1,9 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { fetchTV } from '../api/client';
 import { TVDetail as TVDetailType, Episode } from '../types';
-import { API_CONFIG } from '../config';
+import VideoPlayer from './VideoPlayer';
 
 interface Props {
     tvId: number;
@@ -15,37 +14,12 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
-
-    const player = useVideoPlayer(
-        currentEpisode ? getVideoUrl(currentEpisode.url) : null,
-        (player) => {
-            player.loop = false;
-            if (currentEpisode) {
-                player.play();
-            }
-        }
-    );
+    const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
 
     useEffect(() => {
         loadData();
     }, [tvId]);
 
-    // Update player source when episode changes
-    useEffect(() => {
-        if (currentEpisode) {
-            const url = getVideoUrl(currentEpisode.url);
-            // expo-video player source update logic might be different, 
-            // but useVideoPlayer hook often handles source changes if passed as dependency or argument.
-            // However, the hook signature is useVideoPlayer(source, setup).
-            // If source changes, it should update.
-            // Let's verify if we need to manually replace the source.
-            player.replace({
-                uri: url,
-                headers: { Authorization: API_CONFIG.AUTH_HEADER }
-            });
-            player.play();
-        }
-    }, [currentEpisode]);
 
     const loadData = async () => {
         try {
@@ -56,8 +30,10 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 const nextIndex = data.watch.watched_episode;
                 if (nextIndex < data.episodes.length) {
                     setCurrentEpisode(data.episodes[nextIndex]);
+                    setCurrentEpisodeIndex(nextIndex);
                 } else {
                     setCurrentEpisode(data.episodes[0]);
+                    setCurrentEpisodeIndex(0);
                 }
             }
         } catch (err: any) {
@@ -67,13 +43,19 @@ export default function TVDetail({ tvId, onBack }: Props) {
         }
     };
 
-    const handleEpisodePress = (episode: Episode) => {
+    const handleEpisodePress = (episode: Episode, index: number) => {
         setCurrentEpisode(episode);
+        setCurrentEpisodeIndex(index);
     };
 
-    function getVideoUrl(url: string) {
-        if (url.startsWith('http')) return url;
-        return `${API_CONFIG.BASE_URL}${url}`;
+    // Calculate initial position: only use watched_episode_time if it's the current watched episode
+    const getInitialPosition = () => {
+        if (!detail) return 0;
+        // Only resume from saved position if we're on the watched episode
+        if (currentEpisodeIndex === detail.watch.watched_episode) {
+            return detail.watch.watched_episode_time;
+        }
+        return 0;
     };
 
     if (loading) {
@@ -102,11 +84,9 @@ export default function TVDetail({ tvId, onBack }: Props) {
             </TouchableOpacity>
 
             <View style={styles.videoContainer}>
-                <VideoView
-                    style={styles.video}
-                    player={player}
-                    allowsFullscreen
-                    allowsPictureInPicture
+                <VideoPlayer
+                    episode={currentEpisode}
+                    initialPosition={getInitialPosition()}
                 />
             </View>
 
@@ -134,7 +114,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                                     isSelected && styles.episodeSelected,
                                     isWatched && !isSelected && styles.episodeWatched
                                 ]}
-                                onPress={() => handleEpisodePress(ep)}
+                                onPress={() => handleEpisodePress(ep, index)}
                             >
                                 <Text style={[
                                     styles.episodeText,
