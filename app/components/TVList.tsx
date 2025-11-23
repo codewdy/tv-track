@@ -124,23 +124,27 @@ export default function TVList() {
         );
     }
 
-    if (error) {
-        return (
-            <View style={styles.center}>
-                <Text style={styles.error}>{error}</Text>
-            </View>
-        );
-    }
-
     return (
         <SectionList
             sections={sectionsToRender}
             renderItem={renderItem}
             renderSectionHeader={renderSectionHeader}
             keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={[styles.list, sectionsToRender.length === 0 && styles.center]}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+                error ? (
+                    <View style={styles.center}>
+                        <Text style={styles.error}>{error}</Text>
+                        <Text style={styles.retry}>Pull down to retry</Text>
+                    </View>
+                ) : (
+                    <View style={styles.center}>
+                        <Text>No TV shows found</Text>
+                    </View>
+                )
             }
         />
     );
@@ -149,6 +153,7 @@ export default function TVList() {
 const styles = StyleSheet.create({
     list: {
         padding: 10,
+        flexGrow: 1,
     },
     center: {
         flex: 1,
@@ -226,5 +231,10 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 16,
         textAlign: 'center',
+    },
+    retry: {
+        marginTop: 10,
+        color: '#666',
+        fontSize: 14,
     },
 });
