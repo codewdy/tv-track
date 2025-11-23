@@ -31,3 +31,16 @@ export interface ConfigResponse {
     tags: TagConfig[];
     system_monitor: { key: string; name: string }[];
 }
+
+export interface Episode {
+    name: string;
+    url: string;
+    audio_url?: string;
+}
+
+export interface TVDetail {
+    name: string;
+    tag: string;
+    watch: WatchStatus;
+    episodes: Episode[];
+}

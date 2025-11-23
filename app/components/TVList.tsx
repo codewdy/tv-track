@@ -10,7 +10,11 @@ interface TVSection {
     data: TV[];
 }
 
-export default function TVList() {
+interface Props {
+    onSelect: (id: number) => void;
+}
+
+export default function TVList({ onSelect }: Props) {
     const [sections, setSections] = useState<TVSection[]>([]);
     const [tagMap, setTagMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
@@ -95,7 +99,7 @@ export default function TVList() {
         const unwatchedCount = item.total_episodes - item.watch.watched_episode;
 
         return (
-            <View style={styles.card}>
+            <TouchableOpacity style={styles.card} onPress={() => onSelect(item.id)}>
                 <AuthImage
                     uri={imageUrl}
                     headers={{ Authorization: API_CONFIG.AUTH_HEADER }}
@@ -113,7 +117,7 @@ export default function TVList() {
                         <Text style={styles.badgeText}>{unwatchedCount}</Text>
                     </View>
                 )}
-            </View>
+            </TouchableOpacity>
         );
     };
 

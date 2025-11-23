@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail } from '../types';
 import { API_CONFIG } from '../config';
 
 export const fetchMonitor = async (version: string = ''): Promise<MonitorResponse> => {
@@ -45,6 +45,30 @@ export const fetchConfig = async (): Promise<ConfigResponse> => {
         return await response.json();
     } catch (error) {
         console.error('Fetch config failed:', error);
+        throw error;
+    }
+};
+
+export const fetchTV = async (id: number): Promise<TVDetail> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/get_tv`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify({ id }),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`API Error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Fetch TV failed:', error);
         throw error;
     }
 };

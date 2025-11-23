@@ -1,16 +1,26 @@
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import TVList from './components/TVList';
+import TVDetail from './components/TVDetail';
 
 export default function App() {
+  const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>追番小助手</Text>
-        </View>
-        <TVList />
+        {selectedTVId ? (
+          <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
+        ) : (
+          <>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>追番小助手</Text>
+            </View>
+            <TVList onSelect={setSelectedTVId} />
+          </>
+        )}
         <StatusBar style="auto" />
       </SafeAreaView>
     </SafeAreaProvider>
