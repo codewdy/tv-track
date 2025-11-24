@@ -42,10 +42,18 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     useEffect(() => {
         if (episode) {
             const url = getVideoUrl(episode.url);
-            player.replace({
-                uri: url,
-                headers: { Authorization: API_CONFIG.AUTH_HEADER }
-            });
+            // Use replaceAsync to avoid main thread freeze warning
+            if ((player as any).replaceAsync) {
+                (player as any).replaceAsync({
+                    uri: url,
+                    headers: { Authorization: API_CONFIG.AUTH_HEADER }
+                });
+            } else {
+                player.replace({
+                    uri: url,
+                    headers: { Authorization: API_CONFIG.AUTH_HEADER }
+                });
+            }
         }
     }, [episode]);
 
@@ -55,9 +63,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             // Set update interval for timeUpdate event (in seconds)
             try {
                 (player as any).timeUpdateEventInterval = 0.5;
-                console.log('[VideoPlayer] Set timeUpdateEventInterval to 0.5s');
             } catch (e) {
-                console.warn('[VideoPlayer] Failed to set timeUpdateEventInterval', e);
+                // Ignore
             }
 
             if (initialPosition > 0) {
@@ -146,7 +153,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
             // Report one last time when unmounting
             try {
-                console.log('[VideoPlayer] Component unmounting, reporting final progress');
                 reportProgressImmediate(player.currentTime, player.duration);
             } catch (error) {
                 // Ignore
@@ -158,7 +164,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         <VideoView
             style={[styles.video, style]}
             player={player}
-            allowsFullscreen
             allowsPictureInPicture
         />
     );
