@@ -18,6 +18,8 @@ interface Props {
 
 export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
+    const lastKnownPositionRef = useRef<number>(0);
+    const lastKnownDurationRef = useRef<number>(0);
     const playerRef = useRef<any>(null);
 
     const getVideoUrl = (url: string) => {
@@ -121,7 +123,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     if (!event.isPlaying) {
                         try {
                             // Safe to access properties inside event handler usually
-                            reportProgressImmediate(player.currentTime, player.duration);
+                            const currentTime = player.currentTime;
+                            const duration = player.duration;
+                            lastKnownPositionRef.current = currentTime;
+                            lastKnownDurationRef.current = duration;
+                            reportProgressImmediate(currentTime, duration);
                         } catch (e) {
                             // Ignore
                         }
@@ -133,6 +139,9 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 subscriptions.push(player.addListener('timeUpdate', (event: { currentTime: number }) => {
                     const currentTime = event.currentTime;
                     const duration = player.duration;
+
+                    lastKnownPositionRef.current = currentTime;
+                    lastKnownDurationRef.current = duration;
 
                     // Check for seek
                     if (Math.abs(currentTime - lastTime) > 2) {
@@ -151,9 +160,16 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         return () => {
             subscriptions.forEach(sub => sub.remove());
 
-            // Report one last time when unmounting
+            // Report one last time when unmounting using last known values
             try {
-                reportProgressImmediate(player.currentTime, player.duration);
+                const finalTime = lastKnownPositionRef.current;
+                const finalDuration = lastKnownDurationRef.current;
+                if (finalTime > 0 && finalDuration > 0) {
+                    reportProgressImmediate(finalTime, finalDuration);
+                } else {
+                    // Fallback to player properties if refs are empty (e.g. no events fired yet)
+                    reportProgressImmediate(player.currentTime, player.duration);
+                }
             } catch (error) {
                 // Ignore
             }
