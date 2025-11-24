@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { fetchTV, setWatch } from '../api/client';
 import { TVDetail as TVDetailType, Episode } from '../types';
 import VideoPlayer from './VideoPlayer';
@@ -15,6 +15,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [error, setError] = useState<string | null>(null);
     const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
     const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
+    const [isFinished, setIsFinished] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -45,6 +46,30 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const handleEpisodePress = (episode: Episode, index: number) => {
         setCurrentEpisode(episode);
         setCurrentEpisodeIndex(index);
+        setIsFinished(false);
+
+        // Update local detail state to reflect new watch status (time 0)
+        if (detail) {
+            setDetail({
+                ...detail,
+                watch: {
+                    ...detail.watch,
+                    watched_episode: index,
+                    watched_episode_time: 0,
+                    watched_episode_time_ratio: 0
+                }
+            });
+        }
+
+        // Update server
+        setWatch({
+            id: tvId,
+            watch: {
+                watched_episode: index,
+                watched_episode_time: 0,
+                watched_episode_time_ratio: 0
+            }
+        });
     };
 
     // Calculate initial position: only use watched_episode_time if it's the current watched episode
@@ -70,6 +95,31 @@ export default function TVDetail({ tvId, onBack }: Props) {
             id: tvId,
             watch: watchData
         });
+    };
+
+    const handleVideoEnd = () => {
+        if (!detail || !currentEpisode) return;
+
+        const nextIndex = currentEpisodeIndex + 1;
+
+        // Update status for the next episode (mark as started/unplayed)
+        // Even if it's the last episode, we increment the index as requested
+        setWatch({
+            id: tvId,
+            watch: {
+                watched_episode: nextIndex,
+                watched_episode_time: 0,
+                watched_episode_time_ratio: 0
+            }
+        });
+
+        // Switch to next episode or finish
+        if (nextIndex < detail.episodes.length) {
+            setCurrentEpisode(detail.episodes[nextIndex]);
+            setCurrentEpisodeIndex(nextIndex);
+        } else {
+            setIsFinished(true);
+        }
     };
 
     if (loading) {
@@ -98,11 +148,18 @@ export default function TVDetail({ tvId, onBack }: Props) {
             </TouchableOpacity>
 
             <View style={styles.videoContainer}>
-                <VideoPlayer
-                    episode={currentEpisode}
-                    initialPosition={getInitialPosition()}
-                    onProgressUpdate={handleProgressUpdate}
-                />
+                {isFinished ? (
+                    <View style={styles.finishedContainer}>
+                        <Text style={styles.finishedText}>All episodes watched!</Text>
+                    </View>
+                ) : (
+                    <VideoPlayer
+                        episode={currentEpisode}
+                        initialPosition={getInitialPosition()}
+                        onProgressUpdate={handleProgressUpdate}
+                        onEnd={handleVideoEnd}
+                    />
+                )}
             </View>
 
             <View style={styles.infoContainer}>
@@ -252,5 +309,17 @@ const styles = StyleSheet.create({
     },
     backButtonText: {
         color: '#fff',
+    },
+    finishedContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#000',
+    },
+    finishedText: {
+        color: '#fff',
+        fontSize: 18,
+        marginBottom: 20,
+        fontWeight: 'bold',
     },
 });

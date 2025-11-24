@@ -14,12 +14,14 @@ interface Props {
     initialPosition?: number; // in seconds
     style?: ViewStyle;
     onProgressUpdate?: (progress: ProgressUpdate) => void;
+    onEnd?: () => void;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
+    const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
 
     const getVideoUrl = (url: string) => {
@@ -43,6 +45,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     // Update player source when episode changes
     useEffect(() => {
         if (episode) {
+            isEndedRef.current = false; // Reset ended state
             const url = getVideoUrl(episode.url);
             // Use replaceAsync to avoid main thread freeze warning
             if ((player as any).replaceAsync) {
@@ -88,14 +91,17 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
     // Report progress using event listeners
     useEffect(() => {
-        if (!episode || !player || !onProgressUpdate) return;
+        if (!episode || !player) return;
 
         const reportProgress = (currentTime: number, duration: number) => {
+            if (isEndedRef.current) return; // Stop reporting if ended
             try {
                 // Only report if we have valid values and time has changed
                 if (currentTime > 0 && duration > 0 && Math.abs(currentTime - lastReportedTimeRef.current) > 5) {
                     lastReportedTimeRef.current = currentTime;
-                    onProgressUpdate({ currentTime, duration });
+                    if (onProgressUpdate) {
+                        onProgressUpdate({ currentTime, duration });
+                    }
                 }
             } catch (error) {
                 console.error('Failed to report progress:', error);
@@ -103,10 +109,13 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         };
 
         const reportProgressImmediate = (currentTime: number, duration: number) => {
+            if (isEndedRef.current) return; // Stop reporting if ended
             try {
                 if (currentTime > 0 && duration > 0) {
                     lastReportedTimeRef.current = currentTime;
-                    onProgressUpdate({ currentTime, duration });
+                    if (onProgressUpdate) {
+                        onProgressUpdate({ currentTime, duration });
+                    }
                 }
             } catch (error) {
                 console.error('Failed to report progress immediately:', error);
@@ -131,6 +140,15 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                         } catch (e) {
                             // Ignore
                         }
+                    }
+                }));
+
+                // Listen for playback completion
+                subscriptions.push(player.addListener('playToEnd', () => {
+                    console.log('[VideoPlayer] Playback ended');
+                    isEndedRef.current = true; // Mark as ended
+                    if (onEnd) {
+                        onEnd();
                     }
                 }));
 
@@ -174,7 +192,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 // Ignore
             }
         };
-    }, [episode, player, onProgressUpdate]);
+    }, [episode, player, onProgressUpdate, onEnd]);
 
     return (
         <VideoView
