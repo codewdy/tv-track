@@ -74,7 +74,6 @@ export const fetchTV = async (id: number): Promise<TVDetail> => {
 };
 
 export const setWatch = async (request: SetWatchRequest): Promise<void> => {
-    console.log(`[API] setWatch: ${JSON.stringify(request)}`);
     try {
         const response = await fetch(`${API_CONFIG.BASE_URL}/api/set_watch`, {
             method: 'POST',
