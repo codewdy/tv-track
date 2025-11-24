@@ -66,14 +66,6 @@ export default function TVDetail({ tvId, onBack }: Props) {
             watched_episode_time_ratio: ratio
         };
 
-        console.log('[TVDetail] Sending watch progress to server:', {
-            tvId,
-            episode: currentEpisodeIndex,
-            time: progress.currentTime.toFixed(2),
-            duration: progress.duration.toFixed(2),
-            ratio: ratio.toFixed(4)
-        });
-
         setWatch({
             id: tvId,
             watch: watchData

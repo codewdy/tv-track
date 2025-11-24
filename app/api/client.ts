@@ -75,8 +75,6 @@ export const fetchTV = async (id: number): Promise<TVDetail> => {
 
 export const setWatch = async (request: SetWatchRequest): Promise<void> => {
     try {
-        console.log('[API] setWatch request:', JSON.stringify(request, null, 2));
-
         const response = await fetch(`${API_CONFIG.BASE_URL}/api/set_watch`, {
             method: 'POST',
             headers: {
@@ -91,8 +89,6 @@ export const setWatch = async (request: SetWatchRequest): Promise<void> => {
             console.error(`[API] setWatch error: ${response.status} ${text}`);
             throw new Error(`API request failed with status ${response.status}: ${text}`);
         }
-
-        console.log('[API] setWatch success');
     } catch (error) {
         console.error('[API] setWatch failed:', error);
         // Don't throw error to avoid disrupting playback

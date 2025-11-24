@@ -86,11 +86,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 // Only report if we have valid values and time has changed
                 if (currentTime > 0 && duration > 0 && Math.abs(currentTime - lastReportedTimeRef.current) > 5) {
                     lastReportedTimeRef.current = currentTime;
-                    console.log('[VideoPlayer] Periodic progress update:', {
-                        currentTime: currentTime.toFixed(2),
-                        duration: duration.toFixed(2),
-                        ratio: (currentTime / duration).toFixed(4)
-                    });
                     onProgressUpdate({ currentTime, duration });
                 }
             } catch (error) {
@@ -102,11 +97,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             try {
                 if (currentTime > 0 && duration > 0) {
                     lastReportedTimeRef.current = currentTime;
-                    console.log('[VideoPlayer] Immediate progress update:', {
-                        currentTime: currentTime.toFixed(2),
-                        duration: duration.toFixed(2),
-                        ratio: (currentTime / duration).toFixed(4)
-                    });
                     onProgressUpdate({ currentTime, duration });
                 }
             } catch (error) {
@@ -122,12 +112,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             if (player.addListener) {
                 subscriptions.push(player.addListener('playingChange', (event: { isPlaying: boolean }) => {
                     if (!event.isPlaying) {
-                        console.log('[VideoPlayer] Pause detected (event), reporting progress');
                         try {
                             // Safe to access properties inside event handler usually
                             reportProgressImmediate(player.currentTime, player.duration);
                         } catch (e) {
-                            console.warn('[VideoPlayer] Could not get time during pause event');
+                            // Ignore
                         }
                     }
                 }));
@@ -140,7 +129,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                     // Check for seek
                     if (Math.abs(currentTime - lastTime) > 2) {
-                        console.log('[VideoPlayer] Seek detected (event)');
                         reportProgressImmediate(currentTime, duration);
                     }
                     lastTime = currentTime;
