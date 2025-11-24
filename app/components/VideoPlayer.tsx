@@ -36,6 +36,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         episode ? getVideoUrl(episode.url) : null,
         (player) => {
             player.loop = false;
+            player.staysActiveInBackground = true;
             playerRef.current = player;
         }
     );
