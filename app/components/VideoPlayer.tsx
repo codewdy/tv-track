@@ -1,17 +1,25 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
 
+interface ProgressUpdate {
+    currentTime: number;
+    duration: number;
+}
+
 interface Props {
     episode: Episode | null;
     initialPosition?: number; // in seconds
     style?: ViewStyle;
-    onPlaybackStatusUpdate?: (status: any) => void;
+    onProgressUpdate?: (progress: ProgressUpdate) => void;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onPlaybackStatusUpdate }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate }: Props) {
+    const lastReportedTimeRef = useRef<number>(0);
+    const playerRef = useRef<any>(null);
+
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http')) return url;
         return `${API_CONFIG.BASE_URL}${url}`;
@@ -21,8 +29,14 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPla
         episode ? getVideoUrl(episode.url) : null,
         (player) => {
             player.loop = false;
+            playerRef.current = player;
         }
     );
+
+    // Update playerRef when player changes
+    useEffect(() => {
+        playerRef.current = player;
+    }, [player]);
 
     // Update player source when episode changes
     useEffect(() => {
@@ -37,21 +51,120 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPla
 
     // Seek to initial position after player is ready
     useEffect(() => {
-        if (episode && player && initialPosition > 0) {
-            // Wait a bit for the video to load before seeking
-            const timer = setTimeout(() => {
-                try {
-                    player.currentTime = initialPosition;
-                    player.play();
-                } catch (error) {
-                    console.error('Failed to seek to initial position:', error);
-                }
-            }, 500);
-            return () => clearTimeout(timer);
-        } else if (episode && player) {
-            player.play();
+        if (episode && player) {
+            // Set update interval for timeUpdate event (in seconds)
+            try {
+                (player as any).timeUpdateEventInterval = 0.5;
+                console.log('[VideoPlayer] Set timeUpdateEventInterval to 0.5s');
+            } catch (e) {
+                console.warn('[VideoPlayer] Failed to set timeUpdateEventInterval', e);
+            }
+
+            if (initialPosition > 0) {
+                // Wait a bit for the video to load before seeking
+                const timer = setTimeout(() => {
+                    try {
+                        player.currentTime = initialPosition;
+                        player.play();
+                    } catch (error) {
+                        console.error('Failed to seek to initial position:', error);
+                    }
+                }, 500);
+                return () => clearTimeout(timer);
+            } else {
+                player.play();
+            }
         }
-    }, [episode, initialPosition]);
+    }, [episode, initialPosition, player]);
+
+    // Report progress using event listeners
+    useEffect(() => {
+        if (!episode || !player || !onProgressUpdate) return;
+
+        const reportProgress = (currentTime: number, duration: number) => {
+            try {
+                // Only report if we have valid values and time has changed
+                if (currentTime > 0 && duration > 0 && Math.abs(currentTime - lastReportedTimeRef.current) > 5) {
+                    lastReportedTimeRef.current = currentTime;
+                    console.log('[VideoPlayer] Periodic progress update:', {
+                        currentTime: currentTime.toFixed(2),
+                        duration: duration.toFixed(2),
+                        ratio: (currentTime / duration).toFixed(4)
+                    });
+                    onProgressUpdate({ currentTime, duration });
+                }
+            } catch (error) {
+                console.error('Failed to report progress:', error);
+            }
+        };
+
+        const reportProgressImmediate = (currentTime: number, duration: number) => {
+            try {
+                if (currentTime > 0 && duration > 0) {
+                    lastReportedTimeRef.current = currentTime;
+                    console.log('[VideoPlayer] Immediate progress update:', {
+                        currentTime: currentTime.toFixed(2),
+                        duration: duration.toFixed(2),
+                        ratio: (currentTime / duration).toFixed(4)
+                    });
+                    onProgressUpdate({ currentTime, duration });
+                }
+            } catch (error) {
+                console.error('Failed to report progress immediately:', error);
+            }
+        };
+
+        // Subscribe to events
+        const subscriptions: any[] = [];
+
+        try {
+            // Listen for play/pause changes
+            if (player.addListener) {
+                subscriptions.push(player.addListener('playingChange', (event: { isPlaying: boolean }) => {
+                    if (!event.isPlaying) {
+                        console.log('[VideoPlayer] Pause detected (event), reporting progress');
+                        try {
+                            // Safe to access properties inside event handler usually
+                            reportProgressImmediate(player.currentTime, player.duration);
+                        } catch (e) {
+                            console.warn('[VideoPlayer] Could not get time during pause event');
+                        }
+                    }
+                }));
+
+                // Listen for time updates to detect seeks
+                let lastTime = 0;
+                subscriptions.push(player.addListener('timeUpdate', (event: { currentTime: number }) => {
+                    const currentTime = event.currentTime;
+                    const duration = player.duration;
+
+                    // Check for seek
+                    if (Math.abs(currentTime - lastTime) > 2) {
+                        console.log('[VideoPlayer] Seek detected (event)');
+                        reportProgressImmediate(currentTime, duration);
+                    }
+                    lastTime = currentTime;
+
+                    // Also handle periodic reporting here
+                    reportProgress(currentTime, duration);
+                }));
+            }
+        } catch (e) {
+            console.error('[VideoPlayer] Failed to add listeners:', e);
+        }
+
+        return () => {
+            subscriptions.forEach(sub => sub.remove());
+
+            // Report one last time when unmounting
+            try {
+                console.log('[VideoPlayer] Component unmounting, reporting final progress');
+                reportProgressImmediate(player.currentTime, player.duration);
+            } catch (error) {
+                // Ignore
+            }
+        };
+    }, [episode, player, onProgressUpdate]);
 
     return (
         <VideoView

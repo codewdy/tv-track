@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
-import { fetchTV } from '../api/client';
+import { fetchTV, setWatch } from '../api/client';
 import { TVDetail as TVDetailType, Episode } from '../types';
 import VideoPlayer from './VideoPlayer';
 
@@ -19,7 +19,6 @@ export default function TVDetail({ tvId, onBack }: Props) {
     useEffect(() => {
         loadData();
     }, [tvId]);
-
 
     const loadData = async () => {
         try {
@@ -58,6 +57,29 @@ export default function TVDetail({ tvId, onBack }: Props) {
         return 0;
     };
 
+    // Handle progress updates from VideoPlayer
+    const handleProgressUpdate = (progress: { currentTime: number; duration: number }) => {
+        const ratio = progress.currentTime / progress.duration;
+        const watchData = {
+            watched_episode: currentEpisodeIndex,
+            watched_episode_time: progress.currentTime,
+            watched_episode_time_ratio: ratio
+        };
+
+        console.log('[TVDetail] Sending watch progress to server:', {
+            tvId,
+            episode: currentEpisodeIndex,
+            time: progress.currentTime.toFixed(2),
+            duration: progress.duration.toFixed(2),
+            ratio: ratio.toFixed(4)
+        });
+
+        setWatch({
+            id: tvId,
+            watch: watchData
+        });
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -87,6 +109,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 <VideoPlayer
                     episode={currentEpisode}
                     initialPosition={getInitialPosition()}
+                    onProgressUpdate={handleProgressUpdate}
                 />
             </View>
 

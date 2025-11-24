@@ -44,3 +44,8 @@ export interface TVDetail {
     watch: WatchStatus;
     episodes: Episode[];
 }
+
+export interface SetWatchRequest {
+    id: number;
+    watch: WatchStatus;
+}
