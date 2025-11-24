@@ -16,6 +16,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
     const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
     const [isFinished, setIsFinished] = useState(false);
+    const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -47,6 +48,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
         setCurrentEpisode(episode);
         setCurrentEpisodeIndex(index);
         setIsFinished(false);
+        setShouldAutoPlay(false); // Disable auto-play for manual selection
 
         // Update local detail state to reflect new watch status (time 0)
         if (detail) {
@@ -115,6 +117,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
         // Switch to next episode or finish
         if (nextIndex < detail.episodes.length) {
+            setShouldAutoPlay(true); // Enable auto-play for automatic transition
             setCurrentEpisode(detail.episodes[nextIndex]);
             setCurrentEpisodeIndex(nextIndex);
         } else {
@@ -158,6 +161,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                         initialPosition={getInitialPosition()}
                         onProgressUpdate={handleProgressUpdate}
                         onEnd={handleVideoEnd}
+                        autoPlay={shouldAutoPlay}
                     />
                 )}
             </View>

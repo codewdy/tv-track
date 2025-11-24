@@ -15,14 +15,17 @@ interface Props {
     style?: ViewStyle;
     onProgressUpdate?: (progress: ProgressUpdate) => void;
     onEnd?: () => void;
+    autoPlay?: boolean;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
+
+    // ... (getVideoUrl and useVideoPlayer remain same)
 
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http')) return url;
@@ -77,17 +80,25 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 const timer = setTimeout(() => {
                     try {
                         player.currentTime = initialPosition;
-                        player.play();
+                        if (autoPlay) {
+                            player.play();
+                        } else {
+                            player.pause();
+                        }
                     } catch (error) {
                         console.error('Failed to seek to initial position:', error);
                     }
                 }, 500);
                 return () => clearTimeout(timer);
             } else {
-                player.play();
+                if (autoPlay) {
+                    player.play();
+                } else {
+                    player.pause();
+                }
             }
         }
-    }, [episode, initialPosition, player]);
+    }, [episode, initialPosition, player, autoPlay]);
 
     // Report progress using event listeners
     useEffect(() => {
@@ -145,7 +156,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                 // Listen for playback completion
                 subscriptions.push(player.addListener('playToEnd', () => {
-                    console.log('[VideoPlayer] Playback ended');
                     isEndedRef.current = true; // Mark as ended
                     if (onEnd) {
                         onEnd();
