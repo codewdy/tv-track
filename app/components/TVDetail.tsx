@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler } from 'react-native';
 import { fetchTV, setWatch } from '../api/client';
 import { TVDetail as TVDetailType, Episode } from '../types';
 import VideoPlayer from './VideoPlayer';
@@ -20,6 +20,13 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
     useEffect(() => {
         loadData();
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            onBack();
+            return true;
+        });
+
+        return () => backHandler.remove();
     }, [tvId]);
 
     const loadData = async () => {
@@ -146,9 +153,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={onBack} style={styles.headerBack}>
-                <Text style={styles.headerBackText}>← Back</Text>
-            </TouchableOpacity>
+
 
             <View style={styles.videoContainer}>
                 {isFinished ? (
@@ -217,16 +222,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    headerBack: {
-        padding: 15,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    headerBackText: {
-        fontSize: 16,
-        color: '#007AFF',
-    },
+
     videoContainer: {
         width: '100%',
         aspectRatio: 16 / 9,
