@@ -16,12 +16,12 @@ interface Props {
     onProgressUpdate?: (progress: ProgressUpdate) => void;
     onEnd?: () => void;
     autoPlay?: boolean;
+    lastKnownPositionRef: React.RefObject<number>;
+    lastKnownDurationRef: React.RefObject<number>;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
-    const lastKnownPositionRef = useRef<number>(0);
-    const lastKnownDurationRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
 
@@ -48,6 +48,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
     // Update player source when episode changes
     useEffect(() => {
+        lastKnownPositionRef.current = -1;
+        lastKnownDurationRef.current = -1;
         if (episode) {
             isEndedRef.current = false; // Reset ended state
             const url = getVideoUrl(episode.url);
@@ -188,20 +190,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
         return () => {
             subscriptions.forEach(sub => sub.remove());
-
-            // Report one last time when unmounting using last known values
-            try {
-                const finalTime = lastKnownPositionRef.current;
-                const finalDuration = lastKnownDurationRef.current;
-                if (finalTime > 0 && finalDuration > 0) {
-                    reportProgressImmediate(finalTime, finalDuration);
-                } else {
-                    // Fallback to player properties if refs are empty (e.g. no events fired yet)
-                    reportProgressImmediate(player.currentTime, player.duration);
-                }
-            } catch (error) {
-                // Ignore
-            }
         };
     }, [episode, player, onProgressUpdate, onEnd]);
 

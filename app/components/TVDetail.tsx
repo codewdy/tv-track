@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler } from 'react-native';
 import { fetchTV, setWatch } from '../api/client';
 import { TVDetail as TVDetailType, Episode } from '../types';
@@ -17,17 +17,36 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
     const [isFinished, setIsFinished] = useState(false);
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+    const lastKnownPositionRef = useRef<number>(0);
+    const lastKnownDurationRef = useRef<number>(0);
 
     useEffect(() => {
         loadData();
+    }, [tvId]);
 
+    useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (lastKnownPositionRef.current >= 0 && lastKnownDurationRef.current >= 0) {
+                const ratio = lastKnownPositionRef.current / lastKnownDurationRef.current;
+                const watchData = {
+                    watched_episode: currentEpisodeIndex,
+                    watched_episode_time: lastKnownPositionRef.current,
+                    watched_episode_time_ratio: ratio
+                };
+
+                setWatch({
+                    id: tvId,
+                    watch: watchData
+                });
+            }
             onBack();
             return true;
         });
 
-        return () => backHandler.remove();
-    }, [tvId]);
+        return () => {
+            backHandler.remove();
+        }
+    }, [tvId, currentEpisodeIndex, onBack]);
 
     const loadData = async () => {
         try {
@@ -36,13 +55,9 @@ export default function TVDetail({ tvId, onBack }: Props) {
             setDetail(data);
             if (data.episodes && data.episodes.length > 0) {
                 const nextIndex = data.watch.watched_episode;
-                if (nextIndex < data.episodes.length) {
-                    setCurrentEpisode(data.episodes[nextIndex]);
-                    setCurrentEpisodeIndex(nextIndex);
-                } else {
-                    setCurrentEpisode(data.episodes[0]);
-                    setCurrentEpisodeIndex(0);
-                }
+                setCurrentEpisode(data.episodes[nextIndex]);
+                setCurrentEpisodeIndex(nextIndex);
+                setIsFinished(nextIndex >= data.episodes.length);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to load TV details');
@@ -153,8 +168,6 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
     return (
         <View style={styles.container}>
-
-
             <View style={styles.videoContainer}>
                 {isFinished ? (
                     <View style={styles.finishedContainer}>
@@ -167,6 +180,8 @@ export default function TVDetail({ tvId, onBack }: Props) {
                         onProgressUpdate={handleProgressUpdate}
                         onEnd={handleVideoEnd}
                         autoPlay={shouldAutoPlay}
+                        lastKnownPositionRef={lastKnownPositionRef}
+                        lastKnownDurationRef={lastKnownDurationRef}
                     />
                 )}
             </View>
