@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { API_CONFIG } from '../config';
 
-export type DownloadStatus = 'downloading' | 'paused' | 'finished' | 'error';
+export type DownloadStatus = 'downloading' | 'pending' | 'paused' | 'finished' | 'error';
 
 export interface DownloadItem {
     id: string;
@@ -16,6 +16,7 @@ export interface DownloadItem {
 }
 
 const METADATA_FILE = (FileSystem.documentDirectory || '') + 'downloads_metadata.json';
+const MAX_CONCURRENT_DOWNLOADS = 5;
 
 class DownloadManager {
     private downloads: Map<string, DownloadItem> = new Map();
@@ -34,7 +35,8 @@ class DownloadManager {
 
                 // Rehydrate downloads
                 savedDownloads.forEach(item => {
-                    if (item.status === 'downloading') {
+                    // Reset active/pending states to paused on restart
+                    if (item.status === 'downloading' || item.status === 'pending') {
                         item.status = 'paused';
                     }
                     this.downloads.set(item.id, item);
@@ -104,41 +106,78 @@ class DownloadManager {
         }
     }
 
+    private processQueue() {
+        const activeDownloads = Array.from(this.downloads.values()).filter(d => d.status === 'downloading');
+        if (activeDownloads.length < MAX_CONCURRENT_DOWNLOADS) {
+            // Find pending items (FIFO based on insertion order in Map usually, but let's just pick first pending)
+            const pendingItem = Array.from(this.downloads.values()).find(d => d.status === 'pending');
+            if (pendingItem) {
+                this.runDownload(pendingItem);
+            }
+        }
+    }
+
+    private async runDownload(item: DownloadItem) {
+        if (item.status === 'downloading') return;
+
+        item.status = 'downloading';
+        this.notifyListeners();
+
+        // If no resumable, create it
+        if (!item.resumable) {
+            const fileUri = (FileSystem.documentDirectory || '') + item.filename;
+            const callback = (downloadProgress: FileSystem.DownloadProgressData) => {
+                const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+                // Only update progress if still downloading (might have been paused/cancelled)
+                if (item.status === 'downloading') {
+                    item.progress = progress;
+                    this.notifyListeners();
+                }
+            };
+
+            item.resumable = FileSystem.createDownloadResumable(
+                item.url,
+                fileUri,
+                {
+                    headers: {
+                        'Authorization': API_CONFIG.AUTH_HEADER
+                    }
+                },
+                callback
+            );
+        }
+
+        try {
+            let result;
+            if (item.resumable) {
+                result = await item.resumable.downloadAsync();
+            }
+
+            if (result) {
+                item.status = 'finished';
+                item.localUri = result.uri;
+                item.resumable = undefined;
+                this.notifyListeners();
+                this.processQueue(); // Slot freed
+            }
+        } catch (e) {
+            console.error("Download error", e);
+            item.status = 'error';
+            this.notifyListeners();
+            this.processQueue(); // Slot freed (even if error)
+        }
+    }
+
     async startDownload(url: string, filename: string, tvId: number, episodeId: number) {
-        // Use simple ID format: tv{tvId}-ep{episodeId}
         const id = `tv${tvId}-ep${episodeId}`;
 
-        // Check if already downloading or downloaded
         if (this.downloads.has(id)) {
             console.warn(`Download already exists for ${id}`);
             return;
         }
 
         const uniqueFilename = await this.getUniqueFilename(filename);
-        const fileUri = (FileSystem.documentDirectory || '') + uniqueFilename;
-
-        // Handle relative URLs
         const fullUrl = url.startsWith('http') ? url : `${API_CONFIG.BASE_URL}${url}`;
-
-        const callback = (downloadProgress: FileSystem.DownloadProgressData) => {
-            const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-            const item = this.downloads.get(id);
-            if (item) {
-                item.progress = progress;
-                this.notifyListeners();
-            }
-        };
-
-        const downloadResumable = FileSystem.createDownloadResumable(
-            fullUrl,
-            fileUri,
-            {
-                headers: {
-                    'Authorization': API_CONFIG.AUTH_HEADER
-                }
-            },
-            callback
-        );
 
         const newItem: DownloadItem = {
             id,
@@ -147,84 +186,41 @@ class DownloadManager {
             tvId,
             episodeId,
             progress: 0,
-            status: 'downloading',
-            resumable: downloadResumable
+            status: 'pending', // Start as pending
+            // Resumable will be created when running
         };
 
         this.downloads.set(id, newItem);
         this.notifyListeners();
-
-        try {
-            const result = await downloadResumable.downloadAsync();
-            if (result) {
-                const item = this.downloads.get(id);
-                if (item) {
-                    item.status = 'finished';
-                    item.localUri = result.uri;
-                    item.resumable = undefined;
-                    this.notifyListeners();
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            const item = this.downloads.get(id);
-            if (item) {
-                item.status = 'error';
-                this.notifyListeners();
-            }
-        }
+        this.processQueue();
     }
 
     async pauseDownload(id: string) {
         const item = this.downloads.get(id);
-        if (item && item.status === 'downloading' && item.resumable) {
-            try {
-                await item.resumable.pauseAsync();
+        if (item) {
+            if (item.status === 'downloading' && item.resumable) {
+                try {
+                    await item.resumable.pauseAsync();
+                    item.status = 'paused';
+                    this.notifyListeners();
+                    this.processQueue(); // Slot freed
+                } catch (e) {
+                    console.error("Error pausing", e);
+                }
+            } else if (item.status === 'pending') {
                 item.status = 'paused';
                 this.notifyListeners();
-            } catch (e) {
-                console.error("Error pausing", e);
+                // No slot freed, but removed from queue
             }
         }
     }
 
     async resumeDownload(id: string) {
         const item = this.downloads.get(id);
-        if (item && item.status === 'paused' && item.resumable) {
-            try {
-                item.status = 'downloading';
-                this.notifyListeners();
-                const result = await item.resumable.resumeAsync();
-                if (result) {
-                    item.status = 'finished';
-                    item.localUri = result.uri;
-                    item.resumable = undefined;
-                    this.notifyListeners();
-                }
-            } catch (e) {
-                console.error("Error resuming, will delete and restart", e);
-                // Delete partial download file if it exists
-                const fileUri = (FileSystem.documentDirectory || '') + item.filename;
-                try {
-                    await FileSystem.deleteAsync(fileUri, { idempotent: true });
-                } catch (deleteError) {
-                    console.error("Error deleting partial file", deleteError);
-                }
-                // Remove from downloads and restart
-                this.downloads.delete(id);
-                this.startDownload(item.url, item.filename, item.tvId, item.episodeId);
-            }
-        } else if (item && item.status === 'paused' && !item.resumable) {
-            // If resumable object is missing (e.g. after restart), delete partial file and restart
-            console.log("Resumable object missing, deleting partial file and restarting");
-            const fileUri = (FileSystem.documentDirectory || '') + item.filename;
-            try {
-                await FileSystem.deleteAsync(fileUri, { idempotent: true });
-            } catch (deleteError) {
-                console.error("Error deleting partial file", deleteError);
-            }
-            this.downloads.delete(id);
-            this.startDownload(item.url, item.filename, item.tvId, item.episodeId);
+        if (item && item.status === 'paused') {
+            item.status = 'pending';
+            this.notifyListeners();
+            this.processQueue();
         }
     }
 
@@ -247,6 +243,7 @@ class DownloadManager {
             }
             this.downloads.delete(id);
             this.notifyListeners();
+            this.processQueue(); // Slot freed if it was downloading
         }
     }
 }

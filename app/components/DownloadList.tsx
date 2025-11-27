@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { useDownload } from '../context/DownloadContext';
-import { DownloadItem } from '../utils/DownloadManager';
+import { DownloadItem } from '../utils/downloadManager';
 
 const DownloadList = ({ onBack }: { onBack: () => void }) => {
     const { downloads, pauseDownload, resumeDownload, deleteDownload } = useDownload();
@@ -32,7 +32,7 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
                 </View>
             </View>
             <View style={styles.actions}>
-                {item.status === 'downloading' && (
+                {(item.status === 'downloading' || item.status === 'pending') && (
                     <TouchableOpacity onPress={() => pauseDownload(item.id)} style={styles.button}>
                         <Text style={styles.buttonText}>Pause</Text>
                     </TouchableOpacity>
