@@ -7,6 +7,7 @@ interface DownloadContextType {
     pauseDownload: (id: string) => void;
     resumeDownload: (id: string) => void;
     deleteDownload: (id: string) => Promise<void>;
+    getDownload: (tvId: number, episodeId: number) => DownloadItem | undefined;
 }
 
 const DownloadContext = createContext<DownloadContextType | undefined>(undefined);
@@ -37,8 +38,12 @@ export const DownloadProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await downloadManager.deleteDownload(id);
     };
 
+    const getDownload = (tvId: number, episodeId: number) => {
+        return downloadManager.getDownload(tvId, episodeId);
+    };
+
     return (
-        <DownloadContext.Provider value={{ downloads, startDownload, pauseDownload, resumeDownload, deleteDownload }}>
+        <DownloadContext.Provider value={{ downloads, startDownload, pauseDownload, resumeDownload, deleteDownload, getDownload }}>
             {children}
         </DownloadContext.Provider>
     );

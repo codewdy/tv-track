@@ -76,6 +76,11 @@ class DownloadManager {
         return Array.from(this.downloads.values());
     }
 
+    getDownload(tvId: number, episodeId: number): DownloadItem | undefined {
+        const id = `tv${tvId}-ep${episodeId}`;
+        return this.downloads.get(id);
+    }
+
     private async getUniqueFilename(filename: string): Promise<string> {
         const dir = FileSystem.documentDirectory || '';
         let finalName = filename;
@@ -100,13 +105,14 @@ class DownloadManager {
     }
 
     async startDownload(url: string, filename: string, tvId: number, episodeId: number) {
-        // Generate complex unique ID: timestamp + random string + tvId + episodeId
-        // Check if ID already exists and regenerate if needed
-        let id: string;
-        do {
-            const randomStr = Math.random().toString(36).substring(2, 10);
-            id = `${Date.now()}-${randomStr}-tv${tvId}-ep${episodeId}`;
-        } while (this.downloads.has(id));
+        // Use simple ID format: tv{tvId}-ep{episodeId}
+        const id = `tv${tvId}-ep${episodeId}`;
+
+        // Check if already downloading or downloaded
+        if (this.downloads.has(id)) {
+            console.warn(`Download already exists for ${id}`);
+            return;
+        }
 
         const uniqueFilename = await this.getUniqueFilename(filename);
         const fileUri = (FileSystem.documentDirectory || '') + uniqueFilename;

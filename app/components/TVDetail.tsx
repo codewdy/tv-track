@@ -22,7 +22,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
     const hasPlayedRef = useRef<boolean>(false);
-    const { startDownload, downloads, deleteDownload } = useDownload();
+    const { startDownload, downloads, deleteDownload, getDownload } = useDownload();
     const { fetchTV, setWatch } = useClient();
 
     useEffect(() => {
@@ -169,9 +169,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
         for (let i = 0; i < detail.episodes.length; i++) {
             const episode = detail.episodes[i];
-            const existingDownload = downloads.find(
-                d => d.tvId === tvId && d.episodeId === i
-            );
+            const existingDownload = getDownload(tvId, i);
 
             // Skip if already downloaded or downloading
             if (existingDownload && (existingDownload.status === 'finished' || existingDownload.status === 'downloading')) {
@@ -193,9 +191,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
         for (let i = currentEpisodeIndex + 1; i < detail.episodes.length; i++) {
             const episode = detail.episodes[i];
-            const existingDownload = downloads.find(
-                d => d.tvId === tvId && d.episodeId === i
-            );
+            const existingDownload = getDownload(tvId, i);
 
             // Skip if already downloaded or downloading
             if (existingDownload && (existingDownload.status === 'finished' || existingDownload.status === 'downloading')) {
@@ -215,9 +211,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const downloadCurrentEpisode = async () => {
         if (!currentEpisode) return;
 
-        const existingDownload = downloads.find(
-            d => d.tvId === tvId && d.episodeId === currentEpisodeIndex
-        );
+        const existingDownload = getDownload(tvId, currentEpisodeIndex);
 
         if (existingDownload) {
             await deleteDownload(existingDownload.id);
@@ -301,7 +295,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                                             onPress={downloadCurrentEpisode}
                                         >
                                             <Text style={styles.menuItemText}>
-                                                {downloads.find(d => d.tvId === tvId && d.episodeId === currentEpisodeIndex)
+                                                {getDownload(tvId, currentEpisodeIndex)
                                                     ? 'Redownload Current'
                                                     : 'Download Current'}
                                             </Text>
