@@ -106,6 +106,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     useEffect(() => {
         if (!episode || !player) return;
 
+        lastReportedTimeRef.current = initialPosition;
+
         const reportProgress = (currentTime: number, duration: number) => {
             if (isEndedRef.current) return; // Stop reporting if ended
             try {
@@ -177,7 +179,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     lastKnownDurationRef.current = duration;
 
                     // Check for seek
-                    if (Math.abs(currentTime - lastTime) > 2) {
+                    if (Math.abs(currentTime - lastTime) > 2 && lastTime > 0) {
                         reportProgressImmediate(currentTime, duration);
                     }
                     lastTime = currentTime;
@@ -193,7 +195,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         return () => {
             subscriptions.forEach(sub => sub.remove());
         };
-    }, [episode, player, onProgressUpdate, onEnd]);
+    }, [episode, initialPosition, player, onProgressUpdate, onEnd]);
 
     return (
         <VideoView

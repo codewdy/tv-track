@@ -154,14 +154,10 @@ export default function TVDetail({ tvId, onBack }: Props) {
             }
         });
 
-        // Switch to next episode or finish
-        if (nextIndex < detail.episodes.length) {
-            setShouldAutoPlay(true); // Enable auto-play for automatic transition
-            setCurrentEpisode(detail.episodes[nextIndex]);
-            setCurrentEpisodeIndex(nextIndex);
-        } else {
-            setIsFinished(true);
-        }
+        setShouldAutoPlay(true); // Enable auto-play for automatic transition
+        setCurrentEpisode(detail.episodes[nextIndex]);
+        setCurrentEpisodeIndex(nextIndex);
+        setIsFinished(nextIndex >= detail.episodes.length);
     };
 
     const downloadAllEpisodes = async () => {

@@ -216,7 +216,6 @@ class ClientService {
 
     async setWatch(request: SetWatchRequest): Promise<void> {
         if (this._isOffline) {
-            console.log('[ClientService] Offline setWatch:', request);
             const detail = this.offlineTVDetails.get(request.id);
             if (detail) {
                 // Update local offline state
