@@ -1,10 +1,24 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { useDownload } from '../context/DownloadContext';
 import { DownloadItem } from '../utils/DownloadManager';
 
 const DownloadList = ({ onBack }: { onBack: () => void }) => {
     const { downloads, pauseDownload, resumeDownload, deleteDownload } = useDownload();
+
+    useEffect(() => {
+        const backAction = () => {
+            onBack();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [onBack]);
 
     const renderItem = ({ item }: { item: DownloadItem }) => (
         <View style={styles.itemContainer}>
@@ -38,9 +52,6 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>Back</Text>
-                </TouchableOpacity>
                 <Text style={styles.title}>Downloads</Text>
             </View>
             <FlatList
@@ -62,17 +73,11 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center', // Center the title since back button is gone
         padding: 15,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
-    },
-    backButton: {
-        marginRight: 15,
-    },
-    backButtonText: {
-        fontSize: 16,
-        color: '#007AFF',
     },
     title: {
         fontSize: 18,
