@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "tv-track",
-    "slug": "app",
+    "slug": "tv-track",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,13 +21,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.codewdy.tvtrack"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c8fe18ae-517f-4cb2-b5e9-fe6dfd4e31a1"
+      }
+    }
   }
 }
