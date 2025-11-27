@@ -11,6 +11,7 @@ interface OfflineData {
     monitor: MonitorResponse | null;
     config: ConfigResponse | null;
     tvDetails: [number, TVDetail][]; // Serialize Map as array of entries
+    pendingSyncTvIds: number[];
 }
 
 class ClientService {
@@ -19,6 +20,7 @@ class ClientService {
     private offlineMonitorData: MonitorResponse | null = null;
     private offlineConfigData: ConfigResponse | null = null;
     private offlineTVDetails: Map<number, TVDetail> = new Map();
+    private pendingSyncTvIds: Set<number> = new Set();
 
     constructor() {
         this.loadOfflineData();
@@ -42,6 +44,7 @@ class ClientService {
                     this.offlineMonitorData = data.monitor;
                     this.offlineConfigData = data.config;
                     this.offlineTVDetails = new Map(data.tvDetails);
+                    this.pendingSyncTvIds = new Set(data.pendingSyncTvIds || []);
                 }
                 this.notifyListeners();
             }
@@ -56,7 +59,8 @@ class ClientService {
                 isOffline: this._isOffline,
                 monitor: this.offlineMonitorData,
                 config: this.offlineConfigData,
-                tvDetails: Array.from(this.offlineTVDetails.entries())
+                tvDetails: Array.from(this.offlineTVDetails.entries()),
+                pendingSyncTvIds: Array.from(this.pendingSyncTvIds)
             };
             await FileSystem.writeAsStringAsync(OFFLINE_DATA_FILE, JSON.stringify(data));
         } catch (e) {
@@ -120,10 +124,36 @@ class ClientService {
             }
         } else {
             // Going online
+            // Sync pending changes
+            if (this.pendingSyncTvIds.size > 0) {
+                console.log(`Syncing ${this.pendingSyncTvIds.size} pending TV updates...`);
+                const tvIdsToSync = Array.from(this.pendingSyncTvIds);
+
+                // We process them sequentially or parallel, here parallel is fine
+                await Promise.all(tvIdsToSync.map(async (tvId) => {
+                    const detail = this.offlineTVDetails.get(tvId);
+                    if (detail) {
+                        try {
+                            await apiClient.setWatch({
+                                id: tvId,
+                                watch: detail.watch
+                            });
+                            this.pendingSyncTvIds.delete(tvId);
+                        } catch (e) {
+                            console.error(`Failed to sync TV ${tvId}`, e);
+                        }
+                    } else {
+                        // Should not happen, but if detail is missing, remove from pending
+                        this.pendingSyncTvIds.delete(tvId);
+                    }
+                }));
+            }
+
             this._isOffline = false;
             this.offlineMonitorData = null;
             this.offlineConfigData = null;
             this.offlineTVDetails.clear();
+            this.pendingSyncTvIds.clear();
         }
 
         this.saveOfflineData();
@@ -187,6 +217,18 @@ class ClientService {
     async setWatch(request: SetWatchRequest): Promise<void> {
         if (this._isOffline) {
             console.log('[ClientService] Offline setWatch:', request);
+            const detail = this.offlineTVDetails.get(request.id);
+            if (detail) {
+                // Update local offline state
+                detail.watch = request.watch;
+                this.offlineTVDetails.set(request.id, detail);
+
+                // Mark for sync
+                this.pendingSyncTvIds.add(request.id);
+
+                // Persist changes
+                this.saveOfflineData();
+            }
             return;
         }
         return apiClient.setWatch(request);
