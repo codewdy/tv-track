@@ -267,55 +267,59 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 <Text style={styles.subtitle}>
                     Watched: {detail.watch.watched_episode} / {detail.episodes.length}
                 </Text>
-                {currentEpisode && (
-                    <View style={styles.playingRow}>
-                        <Text style={styles.episodeTitle}>Playing: {currentEpisode.name}</Text>
-                        <View>
-                            <TouchableOpacity
-                                style={styles.downloadButton}
-                                onPress={() => setShowDownloadMenu(!showDownloadMenu)}
-                            >
-                                <Text style={styles.downloadButtonText}>Download ▼</Text>
-                            </TouchableOpacity>
+                <View style={styles.playingRow}>
+                    <Text style={styles.episodeTitle}>
+                        {currentEpisode ? `Playing: ${currentEpisode.name}` : 'Finished'}
+                    </Text>
+                    <View>
+                        <TouchableOpacity
+                            style={styles.downloadButton}
+                            onPress={() => setShowDownloadMenu(!showDownloadMenu)}
+                        >
+                            <Text style={styles.downloadButtonText}>Download ▼</Text>
+                        </TouchableOpacity>
 
-                            {showDownloadMenu && (
-                                <>
+                        {showDownloadMenu && (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.menuBackdrop}
+                                    activeOpacity={1}
+                                    onPress={() => setShowDownloadMenu(false)}
+                                />
+                                <View style={styles.downloadMenu}>
+                                    {currentEpisode && (
+                                        <>
+                                            <TouchableOpacity
+                                                style={styles.menuItem}
+                                                onPress={downloadCurrentEpisode}
+                                            >
+                                                <Text style={styles.menuItemText}>
+                                                    {getDownload(tvId, currentEpisodeIndex)
+                                                        ? 'Redownload Current'
+                                                        : 'Download Current'}
+                                                </Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                style={styles.menuItem}
+                                                onPress={downloadAfterCurrent}
+                                            >
+                                                <Text style={styles.menuItemText}>Download After Current</Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
+
                                     <TouchableOpacity
-                                        style={styles.menuBackdrop}
-                                        activeOpacity={1}
-                                        onPress={() => setShowDownloadMenu(false)}
-                                    />
-                                    <View style={styles.downloadMenu}>
-                                        <TouchableOpacity
-                                            style={styles.menuItem}
-                                            onPress={downloadCurrentEpisode}
-                                        >
-                                            <Text style={styles.menuItemText}>
-                                                {getDownload(tvId, currentEpisodeIndex)
-                                                    ? 'Redownload Current'
-                                                    : 'Download Current'}
-                                            </Text>
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity
-                                            style={styles.menuItem}
-                                            onPress={downloadAfterCurrent}
-                                        >
-                                            <Text style={styles.menuItemText}>Download After Current</Text>
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity
-                                            style={styles.menuItem}
-                                            onPress={downloadAllEpisodes}
-                                        >
-                                            <Text style={styles.menuItemText}>Download All Episodes</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </>
-                            )}
-                        </View>
+                                        style={styles.menuItem}
+                                        onPress={downloadAllEpisodes}
+                                    >
+                                        <Text style={styles.menuItemText}>Download All Episodes</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
                     </View>
-                )}
+                </View>
             </View>
 
             <ScrollView style={styles.episodeList}>
