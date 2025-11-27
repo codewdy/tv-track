@@ -6,6 +6,7 @@ import TVList from './components/TVList';
 import TVDetail from './components/TVDetail';
 import DownloadList from './components/DownloadList';
 import { DownloadProvider } from './context/DownloadContext';
+import { ClientProvider } from './context/ClientProvider';
 import { TouchableOpacity } from 'react-native';
 
 export default function App() {
@@ -17,49 +18,51 @@ export default function App() {
     <DownloadProvider>
       <SafeAreaProvider>
         <SafeAreaView style={styles.container}>
-          {showDownloads ? (
-            <DownloadList onBack={() => setShowDownloads(false)} />
-          ) : selectedTVId ? (
-            <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
-          ) : (
-            <>
-              <View style={styles.header}>
-                <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuButton}>
-                  <Text style={styles.menuButtonText}>☰</Text>
-                </TouchableOpacity>
-                <View style={styles.titleContainer}>
-                  <Text style={styles.headerTitle}>追番小助手</Text>
-                </View>
-                <View style={styles.headerRight} />
-              </View>
-
-              {showMenu && (
-                <View style={styles.menuContainer}>
-                  <TouchableOpacity
-                    style={styles.backdrop}
-                    activeOpacity={1}
-                    onPress={() => setShowMenu(false)}
-                  />
-                  <View style={styles.drawer}>
-                    <View style={styles.drawerHeader}>
-                      <Text style={styles.drawerTitle}>Menu</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.menuItem}
-                      onPress={() => {
-                        setShowMenu(false);
-                        setShowDownloads(true);
-                      }}
-                    >
-                      <Text style={styles.menuItemText}>Downloads</Text>
-                    </TouchableOpacity>
+          <ClientProvider>
+            {showDownloads ? (
+              <DownloadList onBack={() => setShowDownloads(false)} />
+            ) : selectedTVId ? (
+              <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
+            ) : (
+              <>
+                <View style={styles.header}>
+                  <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuButton}>
+                    <Text style={styles.menuButtonText}>☰</Text>
+                  </TouchableOpacity>
+                  <View style={styles.titleContainer}>
+                    <Text style={styles.headerTitle}>追番小助手</Text>
                   </View>
+                  <View style={styles.headerRight} />
                 </View>
-              )}
 
-              <TVList onSelect={setSelectedTVId} />
-            </>
-          )}
+                {showMenu && (
+                  <View style={styles.menuContainer}>
+                    <TouchableOpacity
+                      style={styles.backdrop}
+                      activeOpacity={1}
+                      onPress={() => setShowMenu(false)}
+                    />
+                    <View style={styles.drawer}>
+                      <View style={styles.drawerHeader}>
+                        <Text style={styles.drawerTitle}>Menu</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                          setShowMenu(false);
+                          setShowDownloads(true);
+                        }}
+                      >
+                        <Text style={styles.menuItemText}>Downloads</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                <TVList onSelect={setSelectedTVId} />
+              </>
+            )}
+          </ClientProvider>
           <StatusBar style="auto" />
         </SafeAreaView>
       </SafeAreaProvider>
@@ -104,12 +107,11 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     position: 'absolute',
-    top: 0,
+    top: 60,
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 100,
-    flexDirection: 'row',
   },
   backdrop: {
     position: 'absolute',
@@ -120,33 +122,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   drawer: {
+    backgroundColor: '#fff',
     width: 250,
     height: '100%',
-    backgroundColor: '#fff',
-    paddingTop: 50, // Safe area for status bar
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    padding: 20,
   },
   drawerHeader: {
-    padding: 20,
+    marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    marginBottom: 10,
+    borderBottomColor: '#eee',
+    paddingBottom: 10,
   },
   drawerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   menuItem: {
-    padding: 15,
-    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   menuItemText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#333',
   },
 });

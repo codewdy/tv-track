@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, SectionList, StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
-import { fetchMonitor, fetchConfig } from '../api/client';
+import { useClient } from '../context/ClientProvider';
 import { TV } from '../types';
 import { AuthImage } from './AuthImage';
 import { API_CONFIG } from '../config';
@@ -21,6 +21,7 @@ export default function TVList({ onSelect }: Props) {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+    const { fetchMonitor, fetchConfig } = useClient();
 
     const loadData = async () => {
         try {

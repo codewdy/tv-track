@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler } from 'react-native';
-import { fetchTV, setWatch } from '../api/client';
+import { useClient } from '../context/ClientProvider';
 import { TVDetail as TVDetailType, Episode } from '../types';
 import VideoPlayer from './VideoPlayer';
 import { useDownload } from '../context/DownloadContext';
@@ -22,6 +22,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const lastKnownDurationRef = useRef<number>(0);
     const hasPlayedRef = useRef<boolean>(false);
     const { startDownload, downloads, deleteDownload } = useDownload();
+    const { fetchTV, setWatch } = useClient();
 
     useEffect(() => {
         loadData();

@@ -26,10 +26,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
 
-    // ... (getVideoUrl and useVideoPlayer remain same)
-
     const getVideoUrl = (url: string) => {
-        if (url.startsWith('http')) return url;
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
         return `${API_CONFIG.BASE_URL}${url}`;
     };
 
