@@ -20,6 +20,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
+    const hasPlayedRef = useRef<boolean>(false);
     const { startDownload, downloads, deleteDownload } = useDownload();
 
     useEffect(() => {
@@ -27,13 +28,17 @@ export default function TVDetail({ tvId, onBack }: Props) {
     }, [tvId]);
 
     useEffect(() => {
+        hasPlayedRef.current = false;
+    }, [currentEpisodeIndex]);
+
+    useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-            if (lastKnownPositionRef.current >= 0 && lastKnownDurationRef.current >= 0) {
+            if (hasPlayedRef.current && lastKnownPositionRef.current >= 0 && lastKnownDurationRef.current >= 0) {
                 const ratio = lastKnownPositionRef.current / lastKnownDurationRef.current;
                 const watchData = {
                     watched_episode: currentEpisodeIndex,
                     watched_episode_time: lastKnownPositionRef.current,
-                    watched_episode_time_ratio: ratio
+                    watched_episode_time_ratio: isNaN(ratio) ? 0 : ratio
                 };
 
                 setWatch({
@@ -108,13 +113,20 @@ export default function TVDetail({ tvId, onBack }: Props) {
         return 0;
     };
 
+    // Handle playing state changes
+    const handlePlayingChange = (isPlaying: boolean) => {
+        if (isPlaying) {
+            hasPlayedRef.current = true;
+        }
+    };
+
     // Handle progress updates from VideoPlayer
     const handleProgressUpdate = (progress: { currentTime: number; duration: number }) => {
         const ratio = progress.currentTime / progress.duration;
         const watchData = {
             watched_episode: currentEpisodeIndex,
             watched_episode_time: progress.currentTime,
-            watched_episode_time_ratio: ratio
+            watched_episode_time_ratio: isNaN(ratio) ? 0 : ratio
         };
 
         setWatch({
@@ -122,6 +134,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
             watch: watchData
         });
     };
+
 
     const handleVideoEnd = () => {
         if (!detail || !currentEpisode) return;
@@ -184,6 +197,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                         autoPlay={shouldAutoPlay}
                         lastKnownPositionRef={lastKnownPositionRef}
                         lastKnownDurationRef={lastKnownDurationRef}
+                        onPlayingChange={handlePlayingChange}
                     />
                 )}
             </View>

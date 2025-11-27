@@ -18,9 +18,10 @@ interface Props {
     autoPlay?: boolean;
     lastKnownPositionRef: React.RefObject<number>;
     lastKnownDurationRef: React.RefObject<number>;
+    onPlayingChange?: (isPlaying: boolean) => void;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
@@ -143,6 +144,9 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             // Listen for play/pause changes
             if (player.addListener) {
                 subscriptions.push(player.addListener('playingChange', (event: { isPlaying: boolean }) => {
+                    if (onPlayingChange) {
+                        onPlayingChange(event.isPlaying);
+                    }
                     if (!event.isPlaying) {
                         try {
                             // Safe to access properties inside event handler usually
