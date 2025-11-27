@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView
 import { fetchTV, setWatch } from '../api/client';
 import { TVDetail as TVDetailType, Episode } from '../types';
 import VideoPlayer from './VideoPlayer';
+import { useDownload } from '../context/DownloadContext';
 
 interface Props {
     tvId: number;
@@ -19,6 +20,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
+    const { startDownload } = useDownload();
 
     useEffect(() => {
         loadData();
@@ -192,7 +194,15 @@ export default function TVDetail({ tvId, onBack }: Props) {
                     Watched: {detail.watch.watched_episode} / {detail.episodes.length}
                 </Text>
                 {currentEpisode && (
-                    <Text style={styles.episodeTitle}>Playing: {currentEpisode.name}</Text>
+                    <View style={styles.playingRow}>
+                        <Text style={styles.episodeTitle}>Playing: {currentEpisode.name}</Text>
+                        <TouchableOpacity
+                            style={styles.downloadButton}
+                            onPress={() => startDownload(currentEpisode.url, `${detail.name} - ${currentEpisode.name}.mp4`, tvId, currentEpisode.id)}
+                        >
+                            <Text style={styles.downloadButtonText}>Download</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
 
@@ -237,7 +247,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-
     videoContainer: {
         width: '100%',
         aspectRatio: 16 / 9,
@@ -270,8 +279,26 @@ const styles = StyleSheet.create({
     },
     episodeTitle: {
         fontSize: 16,
-        marginTop: 5,
         color: '#007AFF',
+        flex: 1,
+    },
+    playingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 5,
+    },
+    downloadButton: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 4,
+        marginLeft: 10,
+    },
+    downloadButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '500',
     },
     episodeList: {
         flex: 1,

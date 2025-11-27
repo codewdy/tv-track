@@ -1,0 +1,53 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { downloadManager, DownloadItem } from '../utils/DownloadManager';
+
+interface DownloadContextType {
+    downloads: DownloadItem[];
+    startDownload: (url: string, filename: string, tvId: number, episodeId: number) => void;
+    pauseDownload: (id: string) => void;
+    resumeDownload: (id: string) => void;
+    deleteDownload: (id: string) => void;
+}
+
+const DownloadContext = createContext<DownloadContextType | undefined>(undefined);
+
+export const DownloadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+
+    useEffect(() => {
+        const unsubscribe = downloadManager.subscribe((list) => {
+            setDownloads([...list]); // Create new array to trigger re-render
+        });
+        return unsubscribe;
+    }, []);
+
+    const startDownload = (url: string, filename: string, tvId: number, episodeId: number) => {
+        downloadManager.startDownload(url, filename, tvId, episodeId);
+    };
+
+    const pauseDownload = (id: string) => {
+        downloadManager.pauseDownload(id);
+    };
+
+    const resumeDownload = (id: string) => {
+        downloadManager.resumeDownload(id);
+    };
+
+    const deleteDownload = (id: string) => {
+        downloadManager.deleteDownload(id);
+    };
+
+    return (
+        <DownloadContext.Provider value={{ downloads, startDownload, pauseDownload, resumeDownload, deleteDownload }}>
+            {children}
+        </DownloadContext.Provider>
+    );
+};
+
+export const useDownload = () => {
+    const context = useContext(DownloadContext);
+    if (!context) {
+        throw new Error('useDownload must be used within a DownloadProvider');
+    }
+    return context;
+};
