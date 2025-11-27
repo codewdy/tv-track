@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { downloadManager, DownloadItem } from '../utils/DownloadManager';
+import { downloadManager, DownloadItem } from '../utils/downloadManager';
 
 interface DownloadContextType {
     downloads: DownloadItem[];
