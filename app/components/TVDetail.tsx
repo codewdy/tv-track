@@ -20,7 +20,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
-    const { startDownload } = useDownload();
+    const { startDownload, downloads, deleteDownload } = useDownload();
 
     useEffect(() => {
         loadData();
@@ -196,12 +196,33 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 {currentEpisode && (
                     <View style={styles.playingRow}>
                         <Text style={styles.episodeTitle}>Playing: {currentEpisode.name}</Text>
-                        <TouchableOpacity
-                            style={styles.downloadButton}
-                            onPress={() => startDownload(currentEpisode.url, `${detail.name} - ${currentEpisode.name}.mp4`, tvId, currentEpisode.id)}
-                        >
-                            <Text style={styles.downloadButtonText}>Download</Text>
-                        </TouchableOpacity>
+                        {(() => {
+                            const existingDownload = downloads.find(
+                                d => d.tvId === tvId && d.episodeId === currentEpisodeIndex
+                            );
+                            const isDownloaded = !!existingDownload;
+
+                            return (
+                                <TouchableOpacity
+                                    style={styles.downloadButton}
+                                    onPress={async () => {
+                                        if (existingDownload) {
+                                            await deleteDownload(existingDownload.id);
+                                        }
+                                        startDownload(
+                                            currentEpisode.url,
+                                            `${detail.name} - ${currentEpisode.name}.mp4`,
+                                            tvId,
+                                            currentEpisodeIndex
+                                        );
+                                    }}
+                                >
+                                    <Text style={styles.downloadButtonText}>
+                                        {isDownloaded ? 'Redownload' : 'Download'}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })()}
                     </View>
                 )}
             </View>
