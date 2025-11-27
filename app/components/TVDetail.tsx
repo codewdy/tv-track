@@ -18,6 +18,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
     const [isFinished, setIsFinished] = useState(false);
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
     const hasPlayedRef = useRef<boolean>(false);
@@ -163,6 +164,74 @@ export default function TVDetail({ tvId, onBack }: Props) {
         }
     };
 
+    const downloadAllEpisodes = async () => {
+        if (!detail) return;
+
+        for (let i = 0; i < detail.episodes.length; i++) {
+            const episode = detail.episodes[i];
+            const existingDownload = downloads.find(
+                d => d.tvId === tvId && d.episodeId === i
+            );
+
+            // Skip if already downloaded or downloading
+            if (existingDownload && (existingDownload.status === 'finished' || existingDownload.status === 'downloading')) {
+                continue;
+            }
+
+            startDownload(
+                episode.url,
+                `${detail.name} - ${episode.name}.mp4`,
+                tvId,
+                i
+            );
+        }
+        setShowDownloadMenu(false);
+    };
+
+    const downloadAfterCurrent = async () => {
+        if (!detail) return;
+
+        for (let i = currentEpisodeIndex + 1; i < detail.episodes.length; i++) {
+            const episode = detail.episodes[i];
+            const existingDownload = downloads.find(
+                d => d.tvId === tvId && d.episodeId === i
+            );
+
+            // Skip if already downloaded or downloading
+            if (existingDownload && (existingDownload.status === 'finished' || existingDownload.status === 'downloading')) {
+                continue;
+            }
+
+            startDownload(
+                episode.url,
+                `${detail.name} - ${episode.name}.mp4`,
+                tvId,
+                i
+            );
+        }
+        setShowDownloadMenu(false);
+    };
+
+    const downloadCurrentEpisode = async () => {
+        if (!currentEpisode) return;
+
+        const existingDownload = downloads.find(
+            d => d.tvId === tvId && d.episodeId === currentEpisodeIndex
+        );
+
+        if (existingDownload) {
+            await deleteDownload(existingDownload.id);
+        }
+
+        startDownload(
+            currentEpisode.url,
+            `${detail?.name} - ${currentEpisode.name}.mp4`,
+            tvId,
+            currentEpisodeIndex
+        );
+        setShowDownloadMenu(false);
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -211,33 +280,50 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 {currentEpisode && (
                     <View style={styles.playingRow}>
                         <Text style={styles.episodeTitle}>Playing: {currentEpisode.name}</Text>
-                        {(() => {
-                            const existingDownload = downloads.find(
-                                d => d.tvId === tvId && d.episodeId === currentEpisodeIndex
-                            );
-                            const isDownloaded = !!existingDownload;
+                        <View>
+                            <TouchableOpacity
+                                style={styles.downloadButton}
+                                onPress={() => setShowDownloadMenu(!showDownloadMenu)}
+                            >
+                                <Text style={styles.downloadButtonText}>Download ▼</Text>
+                            </TouchableOpacity>
 
-                            return (
-                                <TouchableOpacity
-                                    style={styles.downloadButton}
-                                    onPress={async () => {
-                                        if (existingDownload) {
-                                            await deleteDownload(existingDownload.id);
-                                        }
-                                        startDownload(
-                                            currentEpisode.url,
-                                            `${detail.name} - ${currentEpisode.name}.mp4`,
-                                            tvId,
-                                            currentEpisodeIndex
-                                        );
-                                    }}
-                                >
-                                    <Text style={styles.downloadButtonText}>
-                                        {isDownloaded ? 'Redownload' : 'Download'}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })()}
+                            {showDownloadMenu && (
+                                <>
+                                    <TouchableOpacity
+                                        style={styles.menuBackdrop}
+                                        activeOpacity={1}
+                                        onPress={() => setShowDownloadMenu(false)}
+                                    />
+                                    <View style={styles.downloadMenu}>
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={downloadCurrentEpisode}
+                                        >
+                                            <Text style={styles.menuItemText}>
+                                                {downloads.find(d => d.tvId === tvId && d.episodeId === currentEpisodeIndex)
+                                                    ? 'Redownload Current'
+                                                    : 'Download Current'}
+                                            </Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={downloadAfterCurrent}
+                                        >
+                                            <Text style={styles.menuItemText}>Download After Current</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={downloadAllEpisodes}
+                                        >
+                                            <Text style={styles.menuItemText}>Download All Episodes</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </>
+                            )}
+                        </View>
                     </View>
                 )}
             </View>
@@ -399,5 +485,39 @@ const styles = StyleSheet.create({
         fontSize: 18,
         marginBottom: 20,
         fontWeight: 'bold',
+    },
+    menuBackdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 999,
+    },
+    downloadMenu: {
+        position: 'absolute',
+        top: 40,
+        right: 0,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        minWidth: 200,
+        zIndex: 1000,
+    },
+    menuItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    menuItemText: {
+        fontSize: 14,
+        color: '#333',
     },
 });

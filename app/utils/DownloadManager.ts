@@ -34,8 +34,6 @@ class DownloadManager {
 
                 // Rehydrate downloads
                 savedDownloads.forEach(item => {
-                    // We need to recreate DownloadResumable for paused/downloading items if possible
-                    // For simplicity in this version, we might just mark them as paused if they were downloading
                     if (item.status === 'downloading') {
                         item.status = 'paused';
                     }
@@ -51,7 +49,6 @@ class DownloadManager {
     private async saveMetadata() {
         try {
             const downloadsArray = Array.from(this.downloads.values()).map(item => {
-                // Exclude the resumable object from JSON
                 const { resumable, ...rest } = item;
                 return rest;
             });
@@ -103,7 +100,14 @@ class DownloadManager {
     }
 
     async startDownload(url: string, filename: string, tvId: number, episodeId: number) {
-        const id = Date.now().toString(); // Simple ID generation
+        // Generate complex unique ID: timestamp + random string + tvId + episodeId
+        // Check if ID already exists and regenerate if needed
+        let id: string;
+        do {
+            const randomStr = Math.random().toString(36).substring(2, 10);
+            id = `${Date.now()}-${randomStr}-tv${tvId}-ep${episodeId}`;
+        } while (this.downloads.has(id));
+
         const uniqueFilename = await this.getUniqueFilename(filename);
         const fileUri = (FileSystem.documentDirectory || '') + uniqueFilename;
 
@@ -132,7 +136,7 @@ class DownloadManager {
 
         const newItem: DownloadItem = {
             id,
-            url: fullUrl, // Store the full URL
+            url: fullUrl,
             filename: uniqueFilename,
             tvId,
             episodeId,
@@ -192,16 +196,27 @@ class DownloadManager {
                     this.notifyListeners();
                 }
             } catch (e) {
-                console.error("Error resuming", e);
-                item.status = 'error';
-                this.notifyListeners();
+                console.error("Error resuming, will delete and restart", e);
+                // Delete partial download file if it exists
+                const fileUri = (FileSystem.documentDirectory || '') + item.filename;
+                try {
+                    await FileSystem.deleteAsync(fileUri, { idempotent: true });
+                } catch (deleteError) {
+                    console.error("Error deleting partial file", deleteError);
+                }
+                // Remove from downloads and restart
+                this.downloads.delete(id);
+                this.startDownload(item.url, item.filename, item.tvId, item.episodeId);
             }
         } else if (item && item.status === 'paused' && !item.resumable) {
-            // If resumable object is missing (e.g. after restart), we might need to recreate it
-            // For now, let's just restart the download or handle it simpler
-            // Ideally we save the snapshot to resume properly.
-            // For this MVP, let's restart if resumable is lost.
-            this.downloads.delete(id);
+            // If resumable object is missing (e.g. after restart), delete partial file and restart
+            console.log("Resumable object missing, deleting partial file and restarting");
+            const fileUri = (FileSystem.documentDirectory || '') + item.filename;
+            try {
+                await FileSystem.deleteAsync(fileUri, { idempotent: true });
+            } catch (deleteError) {
+                console.error("Error deleting partial file", deleteError);
+            }
             this.downloads.delete(id);
             this.startDownload(item.url, item.filename, item.tvId, item.episodeId);
         }
@@ -213,12 +228,16 @@ class DownloadManager {
             if (item.status === 'downloading' && item.resumable) {
                 try {
                     await item.resumable.cancelAsync();
-                } catch (e) { }
+                } catch (e) {
+                    console.error("Error canceling download", e);
+                }
             }
             if (item.localUri) {
                 try {
                     await FileSystem.deleteAsync(item.localUri, { idempotent: true });
-                } catch (e) { }
+                } catch (e) {
+                    console.error("Error deleting file", e);
+                }
             }
             this.downloads.delete(id);
             this.notifyListeners();
