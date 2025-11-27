@@ -34,16 +34,16 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
             <View style={styles.actions}>
                 {(item.status === 'downloading' || item.status === 'pending') && (
                     <TouchableOpacity onPress={() => pauseDownload(item.id)} style={styles.button}>
-                        <Text style={styles.buttonText}>Pause</Text>
+                        <Text style={styles.buttonText}>暂停</Text>
                     </TouchableOpacity>
                 )}
                 {item.status === 'paused' && (
                     <TouchableOpacity onPress={() => resumeDownload(item.id)} style={styles.button}>
-                        <Text style={styles.buttonText}>Resume</Text>
+                        <Text style={styles.buttonText}>继续</Text>
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => deleteDownload(item.id)} style={[styles.button, styles.deleteButton]}>
-                    <Text style={styles.buttonText}>Delete</Text>
+                    <Text style={styles.buttonText}>删除</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -52,14 +52,14 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Downloads</Text>
+                <Text style={styles.title}>下载列表</Text>
             </View>
             <FlatList
                 data={downloads}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContent}
-                ListEmptyComponent={<Text style={styles.emptyText}>No downloads yet</Text>}
+                ListEmptyComponent={<Text style={styles.emptyText}>暂无下载</Text>}
             />
         </View>
     );

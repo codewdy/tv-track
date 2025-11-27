@@ -69,7 +69,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 setIsFinished(nextIndex >= data.episodes.length);
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to load TV details');
+            setError(err.message || '加载剧集详情失败');
         } finally {
             setLoading(false);
         }
@@ -233,9 +233,9 @@ export default function TVDetail({ tvId, onBack }: Props) {
     if (error || !detail) {
         return (
             <View style={styles.center}>
-                <Text style={styles.error}>{error || 'Failed to load'}</Text>
+                <Text style={styles.error}>{error || '加载失败'}</Text>
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>Go Back</Text>
+                    <Text style={styles.backButtonText}>返回</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -246,7 +246,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
             <View style={styles.videoContainer}>
                 {isFinished ? (
                     <View style={styles.finishedContainer}>
-                        <Text style={styles.finishedText}>All episodes watched!</Text>
+                        <Text style={styles.finishedText}>所有剧集已观看！</Text>
                     </View>
                 ) : (
                     <VideoPlayer
@@ -265,18 +265,18 @@ export default function TVDetail({ tvId, onBack }: Props) {
             <View style={styles.infoContainer}>
                 <Text style={styles.title}>{detail.name}</Text>
                 <Text style={styles.subtitle}>
-                    Watched: {detail.watch.watched_episode} / {detail.episodes.length}
+                    已观看: {detail.watch.watched_episode} / {detail.episodes.length}
                 </Text>
                 <View style={styles.playingRow}>
                     <Text style={styles.episodeTitle}>
-                        {currentEpisode ? `Playing: ${currentEpisode.name}` : 'Finished'}
+                        {currentEpisode ? `正在播放: ${currentEpisode.name}` : '已看完'}
                     </Text>
                     <View>
                         <TouchableOpacity
                             style={styles.downloadButton}
                             onPress={() => setShowDownloadMenu(!showDownloadMenu)}
                         >
-                            <Text style={styles.downloadButtonText}>Download ▼</Text>
+                            <Text style={styles.downloadButtonText}>下载 ▼</Text>
                         </TouchableOpacity>
 
                         {showDownloadMenu && (
@@ -295,8 +295,8 @@ export default function TVDetail({ tvId, onBack }: Props) {
                                             >
                                                 <Text style={styles.menuItemText}>
                                                     {getDownload(tvId, currentEpisodeIndex)
-                                                        ? 'Redownload Current'
-                                                        : 'Download Current'}
+                                                        ? '重新下载当前集'
+                                                        : '下载当前集'}
                                                 </Text>
                                             </TouchableOpacity>
 
@@ -304,7 +304,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                                                 style={styles.menuItem}
                                                 onPress={downloadAfterCurrent}
                                             >
-                                                <Text style={styles.menuItemText}>Download After Current</Text>
+                                                <Text style={styles.menuItemText}>下载后续集</Text>
                                             </TouchableOpacity>
                                         </>
                                     )}
@@ -313,7 +313,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                                         style={styles.menuItem}
                                         onPress={downloadAllEpisodes}
                                     >
-                                        <Text style={styles.menuItemText}>Download All Episodes</Text>
+                                        <Text style={styles.menuItemText}>下载所有集</Text>
                                     </TouchableOpacity>
                                 </View>
                             </>
@@ -323,7 +323,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
             </View>
 
             <ScrollView style={styles.episodeList}>
-                <Text style={styles.sectionTitle}>Episodes</Text>
+                <Text style={styles.sectionTitle}>剧集列表</Text>
                 <View style={styles.grid}>
                     {detail.episodes.map((ep, index) => {
                         const isSelected = currentEpisode?.url === ep.url;

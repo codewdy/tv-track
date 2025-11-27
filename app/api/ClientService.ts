@@ -185,8 +185,8 @@ class ClientService {
             return {
                 watched_ratio: 0.9,
                 tags: [
-                    { tag: 'watching', name: 'Watching' },
-                    { tag: 'finished', name: 'Finished' }
+                    { tag: 'watching', name: '观看中' },
+                    { tag: 'finished', name: '已看完' }
                 ],
                 system_monitor: []
             };
@@ -201,7 +201,7 @@ class ClientService {
                 return detail;
             }
             return {
-                name: 'Offline TV Show',
+                name: '离线剧集',
                 tag: 'watching',
                 watch: {
                     watched_episode: 0,

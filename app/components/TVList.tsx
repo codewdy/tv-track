@@ -45,7 +45,7 @@ export default function TVList({ onSelect }: Props) {
             const knownTags = new Set(configData.tags.map(t => t.tag));
             const unknownTvs = monitorData.tvs.filter(tv => !knownTags.has(tv.tag));
             if (unknownTvs.length > 0) {
-                grouped.push({ title: 'Other', data: unknownTvs });
+                grouped.push({ title: '其他', data: unknownTvs });
             }
 
             if (sections.length === 0) {
@@ -56,14 +56,14 @@ export default function TVList({ onSelect }: Props) {
                     }
                 });
                 if (unknownTvs.length > 0) {
-                    initialCollapsed.add('Other');
+                    initialCollapsed.add('其他');
                 }
                 setCollapsedSections(initialCollapsed);
             }
 
             setSections(grouped);
         } catch (err: any) {
-            setError(err.message || 'Failed to load TV list');
+            setError(err.message || '加载剧集列表失败');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -156,11 +156,11 @@ export default function TVList({ onSelect }: Props) {
                 error ? (
                     <View style={styles.center}>
                         <Text style={styles.error}>{error}</Text>
-                        <Text style={styles.retry}>Pull down to retry</Text>
+                        <Text style={styles.retry}>下拉重试</Text>
                     </View>
                 ) : (
                     <View style={styles.center}>
-                        <Text>No TV shows found</Text>
+                        <Text>未找到剧集</Text>
                     </View>
                 )
             }

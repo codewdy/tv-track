@@ -31,7 +31,7 @@ function MainContent() {
             </TouchableOpacity>
             <View style={styles.titleContainer}>
               <Text style={styles.headerTitle}>
-                {isOffline ? '追番小助手 (Offline)' : '追番小助手'}
+                {isOffline ? '追番小助手 (离线)' : '追番小助手'}
               </Text>
             </View>
             <View style={styles.headerRight} />
@@ -46,7 +46,7 @@ function MainContent() {
               />
               <View style={styles.drawer}>
                 <View style={styles.drawerHeader}>
-                  <Text style={styles.drawerTitle}>Menu</Text>
+                  <Text style={styles.drawerTitle}>菜单</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.menuItem}
@@ -55,7 +55,7 @@ function MainContent() {
                     setShowDownloads(true);
                   }}
                 >
-                  <Text style={styles.menuItemText}>Downloads</Text>
+                  <Text style={styles.menuItemText}>下载管理</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -69,7 +69,7 @@ function MainContent() {
                   }}
                 >
                   <Text style={styles.menuItemText}>
-                    {isOffline ? 'Go Online' : 'Go Offline'}
+                    {isOffline ? '切换到在线模式' : '切换到离线模式'}
                   </Text>
                 </TouchableOpacity>
               </View>
