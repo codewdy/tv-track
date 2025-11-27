@@ -9,59 +9,87 @@ import { DownloadProvider } from './context/DownloadContext';
 import { ClientProvider } from './context/ClientProvider';
 import { TouchableOpacity } from 'react-native';
 
-export default function App() {
+import { useClient } from './context/ClientProvider';
+
+function MainContent() {
   const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
   const [showDownloads, setShowDownloads] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const { isOffline, toggleOfflineMode } = useClient();
 
+  return (
+    <>
+      {showDownloads ? (
+        <DownloadList onBack={() => setShowDownloads(false)} />
+      ) : selectedTVId ? (
+        <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
+      ) : (
+        <>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuButton}>
+              <Text style={styles.menuButtonText}>☰</Text>
+            </TouchableOpacity>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>
+                {isOffline ? '追番小助手 (Offline)' : '追番小助手'}
+              </Text>
+            </View>
+            <View style={styles.headerRight} />
+          </View>
+
+          {showMenu && (
+            <View style={styles.menuContainer}>
+              <TouchableOpacity
+                style={styles.backdrop}
+                activeOpacity={1}
+                onPress={() => setShowMenu(false)}
+              />
+              <View style={styles.drawer}>
+                <View style={styles.drawerHeader}>
+                  <Text style={styles.drawerTitle}>Menu</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setShowMenu(false);
+                    setShowDownloads(true);
+                  }}
+                >
+                  <Text style={styles.menuItemText}>Downloads</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    toggleOfflineMode();
+                    // Don't close menu immediately so user can see change, or close it? 
+                    // Let's keep it open or close it. User didn't specify. 
+                    // Let's close it to be consistent.
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemText}>
+                    {isOffline ? 'Go Online' : 'Go Offline'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          <TVList onSelect={setSelectedTVId} />
+        </>
+      )}
+    </>
+  );
+}
+
+export default function App() {
   return (
     <DownloadProvider>
       <SafeAreaProvider>
         <SafeAreaView style={styles.container}>
           <ClientProvider>
-            {showDownloads ? (
-              <DownloadList onBack={() => setShowDownloads(false)} />
-            ) : selectedTVId ? (
-              <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
-            ) : (
-              <>
-                <View style={styles.header}>
-                  <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuButton}>
-                    <Text style={styles.menuButtonText}>☰</Text>
-                  </TouchableOpacity>
-                  <View style={styles.titleContainer}>
-                    <Text style={styles.headerTitle}>追番小助手</Text>
-                  </View>
-                  <View style={styles.headerRight} />
-                </View>
-
-                {showMenu && (
-                  <View style={styles.menuContainer}>
-                    <TouchableOpacity
-                      style={styles.backdrop}
-                      activeOpacity={1}
-                      onPress={() => setShowMenu(false)}
-                    />
-                    <View style={styles.drawer}>
-                      <View style={styles.drawerHeader}>
-                        <Text style={styles.drawerTitle}>Menu</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.menuItem}
-                        onPress={() => {
-                          setShowMenu(false);
-                          setShowDownloads(true);
-                        }}
-                      >
-                        <Text style={styles.menuItemText}>Downloads</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                <TVList onSelect={setSelectedTVId} />
-              </>
-            )}
+            <MainContent />
           </ClientProvider>
           <StatusBar style="auto" />
         </SafeAreaView>

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { fetchTV as apiFetchTV, setWatch as apiSetWatch, fetchMonitor as apiFetchMonitor, fetchConfig as apiFetchConfig } from '../api/client';
+import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
+import { clientService } from '../api/ClientService';
 import { TVDetail, SetWatchRequest, MonitorResponse, ConfigResponse } from '../types';
 import { useDownload } from './DownloadContext';
 
@@ -8,15 +8,29 @@ interface ClientContextType {
     setWatch: (request: SetWatchRequest) => Promise<void>;
     fetchMonitor: (version?: string) => Promise<MonitorResponse>;
     fetchConfig: () => Promise<ConfigResponse>;
+    isOffline: boolean;
+    toggleOfflineMode: () => void;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
     const { downloads } = useDownload();
+    const [isOffline, setIsOffline] = useState(clientService.isOffline);
+
+    useEffect(() => {
+        const unsubscribe = clientService.subscribe((offline) => {
+            setIsOffline(offline);
+        });
+        return unsubscribe;
+    }, []);
+
+    const toggleOfflineMode = () => {
+        clientService.toggleOfflineMode();
+    };
 
     const fetchTV = async (id: number): Promise<TVDetail> => {
-        const detail = await apiFetchTV(id);
+        const detail = await clientService.fetchTV(id);
 
         // Check for downloaded episodes and replace URLs
         if (detail.episodes) {
@@ -36,19 +50,19 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     };
 
     const setWatch = async (request: SetWatchRequest): Promise<void> => {
-        return apiSetWatch(request);
+        return clientService.setWatch(request);
     };
 
     const fetchMonitor = async (version?: string): Promise<MonitorResponse> => {
-        return apiFetchMonitor(version);
+        return clientService.fetchMonitor(version);
     };
 
     const fetchConfig = async (): Promise<ConfigResponse> => {
-        return apiFetchConfig();
+        return clientService.fetchConfig();
     };
 
     return (
-        <ClientContext.Provider value={{ fetchTV, setWatch, fetchMonitor, fetchConfig }}>
+        <ClientContext.Provider value={{ fetchTV, setWatch, fetchMonitor, fetchConfig, isOffline, toggleOfflineMode }}>
             {children}
         </ClientContext.Provider>
     );

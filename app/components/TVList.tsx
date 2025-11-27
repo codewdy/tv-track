@@ -21,7 +21,7 @@ export default function TVList({ onSelect }: Props) {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-    const { fetchMonitor, fetchConfig } = useClient();
+    const { fetchMonitor, fetchConfig, isOffline } = useClient();
 
     const loadData = async () => {
         try {
@@ -72,7 +72,7 @@ export default function TVList({ onSelect }: Props) {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [isOffline]);
 
     const onRefresh = () => {
         setRefreshing(true);
