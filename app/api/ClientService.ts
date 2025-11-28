@@ -125,6 +125,7 @@ class ClientService {
         } else {
             // Going online
             // Sync pending changes
+            let syncFailed = false;
             if (this.pendingSyncTvIds.size > 0) {
                 console.log(`Syncing ${this.pendingSyncTvIds.size} pending TV updates...`);
                 const tvIdsToSync = Array.from(this.pendingSyncTvIds);
@@ -141,12 +142,20 @@ class ClientService {
                             this.pendingSyncTvIds.delete(tvId);
                         } catch (e) {
                             console.error(`Failed to sync TV ${tvId}`, e);
+                            syncFailed = true;
                         }
                     } else {
                         // Should not happen, but if detail is missing, remove from pending
                         this.pendingSyncTvIds.delete(tvId);
                     }
                 }));
+            }
+
+            if (syncFailed) {
+                console.warn('Sync failed for some items, staying offline');
+                this.saveOfflineData();
+                this.notifyListeners();
+                return;
             }
 
             this._isOffline = false;
