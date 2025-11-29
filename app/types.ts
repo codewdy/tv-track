@@ -91,3 +91,15 @@ export interface GetDownloadStatusResponse {
     downloading: DownloadTask[];
     pending: DownloadTask[];
 }
+
+export interface SystemError {
+    id: number;
+    timestamp: string;
+    title: string;
+    error: string;
+}
+
+export interface GetErrorsResponse {
+    critical_errors: SystemError[];
+    errors: SystemError[];
+}

@@ -7,6 +7,7 @@ import TVDetail from './components/TVDetail';
 import DownloadList from './components/DownloadList';
 import AddTV from './components/AddTV';
 import DownloadMonitor from './components/DownloadMonitor';
+import ErrorList from './components/ErrorList';
 import { DownloadProvider } from './context/DownloadContext';
 import { ClientProvider } from './context/ClientProvider';
 import { AppErrorProvider } from './context/AppErrorContext';
@@ -20,6 +21,7 @@ function MainContent() {
   const [showDownloads, setShowDownloads] = useState(false);
   const [showAddTV, setShowAddTV] = useState(false);
   const [showDownloadMonitor, setShowDownloadMonitor] = useState(false);
+  const [showErrorList, setShowErrorList] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { isOffline, toggleOfflineMode } = useClient();
 
@@ -31,6 +33,8 @@ function MainContent() {
         <AddTV onBack={() => setShowAddTV(false)} />
       ) : showDownloadMonitor ? (
         <DownloadMonitor onBack={() => setShowDownloadMonitor(false)} />
+      ) : showErrorList ? (
+        <ErrorList onBack={() => setShowErrorList(false)} />
       ) : selectedTVId ? (
         <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
       ) : (
@@ -106,7 +110,10 @@ function MainContent() {
             </View>
           )}
 
-          <TVList onSelect={setSelectedTVId} />
+          <TVList
+            onSelect={setSelectedTVId}
+            onErrorClick={() => setShowErrorList(true)}
+          />
         </>
       )}
     </>

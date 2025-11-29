@@ -12,9 +12,10 @@ interface TVSection {
 
 interface Props {
     onSelect: (id: number) => void;
+    onErrorClick: () => void;
 }
 
-export default function TVList({ onSelect }: Props) {
+export default function TVList({ onSelect, onErrorClick }: Props) {
     const [sections, setSections] = useState<TVSection[]>([]);
     const [tagMap, setTagMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
@@ -149,7 +150,7 @@ export default function TVList({ onSelect }: Props) {
     return (
         <View style={styles.container}>
             {(criticalErrors > 0 || errors > 0) && (
-                <View style={styles.errorHeader}>
+                <TouchableOpacity style={styles.errorHeader} onPress={onErrorClick}>
                     {criticalErrors > 0 && (
                         <View style={[styles.errorBadge, styles.criticalErrorBadge]}>
                             <Text style={styles.errorBadgeText}>严重错误: {criticalErrors}</Text>
@@ -160,7 +161,7 @@ export default function TVList({ onSelect }: Props) {
                             <Text style={styles.errorBadgeText}>错误: {errors}</Text>
                         </View>
                     )}
-                </View>
+                </TouchableOpacity>
             )}
             <SectionList
                 sections={sectionsToRender}

@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SearchTVResponse, AddTVRequest, AddTVResponse, GetDownloadStatusResponse } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SearchTVResponse, AddTVRequest, AddTVResponse, GetDownloadStatusResponse, GetErrorsResponse } from '../types';
 import { API_CONFIG } from '../config';
 
 export const fetchMonitor = async (version: string = ''): Promise<MonitorResponse> => {
@@ -163,6 +163,52 @@ export const getDownloadStatus = async (): Promise<GetDownloadStatusResponse> =>
         return await response.json();
     } catch (error) {
         console.error('[API] getDownloadStatus failed:', error);
+        throw error;
+    }
+};
+
+export const getErrors = async (): Promise<GetErrorsResponse> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/get_errors`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`[API] getErrors error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('[API] getErrors failed:', error);
+        throw error;
+    }
+};
+
+export const clearErrors = async (ids: number[]): Promise<void> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/clear_errors`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify({ ids }),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`[API] clearErrors error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+    } catch (error) {
+        console.error('[API] clearErrors failed:', error);
         throw error;
     }
 };
