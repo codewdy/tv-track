@@ -6,6 +6,8 @@ interface AuthImageProps extends Omit<ImageProps, 'source'> {
     headers?: Record<string, string>;
 }
 
+import { getCachedImage, downloadAndCacheImage } from '../utils/imageCache';
+
 export const AuthImage: React.FC<AuthImageProps> = ({ uri, headers, style, ...props }) => {
     const [imgSource, setImgSource] = useState<{ uri: string } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -14,32 +16,29 @@ export const AuthImage: React.FC<AuthImageProps> = ({ uri, headers, style, ...pr
     useEffect(() => {
         let isMounted = true;
 
-        const fetchImage = async () => {
+        const loadImage = async () => {
             try {
-                const response = await fetch(uri, { headers });
-
-                if (!response.ok) {
-                    throw new Error(`Failed to load image: ${response.status}`);
+                // 1. Check cache
+                const cachedUri = await getCachedImage(uri);
+                if (cachedUri) {
+                    if (isMounted) {
+                        setImgSource({ uri: cachedUri });
+                        setLoading(false);
+                    }
+                    return;
                 }
 
-                const blob = await response.blob();
-                const reader = new FileReader();
-
-                reader.onloadend = () => {
+                // 2. Download and cache
+                const downloadedUri = await downloadAndCacheImage(uri, headers);
+                if (downloadedUri) {
                     if (isMounted) {
-                        setImgSource({ uri: reader.result as string });
+                        setImgSource({ uri: downloadedUri });
                         setLoading(false);
                     }
-                };
+                } else {
+                    throw new Error('Failed to download image');
+                }
 
-                reader.onerror = () => {
-                    if (isMounted) {
-                        setError('Failed to read image data');
-                        setLoading(false);
-                    }
-                };
-
-                reader.readAsDataURL(blob);
             } catch (err: any) {
                 if (isMounted) {
                     setError(err.message);
@@ -48,7 +47,7 @@ export const AuthImage: React.FC<AuthImageProps> = ({ uri, headers, style, ...pr
             }
         };
 
-        fetchImage();
+        loadImage();
 
         return () => {
             isMounted = false;
