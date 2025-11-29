@@ -265,6 +265,14 @@ class ClientService {
                 detail.tag = request.tag;
                 this.offlineTVDetails.set(request.id, detail);
 
+                // Update monitor data if available
+                if (this.offlineMonitorData) {
+                    const tvIndex = this.offlineMonitorData.tvs.findIndex(t => t.id === request.id);
+                    if (tvIndex !== -1) {
+                        this.offlineMonitorData.tvs[tvIndex].tag = request.tag;
+                    }
+                }
+
                 // Mark for sync
                 this.pendingSyncTvIds.add(request.id);
 
