@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, BackHandler, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, BackHandler, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { getDownloadStatus } from '../api/client';
 import { DownloadTask } from '../types';
 
@@ -100,7 +100,11 @@ export default function DownloadMonitor({ onBack }: Props) {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>下载监控</Text>
+                <View style={styles.headerRightPlaceholder} />
             </View>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
@@ -152,10 +156,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+    },
+    backButton: {
+        width: 40,
+        justifyContent: 'center',
+    },
+    backButtonText: {
+        fontSize: 24,
+        color: '#333',
+    },
+    headerRightPlaceholder: {
+        width: 40,
     },
     headerTitle: {
         fontSize: 18,

@@ -52,7 +52,11 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
                 <Text style={styles.title}>本地缓存</Text>
+                <View style={styles.headerRightPlaceholder} />
             </View>
             <FlatList
                 data={downloads}
@@ -73,11 +77,22 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center', // Center the title since back button is gone
+        justifyContent: 'space-between',
         padding: 15,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+    },
+    backButton: {
+        width: 40,
+        justifyContent: 'center',
+    },
+    backButtonText: {
+        fontSize: 24,
+        color: '#333',
+    },
+    headerRightPlaceholder: {
+        width: 40,
     },
     title: {
         fontSize: 18,

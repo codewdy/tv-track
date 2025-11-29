@@ -261,6 +261,13 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
     return (
         <View style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={onBack} style={styles.headerBackButton}>
+                    <Text style={styles.headerBackButtonText}>←</Text>
+                </TouchableOpacity>
+                <Text style={styles.headerTitle} numberOfLines={1}>{detail.name}</Text>
+                <View style={styles.headerRightPlaceholder} />
+            </View>
             <View style={styles.videoContainer}>
                 {isFinished ? (
                     <View style={styles.finishedContainer}>
@@ -412,6 +419,31 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f0f0f0',
+    },
+    header: {
+        height: 60,
+        backgroundColor: '#fff',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    headerBackButton: {
+        width: 40,
+        justifyContent: 'center',
+    },
+    headerBackButtonText: {
+        fontSize: 24,
+        color: '#333',
+    },
+    headerRightPlaceholder: {
+        width: 40,
     },
     center: {
         flex: 1,

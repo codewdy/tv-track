@@ -112,7 +112,11 @@ export default function AddTV({ onBack }: Props) {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>添加剧集</Text>
+                <View style={styles.headerRightPlaceholder} />
             </View>
 
             <View style={styles.searchContainer}>
@@ -224,10 +228,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+    },
+    backButton: {
+        width: 40,
+        justifyContent: 'center',
+    },
+    backButtonText: {
+        fontSize: 24,
+        color: '#333',
+    },
+    headerRightPlaceholder: {
+        width: 40,
     },
     headerTitle: {
         fontSize: 18,

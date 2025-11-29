@@ -103,6 +103,9 @@ export default function ErrorList({ onBack }: Props) {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>系统错误</Text>
                 <TouchableOpacity onPress={handleClearAll} style={styles.clearAllButton}>
                     <Text style={styles.clearAllText}>清除全部</Text>
@@ -275,5 +278,13 @@ const styles = StyleSheet.create({
     clearAllText: {
         fontSize: 14,
         color: '#007AFF',
+    },
+    backButton: {
+        width: 60,
+        justifyContent: 'center',
+    },
+    backButtonText: {
+        fontSize: 24,
+        color: '#333',
     },
 });
