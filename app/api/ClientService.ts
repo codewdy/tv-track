@@ -21,6 +21,7 @@ class ClientService {
     private offlineConfigData: ConfigResponse | null = null;
     private offlineTVDetails: Map<number, TVDetail> = new Map();
     private pendingSyncTvIds: Set<number> = new Set();
+    private configCache: ConfigResponse | null = null;
 
     constructor() {
         this.loadOfflineData();
@@ -102,7 +103,7 @@ class ClientService {
                 };
 
                 // 2. Fetch Config
-                this.offlineConfigData = await apiClient.fetchConfig();
+                this.offlineConfigData = await this.fetchConfig();
 
                 // 3. Fetch TV Details for all downloaded TVs
                 this.offlineTVDetails.clear();
@@ -191,11 +192,16 @@ class ClientService {
     }
 
     async fetchConfig(): Promise<ConfigResponse> {
+        if (this.configCache) {
+            return this.configCache;
+        }
+
         if (this._isOffline) {
             if (this.offlineConfigData) {
+                this.configCache = this.offlineConfigData;
                 return this.offlineConfigData;
             }
-            return {
+            const defaultConfig = {
                 watched_ratio: 0.9,
                 tags: [
                     { tag: 'watching', name: '观看中' },
@@ -203,8 +209,13 @@ class ClientService {
                 ],
                 system_monitor: []
             };
+            this.configCache = defaultConfig;
+            return defaultConfig;
         }
-        return apiClient.fetchConfig();
+
+        const config = await apiClient.fetchConfig();
+        this.configCache = config;
+        return config;
     }
 
     async fetchTV(id: number): Promise<TVDetail> {
