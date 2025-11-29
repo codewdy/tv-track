@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { clientService } from '../api/ClientService';
-import { TVDetail, SetWatchRequest, SetTagRequest, MonitorResponse, ConfigResponse } from '../types';
+import { TVDetail, SetWatchRequest, SetTagRequest, SetDownloadStatusRequest, MonitorResponse, ConfigResponse } from '../types';
 import { useDownload } from './DownloadContext';
 import { useAppError } from './AppErrorContext';
 
@@ -8,6 +8,7 @@ interface ClientContextType {
     fetchTV: (id: number) => Promise<TVDetail>;
     setWatch: (request: SetWatchRequest) => Promise<void>;
     setTag: (request: SetTagRequest) => Promise<void>;
+    setDownloadStatus: (request: SetDownloadStatusRequest) => Promise<void>;
     fetchMonitor: (version?: string) => Promise<MonitorResponse>;
     fetchConfig: () => Promise<ConfigResponse>;
     isOffline: boolean;
@@ -64,6 +65,10 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         return clientService.setTag(request);
     };
 
+    const setDownloadStatus = async (request: SetDownloadStatusRequest): Promise<void> => {
+        return clientService.setDownloadStatus(request);
+    };
+
     const fetchMonitor = async (version?: string): Promise<MonitorResponse> => {
         return clientService.fetchMonitor(version);
     };
@@ -73,7 +78,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ClientContext.Provider value={{ fetchTV, setWatch, setTag, fetchMonitor, fetchConfig, isOffline, toggleOfflineMode }}>
+        <ClientContext.Provider value={{ fetchTV, setWatch, setTag, setDownloadStatus, fetchMonitor, fetchConfig, isOffline, toggleOfflineMode }}>
             {children}
         </ClientContext.Provider>
     );

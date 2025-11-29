@@ -55,6 +55,12 @@ export interface SetTagRequest {
     tag: string;
 }
 
+export interface SetDownloadStatusRequest {
+    id: number;
+    episode_idx: number;
+    status: string;
+}
+
 export interface SourceEpisode {
     source_key: string;
     name: string;

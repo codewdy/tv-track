@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SetTagRequest, TV } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SetTagRequest, SetDownloadStatusRequest, TV } from '../types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as apiClient from './client';
 import { downloadManager } from '../utils/downloadManager';
@@ -282,6 +282,14 @@ class ClientService {
             return;
         }
         return apiClient.setTag(request);
+    }
+
+    async setDownloadStatus(request: SetDownloadStatusRequest): Promise<void> {
+        // No offline support for this action as it triggers server-side download
+        if (this._isOffline) {
+            throw new Error('离线模式下无法触发服务器下载');
+        }
+        return apiClient.setDownloadStatus(request);
     }
 }
 

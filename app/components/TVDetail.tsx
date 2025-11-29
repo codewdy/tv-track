@@ -25,7 +25,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const lastKnownDurationRef = useRef<number>(0);
     const hasPlayedRef = useRef<boolean>(false);
     const { startDownload, downloads, deleteDownload, getDownload } = useDownload();
-    const { fetchTV, setWatch, fetchConfig, setTag } = useClient();
+    const { fetchTV, setWatch, fetchConfig, setTag, setDownloadStatus } = useClient();
 
     useEffect(() => {
         loadData();
@@ -222,6 +222,21 @@ export default function TVDetail({ tvId, onBack }: Props) {
         setShowDownloadMenu(false);
     };
 
+    const handleServerRedownload = async () => {
+        if (!currentEpisode) return;
+        try {
+            await setDownloadStatus({
+                id: tvId,
+                episode_idx: currentEpisodeIndex,
+                status: 'running'
+            });
+            Alert.alert('成功', '已触发服务器重新下载');
+            setShowDownloadMenu(false);
+        } catch (err: any) {
+            Alert.alert('错误', err.message || '触发下载失败');
+        }
+    };
+
     const downloadCurrentEpisode = async () => {
         if (!currentEpisode) return;
 
@@ -376,6 +391,13 @@ export default function TVDetail({ tvId, onBack }: Props) {
                                         onPress={downloadAllEpisodes}
                                     >
                                         <Text style={styles.menuItemText}>下载所有集</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.menuItem}
+                                        onPress={handleServerRedownload}
+                                    >
+                                        <Text style={styles.menuItemText}>服务器重下</Text>
                                     </TouchableOpacity>
                                 </View>
                             </>
