@@ -315,29 +315,22 @@ export default function TVDetail({ tvId, onBack }: Props) {
                             </Text>
                         </TouchableOpacity>
                         {showTagMenu && (
-                            <>
-                                <TouchableOpacity
-                                    style={styles.menuBackdrop}
-                                    activeOpacity={1}
-                                    onPress={() => setShowTagMenu(false)}
-                                />
-                                <View style={styles.tagMenu}>
-                                    {tags.map((tag) => (
-                                        <TouchableOpacity
-                                            key={tag.tag}
-                                            style={styles.menuItem}
-                                            onPress={() => handleTagUpdate(tag.tag)}
-                                        >
-                                            <Text style={[
-                                                styles.menuItemText,
-                                                detail.tag === tag.tag && styles.selectedTagText
-                                            ]}>
-                                                {tag.name}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </>
+                            <View style={styles.tagMenu}>
+                                {tags.map((tag) => (
+                                    <TouchableOpacity
+                                        key={tag.tag}
+                                        style={styles.menuItem}
+                                        onPress={() => handleTagUpdate(tag.tag)}
+                                    >
+                                        <Text style={[
+                                            styles.menuItemText,
+                                            detail.tag === tag.tag && styles.selectedTagText
+                                        ]}>
+                                            {tag.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         )}
                     </View>
                 </View>
@@ -357,54 +350,62 @@ export default function TVDetail({ tvId, onBack }: Props) {
                         </TouchableOpacity>
 
                         {showDownloadMenu && (
-                            <>
+                            <View style={styles.downloadMenu}>
+                                {currentEpisode && (
+                                    <>
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={downloadCurrentEpisode}
+                                        >
+                                            <Text style={styles.menuItemText}>
+                                                {getDownload(tvId, currentEpisodeIndex)
+                                                    ? '重新下载当前集'
+                                                    : '下载当前集'}
+                                            </Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.menuItem}
+                                            onPress={downloadAfterCurrent}
+                                        >
+                                            <Text style={styles.menuItemText}>下载后续集</Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )}
+
                                 <TouchableOpacity
-                                    style={styles.menuBackdrop}
-                                    activeOpacity={1}
-                                    onPress={() => setShowDownloadMenu(false)}
-                                />
-                                <View style={styles.downloadMenu}>
-                                    {currentEpisode && (
-                                        <>
-                                            <TouchableOpacity
-                                                style={styles.menuItem}
-                                                onPress={downloadCurrentEpisode}
-                                            >
-                                                <Text style={styles.menuItemText}>
-                                                    {getDownload(tvId, currentEpisodeIndex)
-                                                        ? '重新下载当前集'
-                                                        : '下载当前集'}
-                                                </Text>
-                                            </TouchableOpacity>
+                                    style={styles.menuItem}
+                                    onPress={downloadAllEpisodes}
+                                >
+                                    <Text style={styles.menuItemText}>下载所有集</Text>
+                                </TouchableOpacity>
 
-                                            <TouchableOpacity
-                                                style={styles.menuItem}
-                                                onPress={downloadAfterCurrent}
-                                            >
-                                                <Text style={styles.menuItemText}>下载后续集</Text>
-                                            </TouchableOpacity>
-                                        </>
-                                    )}
-
-                                    <TouchableOpacity
-                                        style={styles.menuItem}
-                                        onPress={downloadAllEpisodes}
-                                    >
-                                        <Text style={styles.menuItemText}>下载所有集</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        style={styles.menuItem}
-                                        onPress={handleServerRedownload}
-                                    >
-                                        <Text style={styles.menuItemText}>服务器重下</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </>
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={handleServerRedownload}
+                                >
+                                    <Text style={styles.menuItemText}>服务器重下</Text>
+                                </TouchableOpacity>
+                            </View>
                         )}
                     </View>
                 </View>
             </View>
+
+            {showTagMenu && (
+                <TouchableOpacity
+                    style={styles.fullScreenBackdrop}
+                    activeOpacity={1}
+                    onPress={() => setShowTagMenu(false)}
+                />
+            )}
+            {showDownloadMenu && (
+                <TouchableOpacity
+                    style={styles.fullScreenBackdrop}
+                    activeOpacity={1}
+                    onPress={() => setShowDownloadMenu(false)}
+                />
+            )}
 
             <ScrollView style={styles.episodeList}>
                 <Text style={styles.sectionTitle}>剧集列表</Text>
@@ -630,13 +631,13 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         fontWeight: 'bold',
     },
-    menuBackdrop: {
+    fullScreenBackdrop: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 999,
+        zIndex: 1000,
     },
     downloadMenu: {
         position: 'absolute',
