@@ -2,6 +2,7 @@ import React, { createContext, useContext, ReactNode, useEffect, useState } from
 import { clientService } from '../api/ClientService';
 import { TVDetail, SetWatchRequest, MonitorResponse, ConfigResponse } from '../types';
 import { useDownload } from './DownloadContext';
+import { useAppError } from './AppErrorContext';
 
 interface ClientContextType {
     fetchTV: (id: number) => Promise<TVDetail>;
@@ -16,6 +17,7 @@ const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
     const { downloads } = useDownload();
+    const { reportError } = useAppError();
     const [isOffline, setIsOffline] = useState(clientService.isOffline);
 
     useEffect(() => {
@@ -25,8 +27,12 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         return unsubscribe;
     }, []);
 
-    const toggleOfflineMode = () => {
-        clientService.toggleOfflineMode();
+    const toggleOfflineMode = async () => {
+        try {
+            await clientService.toggleOfflineMode();
+        } catch (e: any) {
+            reportError(e.message || '切换模式失败');
+        }
     };
 
     const fetchTV = async (id: number): Promise<TVDetail> => {

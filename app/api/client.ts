@@ -91,7 +91,6 @@ export const setWatch = async (request: SetWatchRequest): Promise<void> => {
         }
     } catch (error) {
         console.error('[API] setWatch failed:', error);
-        // Don't throw error to avoid disrupting playback
-        // Just log it
+        throw error;
     }
 };

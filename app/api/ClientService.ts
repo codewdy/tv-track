@@ -155,7 +155,7 @@ class ClientService {
                 console.warn('Sync failed for some items, staying offline');
                 this.saveOfflineData();
                 this.notifyListeners();
-                return;
+                throw new Error('同步数据失败，请检查网络连接');
             }
 
             this._isOffline = false;
