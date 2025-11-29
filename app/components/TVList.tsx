@@ -21,6 +21,8 @@ export default function TVList({ onSelect }: Props) {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+    const [criticalErrors, setCriticalErrors] = useState(0);
+    const [errors, setErrors] = useState(0);
     const { fetchMonitor, fetchConfig, isOffline } = useClient();
 
     const loadData = async () => {
@@ -62,6 +64,8 @@ export default function TVList({ onSelect }: Props) {
             }
 
             setSections(grouped);
+            setCriticalErrors(monitorData.critical_errors || 0);
+            setErrors(monitorData.errors || 0);
         } catch (err: any) {
             setError(err.message || '加载剧集列表失败');
         } finally {
@@ -143,32 +147,77 @@ export default function TVList({ onSelect }: Props) {
     }
 
     return (
-        <SectionList
-            sections={sectionsToRender}
-            renderItem={renderItem}
-            renderSectionHeader={renderSectionHeader}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={[styles.list, sectionsToRender.length === 0 && styles.center]}
-            refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            ListEmptyComponent={
-                error ? (
-                    <View style={styles.center}>
-                        <Text style={styles.error}>{error}</Text>
-                        <Text style={styles.retry}>下拉重试</Text>
-                    </View>
-                ) : (
-                    <View style={styles.center}>
-                        <Text>未找到剧集</Text>
-                    </View>
-                )
-            }
-        />
+        <View style={styles.container}>
+            {(criticalErrors > 0 || errors > 0) && (
+                <View style={styles.errorHeader}>
+                    {criticalErrors > 0 && (
+                        <View style={[styles.errorBadge, styles.criticalErrorBadge]}>
+                            <Text style={styles.errorBadgeText}>严重错误: {criticalErrors}</Text>
+                        </View>
+                    )}
+                    {errors > 0 && (
+                        <View style={[styles.errorBadge, styles.normalErrorBadge]}>
+                            <Text style={styles.errorBadgeText}>错误: {errors}</Text>
+                        </View>
+                    )}
+                </View>
+            )}
+            <SectionList
+                sections={sectionsToRender}
+                renderItem={renderItem}
+                renderSectionHeader={renderSectionHeader}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={[styles.list, sectionsToRender.length === 0 && styles.center]}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+                ListEmptyComponent={
+                    error ? (
+                        <View style={styles.center}>
+                            <Text style={styles.error}>{error}</Text>
+                            <Text style={styles.retry}>下拉重试</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.center}>
+                            <Text>未找到剧集</Text>
+                        </View>
+                    )
+                }
+            />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    errorHeader: {
+        padding: 12,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+        flexDirection: 'row',
+        gap: 10,
+    },
+    errorBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    criticalErrorBadge: {
+        backgroundColor: '#ff4444',
+    },
+    normalErrorBadge: {
+        backgroundColor: '#ffbb33',
+    },
+    errorBadgeText: {
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: 'bold',
+    },
     list: {
         padding: 10,
         flexGrow: 1,

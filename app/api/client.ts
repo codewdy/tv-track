@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SearchTVResponse, AddTVRequest, AddTVResponse } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SearchTVResponse, AddTVRequest, AddTVResponse, GetDownloadStatusResponse } from '../types';
 import { API_CONFIG } from '../config';
 
 export const fetchMonitor = async (version: string = ''): Promise<MonitorResponse> => {
@@ -139,6 +139,30 @@ export const addTV = async (request: AddTVRequest): Promise<AddTVResponse> => {
         return await response.json();
     } catch (error) {
         console.error('[API] addTV failed:', error);
+        throw error;
+    }
+};
+
+export const getDownloadStatus = async (): Promise<GetDownloadStatusResponse> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/get_download_status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`[API] getDownloadStatus error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('[API] getDownloadStatus failed:', error);
         throw error;
     }
 };

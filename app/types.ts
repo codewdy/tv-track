@@ -81,3 +81,13 @@ export interface AddTVRequest {
 export interface AddTVResponse {
     id: number;
 }
+
+export interface DownloadTask {
+    resource: string;
+    status: string;
+}
+
+export interface GetDownloadStatusResponse {
+    downloading: DownloadTask[];
+    pending: DownloadTask[];
+}

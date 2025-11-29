@@ -6,6 +6,7 @@ import TVList from './components/TVList';
 import TVDetail from './components/TVDetail';
 import DownloadList from './components/DownloadList';
 import AddTV from './components/AddTV';
+import DownloadMonitor from './components/DownloadMonitor';
 import { DownloadProvider } from './context/DownloadContext';
 import { ClientProvider } from './context/ClientProvider';
 import { AppErrorProvider } from './context/AppErrorContext';
@@ -18,6 +19,7 @@ function MainContent() {
   const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
   const [showDownloads, setShowDownloads] = useState(false);
   const [showAddTV, setShowAddTV] = useState(false);
+  const [showDownloadMonitor, setShowDownloadMonitor] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { isOffline, toggleOfflineMode } = useClient();
 
@@ -27,6 +29,8 @@ function MainContent() {
         <DownloadList onBack={() => setShowDownloads(false)} />
       ) : showAddTV ? (
         <AddTV onBack={() => setShowAddTV(false)} />
+      ) : showDownloadMonitor ? (
+        <DownloadMonitor onBack={() => setShowDownloadMonitor(false)} />
       ) : selectedTVId ? (
         <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
       ) : (
@@ -61,7 +65,7 @@ function MainContent() {
                     setShowDownloads(true);
                   }}
                 >
-                  <Text style={styles.menuItemText}>下载管理</Text>
+                  <Text style={styles.menuItemText}>本地缓存</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -72,6 +76,16 @@ function MainContent() {
                   }}
                 >
                   <Text style={styles.menuItemText}>添加剧集</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setShowMenu(false);
+                    setShowDownloadMonitor(true);
+                  }}
+                >
+                  <Text style={styles.menuItemText}>下载监控</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

@@ -52,7 +52,7 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>下载列表</Text>
+                <Text style={styles.title}>本地缓存</Text>
             </View>
             <FlatList
                 data={downloads}
