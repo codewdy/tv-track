@@ -7,15 +7,19 @@ import TVDetail from './components/TVDetail';
 import DownloadList from './components/DownloadList';
 import { DownloadProvider } from './context/DownloadContext';
 import { ClientProvider } from './context/ClientProvider';
+import { AppErrorProvider } from './context/AppErrorContext';
+import AppErrorOverlay from './components/AppErrorOverlay';
 import { TouchableOpacity } from 'react-native';
 
 import { useClient } from './context/ClientProvider';
+import { useAppError } from './context/AppErrorContext';
 
 function MainContent() {
   const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
   const [showDownloads, setShowDownloads] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { isOffline, toggleOfflineMode } = useClient();
+  const { reportError } = useAppError();
 
   return (
     <>
@@ -72,6 +76,16 @@ function MainContent() {
                     {isOffline ? '切换到在线模式' : '切换到离线模式'}
                   </Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    reportError('这是一个测试错误信息');
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemText}>测试错误提示</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -89,7 +103,10 @@ export default function App() {
       <SafeAreaProvider>
         <SafeAreaView style={styles.container}>
           <ClientProvider>
-            <MainContent />
+            <AppErrorProvider>
+              <MainContent />
+              <AppErrorOverlay />
+            </AppErrorProvider>
           </ClientProvider>
           <StatusBar style="auto" />
         </SafeAreaView>
