@@ -50,6 +50,11 @@ export interface SetWatchRequest {
     watch: WatchStatus;
 }
 
+export interface SetTagRequest {
+    id: number;
+    tag: string;
+}
+
 export interface SourceEpisode {
     source_key: string;
     name: string;

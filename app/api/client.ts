@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SearchTVResponse, AddTVRequest, AddTVResponse, GetDownloadStatusResponse, GetErrorsResponse } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SetTagRequest, SearchTVResponse, AddTVRequest, AddTVResponse, GetDownloadStatusResponse, GetErrorsResponse } from '../types';
 import { API_CONFIG } from '../config';
 
 export const fetchMonitor = async (version: string = ''): Promise<MonitorResponse> => {
@@ -91,6 +91,28 @@ export const setWatch = async (request: SetWatchRequest): Promise<void> => {
         }
     } catch (error) {
         console.error('[API] setWatch failed:', error);
+        throw error;
+    }
+};
+
+export const setTag = async (request: SetTagRequest): Promise<void> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/set_tag`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`[API] setTag error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+    } catch (error) {
+        console.error('[API] setTag failed:', error);
         throw error;
     }
 };

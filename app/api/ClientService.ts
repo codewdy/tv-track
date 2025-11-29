@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, TV } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SetTagRequest, TV } from '../types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as apiClient from './client';
 import { downloadManager } from '../utils/downloadManager';
@@ -139,6 +139,10 @@ class ClientService {
                                 id: tvId,
                                 watch: detail.watch
                             });
+                            await apiClient.setTag({
+                                id: tvId,
+                                tag: detail.tag
+                            });
                             this.pendingSyncTvIds.delete(tvId);
                         } catch (e) {
                             console.error(`Failed to sync TV ${tvId}`, e);
@@ -240,6 +244,25 @@ class ClientService {
             return;
         }
         return apiClient.setWatch(request);
+    }
+
+    async setTag(request: SetTagRequest): Promise<void> {
+        if (this._isOffline) {
+            const detail = this.offlineTVDetails.get(request.id);
+            if (detail) {
+                // Update local offline state
+                detail.tag = request.tag;
+                this.offlineTVDetails.set(request.id, detail);
+
+                // Mark for sync
+                this.pendingSyncTvIds.add(request.id);
+
+                // Persist changes
+                this.saveOfflineData();
+            }
+            return;
+        }
+        return apiClient.setTag(request);
     }
 }
 

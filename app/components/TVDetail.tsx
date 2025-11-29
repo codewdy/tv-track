@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler } from 'react-native';
 import { useClient } from '../context/ClientProvider';
-import { TVDetail as TVDetailType, Episode } from '../types';
+import { TVDetail as TVDetailType, Episode, TagConfig } from '../types';
 import VideoPlayer from './VideoPlayer';
 import { useDownload } from '../context/DownloadContext';
 
@@ -19,11 +19,13 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [isFinished, setIsFinished] = useState(false);
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const [showTagMenu, setShowTagMenu] = useState(false);
+    const [tags, setTags] = useState<TagConfig[]>([]);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
     const hasPlayedRef = useRef<boolean>(false);
     const { startDownload, downloads, deleteDownload, getDownload } = useDownload();
-    const { fetchTV, setWatch } = useClient();
+    const { fetchTV, setWatch, fetchConfig, setTag } = useClient();
 
     useEffect(() => {
         loadData();
@@ -60,8 +62,12 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const loadData = async () => {
         try {
             setLoading(true);
-            const data = await fetchTV(tvId);
+            const [data, config] = await Promise.all([
+                fetchTV(tvId),
+                fetchConfig()
+            ]);
             setDetail(data);
+            setTags(config.tags);
             if (data.episodes && data.episodes.length > 0) {
                 const nextIndex = data.watch.watched_episode;
                 setCurrentEpisode(data.episodes[nextIndex]);
@@ -72,6 +78,18 @@ export default function TVDetail({ tvId, onBack }: Props) {
             setError(err.message || '加载剧集详情失败');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleTagUpdate = async (newTag: string) => {
+        try {
+            await setTag({ id: tvId, tag: newTag });
+            if (detail) {
+                setDetail({ ...detail, tag: newTag });
+            }
+            setShowTagMenu(false);
+        } catch (err: any) {
+            Alert.alert('错误', err.message || '修改标签失败');
         }
     };
 
@@ -263,7 +281,44 @@ export default function TVDetail({ tvId, onBack }: Props) {
             </View>
 
             <View style={styles.infoContainer}>
-                <Text style={styles.title}>{detail.name}</Text>
+                <View style={styles.headerRow}>
+                    <Text style={styles.title}>{detail.name}</Text>
+                    <View style={styles.tagContainer}>
+                        <TouchableOpacity
+                            style={styles.tagButton}
+                            onPress={() => setShowTagMenu(true)}
+                        >
+                            <Text style={styles.tagButtonText}>
+                                {tags.find(t => t.tag === detail.tag)?.name || detail.tag}
+                            </Text>
+                        </TouchableOpacity>
+                        {showTagMenu && (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.menuBackdrop}
+                                    activeOpacity={1}
+                                    onPress={() => setShowTagMenu(false)}
+                                />
+                                <View style={styles.tagMenu}>
+                                    {tags.map((tag) => (
+                                        <TouchableOpacity
+                                            key={tag.tag}
+                                            style={styles.menuItem}
+                                            onPress={() => handleTagUpdate(tag.tag)}
+                                        >
+                                            <Text style={[
+                                                styles.menuItemText,
+                                                detail.tag === tag.tag && styles.selectedTagText
+                                            ]}>
+                                                {tag.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </View>
                 <Text style={styles.subtitle}>
                     已观看: {detail.watch.watched_episode} / {detail.episodes.length}
                 </Text>
@@ -387,7 +442,48 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: 'bold',
+        flex: 1,
+        marginRight: 10,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 5,
+    },
+    tagContainer: {
+        position: 'relative',
+        zIndex: 1000,
+    },
+    tagButton: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 4,
+    },
+    tagButtonText: {
+        fontSize: 12,
+        color: '#333',
+    },
+    tagMenu: {
+        position: 'absolute',
+        top: 35,
+        right: 0,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        minWidth: 120,
+        zIndex: 1001,
+    },
+    selectedTagText: {
+        color: '#007AFF',
+        fontWeight: 'bold',
     },
     subtitle: {
         fontSize: 14,
