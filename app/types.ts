@@ -49,3 +49,35 @@ export interface SetWatchRequest {
     id: number;
     watch: WatchStatus;
 }
+
+export interface SourceEpisode {
+    source_key: string;
+    name: string;
+    url: string;
+}
+
+export interface Source {
+    source_key: string;
+    name: string;
+    title: string;
+    channel_name: string;
+    url: string;
+    cover_url: string;
+    tracking: boolean;
+    episodes: SourceEpisode[];
+    latest_update: string | null;
+}
+
+export interface SearchTVResponse {
+    source: Source[];
+}
+
+export interface AddTVRequest {
+    name: string;
+    source: Source;
+    tag: string;
+}
+
+export interface AddTVResponse {
+    id: number;
+}

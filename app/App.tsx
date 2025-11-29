@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import TVList from './components/TVList';
 import TVDetail from './components/TVDetail';
 import DownloadList from './components/DownloadList';
+import AddTV from './components/AddTV';
 import { DownloadProvider } from './context/DownloadContext';
 import { ClientProvider } from './context/ClientProvider';
 import { AppErrorProvider } from './context/AppErrorContext';
@@ -16,6 +17,7 @@ import { useClient } from './context/ClientProvider';
 function MainContent() {
   const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
   const [showDownloads, setShowDownloads] = useState(false);
+  const [showAddTV, setShowAddTV] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { isOffline, toggleOfflineMode } = useClient();
 
@@ -23,6 +25,8 @@ function MainContent() {
     <>
       {showDownloads ? (
         <DownloadList onBack={() => setShowDownloads(false)} />
+      ) : showAddTV ? (
+        <AddTV onBack={() => setShowAddTV(false)} />
       ) : selectedTVId ? (
         <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
       ) : (
@@ -58,6 +62,16 @@ function MainContent() {
                   }}
                 >
                   <Text style={styles.menuItemText}>下载管理</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setShowMenu(false);
+                    setShowAddTV(true);
+                  }}
+                >
+                  <Text style={styles.menuItemText}>添加剧集</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

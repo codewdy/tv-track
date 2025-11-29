@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SearchTVResponse, AddTVRequest, AddTVResponse } from '../types';
 import { API_CONFIG } from '../config';
 
 export const fetchMonitor = async (version: string = ''): Promise<MonitorResponse> => {
@@ -91,6 +91,54 @@ export const setWatch = async (request: SetWatchRequest): Promise<void> => {
         }
     } catch (error) {
         console.error('[API] setWatch failed:', error);
+        throw error;
+    }
+};
+
+export const searchTV = async (keyword: string): Promise<SearchTVResponse> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/search_tv`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify({ keyword }),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`[API] searchTV error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('[API] searchTV failed:', error);
+        throw error;
+    }
+};
+
+export const addTV = async (request: AddTVRequest): Promise<AddTVResponse> => {
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/add_tv`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.AUTH_HEADER,
+            },
+            body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`[API] addTV error: ${response.status} ${text}`);
+            throw new Error(`API request failed with status ${response.status}: ${text}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('[API] addTV failed:', error);
         throw error;
     }
 };
