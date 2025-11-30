@@ -16,7 +16,11 @@ import { TouchableOpacity } from 'react-native';
 
 import { useClient } from './context/ClientProvider';
 
-function MainContent() {
+interface MainContentProps {
+  onFullScreenChange: (isFullScreen: boolean) => void;
+}
+
+function MainContent({ onFullScreenChange }: MainContentProps) {
   const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
   const [showDownloads, setShowDownloads] = useState(false);
   const [showAddTV, setShowAddTV] = useState(false);
@@ -36,7 +40,11 @@ function MainContent() {
       ) : showErrorList ? (
         <ErrorList onBack={() => setShowErrorList(false)} />
       ) : selectedTVId ? (
-        <TVDetail tvId={selectedTVId} onBack={() => setSelectedTVId(null)} />
+        <TVDetail
+          tvId={selectedTVId}
+          onBack={() => setSelectedTVId(null)}
+          onFullScreenChange={onFullScreenChange}
+        />
       ) : (
         <>
           <View style={styles.header}>
@@ -121,17 +129,19 @@ function MainContent() {
 }
 
 export default function App() {
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
   return (
     <DownloadProvider>
       <SafeAreaProvider>
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, isFullScreen && { backgroundColor: '#000' }]} edges={isFullScreen ? [] : undefined}>
           <AppErrorProvider>
             <ClientProvider>
-              <MainContent />
+              <MainContent onFullScreenChange={setIsFullScreen} />
             </ClientProvider>
             <AppErrorOverlay />
           </AppErrorProvider>
-          <StatusBar style="auto" />
+          <StatusBar style={isFullScreen ? "light" : "auto"} hidden={isFullScreen} />
         </SafeAreaView>
       </SafeAreaProvider>
     </DownloadProvider>

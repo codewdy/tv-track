@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
+import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, BackHandler } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
 
@@ -21,9 +22,10 @@ interface Props {
     lastKnownPositionRef: React.RefObject<number>;
     lastKnownDurationRef: React.RefObject<number>;
     onPlayingChange?: (isPlaying: boolean) => void;
+    onFullScreenChange?: (isFullScreen: boolean) => void;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange, onFullScreenChange }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
@@ -35,6 +37,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
@@ -108,6 +111,40 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             clearTimeout(controlsTimeoutRef.current);
         }
     };
+
+    const toggleFullScreen = async () => {
+        if (isFullScreen) {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+            setIsFullScreen(false);
+            if (onFullScreenChange) onFullScreenChange(false);
+        } else {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+            setIsFullScreen(true);
+            if (onFullScreenChange) onFullScreenChange(true);
+        }
+        resetControlsTimeout();
+    };
+
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (isFullScreen) {
+                toggleFullScreen();
+                return true;
+            }
+            return false;
+        });
+
+        return () => {
+            backHandler.remove();
+        };
+    }, [isFullScreen]);
+
+    // Reset orientation on unmount
+    useEffect(() => {
+        return () => {
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        };
+    }, []);
 
     // Update playerRef when player changes
     useEffect(() => {
@@ -325,6 +362,13 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                             thumbTintColor="#007AFF"
                         />
                         <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                        <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
+                            <Ionicons
+                                name={isFullScreen ? "contract" : "expand"}
+                                size={20}
+                                color="#fff"
+                            />
+                        </TouchableOpacity>
                     </View>
                 </View>
             </TouchableWithoutFeedback>
@@ -377,5 +421,9 @@ const styles = StyleSheet.create({
         fontSize: 12,
         width: 50,
         textAlign: 'center',
+    },
+    fullScreenButton: {
+        padding: 5,
+        marginLeft: 5,
     },
 });

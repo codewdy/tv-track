@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler, Modal, TextInput, FlatList, Switch } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler, Modal, TextInput, FlatList, Switch, StatusBar } from 'react-native';
 import { useClient } from '../context/ClientProvider';
 import { TVDetail as TVDetailType, Episode, TagConfig, Source } from '../types';
 import VideoPlayer from './VideoPlayer';
 import { useDownload } from '../context/DownloadContext';
+import * as NavigationBar from 'expo-navigation-bar';
 
 interface Props {
     tvId: number;
     onBack: () => void;
+    onFullScreenChange?: (isFullScreen: boolean) => void;
 }
 
-export default function TVDetail({ tvId, onBack }: Props) {
+export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
     const [detail, setDetail] = useState<TVDetailType | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,6 +35,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [selectedSource, setSelectedSource] = useState<Source | null>(null);
     const [enableTracking, setEnableTracking] = useState(true);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -44,6 +47,10 @@ export default function TVDetail({ tvId, onBack }: Props) {
 
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (isFullScreen) {
+                return false;
+            }
+
             if (hasPlayedRef.current && lastKnownPositionRef.current >= 0 && lastKnownDurationRef.current >= 0) {
                 const ratio = lastKnownPositionRef.current / lastKnownDurationRef.current;
                 const watchData = {
@@ -64,7 +71,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
         return () => {
             backHandler.remove();
         }
-    }, [tvId, currentEpisodeIndex, onBack]);
+    }, [tvId, currentEpisodeIndex, onBack, isFullScreen]);
 
     const loadData = async () => {
         try {
@@ -162,6 +169,18 @@ export default function TVDetail({ tvId, onBack }: Props) {
         });
     };
 
+    const handleFullScreenChange = async (fullScreen: boolean) => {
+        setIsFullScreen(fullScreen);
+        if (fullScreen) {
+            await NavigationBar.setVisibilityAsync("hidden");
+        } else {
+            await NavigationBar.setVisibilityAsync("visible");
+        }
+        if (onFullScreenChange) {
+            onFullScreenChange(fullScreen);
+        }
+    };
+
 
     const handleVideoEnd = () => {
         if (!detail || !currentEpisode) return;
@@ -183,6 +202,11 @@ export default function TVDetail({ tvId, onBack }: Props) {
         setCurrentEpisode(detail.episodes[nextIndex]);
         setCurrentEpisodeIndex(nextIndex);
         setIsFinished(nextIndex >= detail.episodes.length);
+
+        // Exit full screen if we've reached the end
+        if (nextIndex >= detail.episodes.length && isFullScreen) {
+            handleFullScreenChange(false);
+        }
     };
 
     const downloadAllEpisodes = async () => {
@@ -316,6 +340,8 @@ export default function TVDetail({ tvId, onBack }: Props) {
         setShowHeaderMenu(false);
     };
 
+
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -336,18 +362,21 @@ export default function TVDetail({ tvId, onBack }: Props) {
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.headerBackButton}>
-                    <Text style={styles.headerBackButtonText}>←</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{detail.name}</Text>
-                <TouchableOpacity onPress={() => setShowHeaderMenu(true)} style={styles.headerRightButton}>
-                    <Text style={styles.headerRightButtonText}>⋮</Text>
-                </TouchableOpacity>
-            </View>
+        <View style={[styles.container, isFullScreen && { backgroundColor: '#000' }]}>
+            <StatusBar hidden={isFullScreen} />
+            {!isFullScreen && (
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={onBack} style={styles.headerBackButton}>
+                        <Text style={styles.headerBackButtonText}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle} numberOfLines={1}>{detail.name}</Text>
+                    <TouchableOpacity onPress={() => setShowHeaderMenu(true)} style={styles.headerRightButton}>
+                        <Text style={styles.headerRightButtonText}>⋮</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
-            <View style={styles.videoContainer}>
+            <View style={isFullScreen ? styles.videoContainerFullScreen : styles.videoContainer}>
                 {isFinished ? (
                     <View style={styles.finishedContainer}>
                         <Text style={styles.finishedText}>所有剧集已观看！</Text>
@@ -362,58 +391,63 @@ export default function TVDetail({ tvId, onBack }: Props) {
                         lastKnownPositionRef={lastKnownPositionRef}
                         lastKnownDurationRef={lastKnownDurationRef}
                         onPlayingChange={handlePlayingChange}
+                        onFullScreenChange={handleFullScreenChange}
                     />
                 )}
             </View>
 
-            <View style={styles.infoContainer}>
-                <View style={styles.headerRow}>
-                    <Text style={styles.title}>{detail.name}</Text>
-                    <View style={styles.tagContainer}>
-                        <View style={styles.tagButton}>
-                            <Text style={styles.tagButtonText}>
-                                {tags.find(t => t.tag === detail.tag)?.name || detail.tag}
+            {!isFullScreen && (
+                <>
+                    <View style={styles.infoContainer}>
+                        <View style={styles.headerRow}>
+                            <Text style={styles.title}>{detail.name}</Text>
+                            <View style={styles.tagContainer}>
+                                <View style={styles.tagButton}>
+                                    <Text style={styles.tagButtonText}>
+                                        {tags.find(t => t.tag === detail.tag)?.name || detail.tag}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                        <Text style={styles.subtitle}>
+                            已观看: {detail.watch.watched_episode} / {detail.episodes.length}
+                        </Text>
+                        <View style={styles.playingRow}>
+                            <Text style={styles.episodeTitle}>
+                                {currentEpisode ? `正在播放: ${currentEpisode.name}` : '已看完'}
                             </Text>
                         </View>
                     </View>
-                </View>
-                <Text style={styles.subtitle}>
-                    已观看: {detail.watch.watched_episode} / {detail.episodes.length}
-                </Text>
-                <View style={styles.playingRow}>
-                    <Text style={styles.episodeTitle}>
-                        {currentEpisode ? `正在播放: ${currentEpisode.name}` : '已看完'}
-                    </Text>
-                </View>
-            </View>
 
-            <ScrollView style={styles.episodeList}>
-                <Text style={styles.sectionTitle}>剧集列表</Text>
-                <View style={styles.grid}>
-                    {detail.episodes.map((ep, index) => {
-                        const isSelected = currentEpisode?.url === ep.url;
-                        const isWatched = index < detail.watch.watched_episode;
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={[
-                                    styles.episodeItem,
-                                    isSelected && styles.episodeSelected,
-                                    isWatched && !isSelected && styles.episodeWatched
-                                ]}
-                                onPress={() => handleEpisodePress(ep, index)}
-                            >
-                                <Text style={[
-                                    styles.episodeText,
-                                    isSelected && styles.episodeTextSelected
-                                ]}>
-                                    {ep.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </ScrollView>
+                    <ScrollView style={styles.episodeList}>
+                        <Text style={styles.sectionTitle}>剧集列表</Text>
+                        <View style={styles.grid}>
+                            {detail.episodes.map((ep, index) => {
+                                const isSelected = currentEpisode?.url === ep.url;
+                                const isWatched = index < detail.watch.watched_episode;
+                                return (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[
+                                            styles.episodeItem,
+                                            isSelected && styles.episodeSelected,
+                                            isWatched && !isSelected && styles.episodeWatched
+                                        ]}
+                                        onPress={() => handleEpisodePress(ep, index)}
+                                    >
+                                        <Text style={[
+                                            styles.episodeText,
+                                            isSelected && styles.episodeTextSelected
+                                        ]}>
+                                            {ep.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </ScrollView>
+                </>
+            )}
 
             {/* Header Menu Modal */}
             <Modal
@@ -660,6 +694,12 @@ const styles = StyleSheet.create({
     videoContainer: {
         width: '100%',
         aspectRatio: 16 / 9,
+        backgroundColor: '#000',
+    },
+    videoContainerFullScreen: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
         backgroundColor: '#000',
     },
     video: {
