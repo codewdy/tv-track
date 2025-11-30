@@ -93,6 +93,12 @@ export interface AddTVResponse {
     id: number;
 }
 
+export interface UpdateSourceRequest {
+    id: number;
+    update_downloaded: boolean;
+    source: Source;
+}
+
 export interface DownloadTask {
     resource: string;
     status: string;

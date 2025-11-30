@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler, Modal, TextInput, FlatList, Switch } from 'react-native';
 import { useClient } from '../context/ClientProvider';
-import { TVDetail as TVDetailType, Episode, TagConfig } from '../types';
+import { TVDetail as TVDetailType, Episode, TagConfig, Source } from '../types';
 import VideoPlayer from './VideoPlayer';
 import { useDownload } from '../context/DownloadContext';
 
@@ -25,7 +25,14 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const lastKnownDurationRef = useRef<number>(0);
     const hasPlayedRef = useRef<boolean>(false);
     const { startDownload, downloads, deleteDownload, getDownload } = useDownload();
-    const { fetchTV, setWatch, fetchConfig, setTag, setDownloadStatus } = useClient();
+    const { fetchTV, setWatch, fetchConfig, setTag, setDownloadStatus, updateSource, searchTV } = useClient();
+    const [showSourceModal, setShowSourceModal] = useState(false);
+    const [sourceSearchKeyword, setSourceSearchKeyword] = useState('');
+    const [searchResults, setSearchResults] = useState<Source[]>([]);
+    const [searchingSource, setSearchingSource] = useState(false);
+    const [showConfigModal, setShowConfigModal] = useState(false);
+    const [selectedSource, setSelectedSource] = useState<Source | null>(null);
+    const [enableTracking, setEnableTracking] = useState(true);
 
     useEffect(() => {
         loadData();
@@ -237,6 +244,59 @@ export default function TVDetail({ tvId, onBack }: Props) {
         }
     };
 
+    const handleOpenSourceModal = () => {
+        setSourceSearchKeyword(detail?.name || '');
+        setSearchResults([]);
+        setShowSourceModal(true);
+    };
+
+    const handleSourceSearch = async () => {
+        if (!sourceSearchKeyword.trim()) {
+            Alert.alert('提示', '请输入搜索关键词');
+            return;
+        }
+
+        try {
+            setSearchingSource(true);
+            const results = await searchTV(sourceSearchKeyword);
+            const sources = results.source || [];
+            setSearchResults(sources);
+            if (!results.source || results.source.length === 0) {
+                Alert.alert('提示', '未找到相关源');
+            }
+        } catch (err: any) {
+            console.error('Search error:', err);
+            Alert.alert('搜索失败', err.message || '无法搜索源');
+        } finally {
+            setSearchingSource(false);
+        }
+    };
+
+    const handleSourceSelect = (source: Source) => {
+        setSelectedSource(source);
+        setEnableTracking(source.tracking ?? true);
+        setShowConfigModal(true);
+    };
+
+    const handleConfirmSourceUpdate = async () => {
+        if (!selectedSource) return;
+
+        try {
+            const sourceToUpdate = { ...selectedSource, tracking: enableTracking };
+            await updateSource({
+                id: tvId,
+                update_downloaded: true,
+                source: sourceToUpdate
+            });
+            Alert.alert('成功', '换源成功，正在重新加载...');
+            setShowConfigModal(false);
+            setShowSourceModal(false);
+            await loadData();
+        } catch (err: any) {
+            Alert.alert('换源失败', err.message || '无法更换源');
+        }
+    };
+
     const downloadCurrentEpisode = async () => {
         if (!currentEpisode) return;
 
@@ -281,7 +341,9 @@ export default function TVDetail({ tvId, onBack }: Props) {
                     <Text style={styles.headerBackButtonText}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{detail.name}</Text>
-                <View style={styles.headerRightPlaceholder} />
+                <TouchableOpacity onPress={handleOpenSourceModal} style={styles.headerRightButton}>
+                    <Text style={styles.headerRightButtonText}>换源</Text>
+                </TouchableOpacity>
             </View>
             <View style={styles.videoContainer}>
                 {isFinished ? (
@@ -434,6 +496,125 @@ export default function TVDetail({ tvId, onBack }: Props) {
                     })}
                 </View>
             </ScrollView>
+
+            <Modal
+                visible={showSourceModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowSourceModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>换源</Text>
+                            <TouchableOpacity onPress={() => setShowSourceModal(false)}>
+                                <Text style={styles.modalCloseText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.searchContainer}>
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="输入搜索关键词"
+                                value={sourceSearchKeyword}
+                                onChangeText={setSourceSearchKeyword}
+                                onSubmitEditing={handleSourceSearch}
+                            />
+                            <TouchableOpacity
+                                style={styles.searchButton}
+                                onPress={handleSourceSearch}
+                                disabled={searchingSource}
+                            >
+                                <Text style={styles.searchButtonText}>
+                                    {searchingSource ? '搜索中...' : '搜索'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <FlatList
+                            data={searchResults}
+                            keyExtractor={(item, index) => `${item.source_key}-${index}`}
+                            style={styles.sourceList}
+                            contentContainerStyle={{ flexGrow: 1 }}
+                            renderItem={({ item }) => {
+                                return (
+                                    <TouchableOpacity
+                                        style={styles.sourceItem}
+                                        onPress={() => handleSourceSelect(item)}
+                                    >
+                                        <View>
+                                            <Text style={styles.sourceName}>{item.name}</Text>
+                                            <Text style={styles.sourceInfo}>
+                                                频道: {item.channel_name} | 集数: {item.episodes.length}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            }}
+                            ListEmptyComponent={
+                                <View style={styles.emptyContainer}>
+                                    <Text style={styles.emptyText}>
+                                        {searchingSource ? '搜索中...' : '输入关键词搜索源'}
+                                    </Text>
+                                </View>
+                            }
+                        />
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={showConfigModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowConfigModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.configModalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>配置源</Text>
+                            <TouchableOpacity onPress={() => setShowConfigModal(false)}>
+                                <Text style={styles.modalCloseText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedSource && (
+                            <View style={styles.configContent}>
+                                <Text style={styles.configSourceName}>
+                                    已选源: {selectedSource.name}
+                                </Text>
+                                <View style={styles.configRow}>
+                                    <Text style={styles.configLabel}>是否追踪更新</Text>
+                                    <Switch
+                                        value={enableTracking}
+                                        onValueChange={setEnableTracking}
+                                        trackColor={{ false: "#767577", true: "#81b0ff" }}
+                                        thumbColor={enableTracking ? "#007AFF" : "#f4f3f4"}
+                                    />
+                                </View>
+                                <Text style={styles.configDescription}>
+                                    开启追踪后，系统会自动检查该源的更新。
+                                </Text>
+                            </View>
+                        )}
+
+                        <View style={styles.configButtons}>
+                            <TouchableOpacity
+                                style={[styles.configButton, styles.cancelButton]}
+                                onPress={() => setShowConfigModal(false)}
+                            >
+                                <Text style={styles.cancelButtonText}>取消</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.configButton, styles.confirmButton]}
+                                onPress={handleConfirmSourceUpdate}
+                            >
+                                <Text style={styles.confirmButtonText}>确认更换</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -664,5 +845,148 @@ const styles = StyleSheet.create({
     menuItemText: {
         fontSize: 14,
         color: '#333',
+    },
+    headerRightButton: {
+        width: 60,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+    },
+    headerRightButtonText: {
+        fontSize: 14,
+        color: '#007AFF',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+        width: '90%',
+        height: '80%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    modalCloseText: {
+        fontSize: 24,
+        color: '#666',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        marginBottom: 15,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        marginRight: 10,
+    },
+    searchButton: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 20,
+        justifyContent: 'center',
+        borderRadius: 5,
+    },
+    searchButtonText: {
+        color: '#fff',
+        fontSize: 14,
+    },
+    sourceList: {
+        flex: 1,
+        minHeight: 200,
+    },
+    sourceItem: {
+        padding: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    sourceName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    sourceInfo: {
+        fontSize: 12,
+        color: '#666',
+    },
+    emptyContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 14,
+        color: '#999',
+    },
+    configModalContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+        width: '85%',
+    },
+    configContent: {
+        marginBottom: 20,
+    },
+    configSourceName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        color: '#333',
+    },
+    configRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    configLabel: {
+        fontSize: 16,
+        color: '#333',
+    },
+    configDescription: {
+        fontSize: 12,
+        color: '#666',
+        marginTop: 5,
+    },
+    configButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    configButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    cancelButton: {
+        backgroundColor: '#f5f5f5',
+        borderWidth: 1,
+        borderColor: '#ddd',
+    },
+    confirmButton: {
+        backgroundColor: '#007AFF',
+    },
+    cancelButtonText: {
+        color: '#666',
+        fontSize: 16,
+    },
+    confirmButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });

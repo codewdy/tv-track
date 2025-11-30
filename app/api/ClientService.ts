@@ -1,4 +1,4 @@
-import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SetTagRequest, SetDownloadStatusRequest, TV } from '../types';
+import { MonitorResponse, ConfigResponse, TVDetail, SetWatchRequest, SetTagRequest, SetDownloadStatusRequest, UpdateSourceRequest, SearchTVResponse, TV } from '../types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as apiClient from './client';
 import { downloadManager } from '../utils/downloadManager';
@@ -290,6 +290,22 @@ class ClientService {
             throw new Error('离线模式下无法触发服务器下载');
         }
         return apiClient.setDownloadStatus(request);
+    }
+
+    async updateSource(request: UpdateSourceRequest): Promise<void> {
+        // No offline support - this is a server-side operation
+        if (this._isOffline) {
+            throw new Error('离线模式下无法更换源');
+        }
+        return apiClient.updateSource(request);
+    }
+
+    async searchTV(keyword: string): Promise<SearchTVResponse> {
+        // Search is online-only
+        if (this._isOffline) {
+            throw new Error('离线模式下无法搜索');
+        }
+        return apiClient.searchTV(keyword);
     }
 }
 

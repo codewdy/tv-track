@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { clientService } from '../api/ClientService';
-import { TVDetail, SetWatchRequest, SetTagRequest, SetDownloadStatusRequest, MonitorResponse, ConfigResponse } from '../types';
+import { TVDetail, SetWatchRequest, SetTagRequest, SetDownloadStatusRequest, UpdateSourceRequest, SearchTVResponse, MonitorResponse, ConfigResponse } from '../types';
 import { useDownload } from './DownloadContext';
 import { useAppError } from './AppErrorContext';
 
@@ -9,6 +9,8 @@ interface ClientContextType {
     setWatch: (request: SetWatchRequest) => Promise<void>;
     setTag: (request: SetTagRequest) => Promise<void>;
     setDownloadStatus: (request: SetDownloadStatusRequest) => Promise<void>;
+    updateSource: (request: UpdateSourceRequest) => Promise<void>;
+    searchTV: (keyword: string) => Promise<SearchTVResponse>;
     fetchMonitor: (version?: string) => Promise<MonitorResponse>;
     fetchConfig: () => Promise<ConfigResponse>;
     isOffline: boolean;
@@ -69,6 +71,14 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         return clientService.setDownloadStatus(request);
     };
 
+    const updateSource = async (request: UpdateSourceRequest): Promise<void> => {
+        return clientService.updateSource(request);
+    };
+
+    const searchTV = async (keyword: string): Promise<SearchTVResponse> => {
+        return clientService.searchTV(keyword);
+    };
+
     const fetchMonitor = async (version?: string): Promise<MonitorResponse> => {
         return clientService.fetchMonitor(version);
     };
@@ -78,7 +88,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ClientContext.Provider value={{ fetchTV, setWatch, setTag, setDownloadStatus, fetchMonitor, fetchConfig, isOffline, toggleOfflineMode }}>
+        <ClientContext.Provider value={{ fetchTV, setWatch, setTag, setDownloadStatus, updateSource, searchTV, fetchMonitor, fetchConfig, isOffline, toggleOfflineMode }}>
             {children}
         </ClientContext.Provider>
     );
