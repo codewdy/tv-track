@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, BackHandler } from 'react-native';
+import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, BackHandler, PanResponder, PanResponderInstance, Dimensions } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +39,97 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [isSeeking, setIsSeeking] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
 
+    // Gesture seeking state
+    const [isGestureSeeking, setIsGestureSeeking] = useState(false);
+    const [gestureSeekTime, setGestureSeekTime] = useState(0);
+    const [gestureSeekOffset, setGestureSeekOffset] = useState(0);
+
+    // Refs for PanResponder to access current values without re-binding
+    const currentTimeRef = useRef(0);
+    const durationRef = useRef(0);
+    const isGestureSeekingRef = useRef(false);
+
+    // Update refs when state changes
+    useEffect(() => {
+        currentTimeRef.current = currentTime;
+    }, [currentTime]);
+
+    useEffect(() => {
+        durationRef.current = duration;
+    }, [duration]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
+            },
+            onPanResponderGrant: (evt, gestureState) => {
+                // If we stole the responder (dx > 10), start seeking immediately
+                if (Math.abs(gestureState.dx) > 10) {
+                    setIsGestureSeeking(true);
+                    isGestureSeekingRef.current = true;
+                    setGestureSeekTime(currentTimeRef.current);
+                    setGestureSeekOffset(0);
+                    if (controlsTimeoutRef.current) {
+                        clearTimeout(controlsTimeoutRef.current);
+                    }
+                }
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                const screenWidth = Dimensions.get('window').width;
+
+                // If not yet seeking, check if we should start
+                if (!isGestureSeekingRef.current) {
+                    if (Math.abs(gestureState.dx) > 10) {
+                        setIsGestureSeeking(true);
+                        isGestureSeekingRef.current = true;
+                        setGestureSeekTime(currentTimeRef.current);
+                        setGestureSeekOffset(0);
+                        if (controlsTimeoutRef.current) {
+                            clearTimeout(controlsTimeoutRef.current);
+                        }
+                    }
+                    return;
+                }
+
+                // 90 seconds for full screen width
+                const seekSeconds = (gestureState.dx / screenWidth) * 90;
+
+                let newTime = currentTimeRef.current + seekSeconds;
+                // Clamp time
+                newTime = Math.max(0, Math.min(newTime, durationRef.current));
+
+                setGestureSeekTime(newTime);
+                setGestureSeekOffset(seekSeconds);
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (isGestureSeekingRef.current) {
+                    const screenWidth = Dimensions.get('window').width;
+                    const seekSeconds = (gestureState.dx / screenWidth) * 90;
+                    let targetTime = currentTimeRef.current + seekSeconds;
+                    targetTime = Math.max(0, Math.min(targetTime, durationRef.current));
+
+                    if (playerRef.current) {
+                        playerRef.current.currentTime = targetTime;
+                        setCurrentTime(targetTime);
+                    }
+
+                    setIsGestureSeeking(false);
+                    isGestureSeekingRef.current = false;
+                    resetControlsTimeout();
+                } else {
+                    // It was a tap
+                    toggleControls();
+                }
+            },
+            onPanResponderTerminate: () => {
+                setIsGestureSeeking(false);
+                isGestureSeekingRef.current = false;
+                resetControlsTimeout();
+            }
+        })
+    ).current;
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
         return `${API_CONFIG.BASE_URL}${url}`;
@@ -333,45 +424,58 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 nativeControls={false}
             />
 
-            <TouchableWithoutFeedback onPress={toggleControls}>
-                <View style={[styles.overlay, !showControls && styles.hidden]}>
-                    {/* Center Play/Pause Button */}
-                    <View style={styles.centerControls}>
-                        <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
-                            <Ionicons
-                                name={isPlaying ? "pause" : "play"}
-                                size={40}
-                                color="#fff"
-                                style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
-                            />
-                        </TouchableOpacity>
+            <View
+                style={[styles.overlay, !showControls && !isGestureSeeking && styles.hidden]}
+                {...panResponder.panHandlers}
+            >
+                {/* Gesture Indicator */}
+                {isGestureSeeking && (
+                    <View style={styles.gestureIndicator}>
+                        <Text style={styles.gestureTimeText}>
+                            {formatTime(gestureSeekTime)} / {formatTime(duration)}
+                        </Text>
+                        <Text style={styles.gestureOffsetText}>
+                            {gestureSeekOffset > 0 ? '+' : ''}{Math.round(gestureSeekOffset)}s
+                        </Text>
                     </View>
+                )}
 
-                    {/* Bottom Control Bar */}
-                    <View style={styles.bottomControls}>
-                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                        <Slider
-                            style={styles.slider}
-                            minimumValue={0}
-                            maximumValue={duration > 0 ? duration : 1}
-                            value={currentTime}
-                            onSlidingStart={handleSlidingStart}
-                            onSlidingComplete={handleSeek}
-                            minimumTrackTintColor="#007AFF"
-                            maximumTrackTintColor="#FFFFFF"
-                            thumbTintColor="#007AFF"
+                {/* Center Play/Pause Button */}
+                <View style={styles.centerControls}>
+                    <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
+                        <Ionicons
+                            name={isPlaying ? "pause" : "play"}
+                            size={40}
+                            color="#fff"
+                            style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
                         />
-                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
-                        <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
-                            <Ionicons
-                                name={isFullScreen ? "contract" : "expand"}
-                                size={20}
-                                color="#fff"
-                            />
-                        </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
                 </View>
-            </TouchableWithoutFeedback>
+
+                {/* Bottom Control Bar */}
+                <View style={styles.bottomControls}>
+                    <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                    <Slider
+                        style={styles.slider}
+                        minimumValue={0}
+                        maximumValue={duration > 0 ? duration : 1}
+                        value={currentTime}
+                        onSlidingStart={handleSlidingStart}
+                        onSlidingComplete={handleSeek}
+                        minimumTrackTintColor="#007AFF"
+                        maximumTrackTintColor="#FFFFFF"
+                        thumbTintColor="#007AFF"
+                    />
+                    <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                    <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
+                        <Ionicons
+                            name={isFullScreen ? "contract" : "expand"}
+                            size={20}
+                            color="#fff"
+                        />
+                    </TouchableOpacity>
+                </View>
+            </View>
         </View>
     );
 }
@@ -425,5 +529,30 @@ const styles = StyleSheet.create({
     fullScreenButton: {
         padding: 5,
         marginLeft: 5,
+    },
+    gestureIndicator: {
+        position: 'absolute',
+        top: '40%',
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    gestureTimeText: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
+    },
+    gestureOffsetText: {
+        color: '#ddd',
+        fontSize: 18,
+        marginTop: 5,
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
 });
