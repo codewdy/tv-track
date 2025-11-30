@@ -18,8 +18,8 @@ export default function TVDetail({ tvId, onBack }: Props) {
     const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
     const [isFinished, setIsFinished] = useState(false);
     const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
-    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
-    const [showTagMenu, setShowTagMenu] = useState(false);
+    const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+    const [showTagModal, setShowTagModal] = useState(false);
     const [tags, setTags] = useState<TagConfig[]>([]);
     const lastKnownPositionRef = useRef<number>(0);
     const lastKnownDurationRef = useRef<number>(0);
@@ -94,7 +94,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
             if (detail) {
                 setDetail({ ...detail, tag: newTag });
             }
-            setShowTagMenu(false);
+            setShowTagModal(false);
         } catch (err: any) {
             Alert.alert('错误', err.message || '修改标签失败');
         }
@@ -204,7 +204,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 i
             );
         }
-        setShowDownloadMenu(false);
+        setShowHeaderMenu(false);
     };
 
     const downloadAfterCurrent = async () => {
@@ -226,7 +226,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 i
             );
         }
-        setShowDownloadMenu(false);
+        setShowHeaderMenu(false);
     };
 
     const handleServerRedownload = async () => {
@@ -238,7 +238,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 status: 'running'
             });
             Alert.alert('成功', '已触发服务器重新下载');
-            setShowDownloadMenu(false);
+            setShowHeaderMenu(false);
         } catch (err: any) {
             Alert.alert('错误', err.message || '触发下载失败');
         }
@@ -248,6 +248,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
         setSourceSearchKeyword(detail?.name || '');
         setSearchResults([]);
         setShowSourceModal(true);
+        setShowHeaderMenu(false);
     };
 
     const handleSourceSearch = async () => {
@@ -312,7 +313,7 @@ export default function TVDetail({ tvId, onBack }: Props) {
             tvId,
             currentEpisodeIndex
         );
-        setShowDownloadMenu(false);
+        setShowHeaderMenu(false);
     };
 
     if (loading) {
@@ -341,10 +342,11 @@ export default function TVDetail({ tvId, onBack }: Props) {
                     <Text style={styles.headerBackButtonText}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{detail.name}</Text>
-                <TouchableOpacity onPress={handleOpenSourceModal} style={styles.headerRightButton}>
-                    <Text style={styles.headerRightButtonText}>换源</Text>
+                <TouchableOpacity onPress={() => setShowHeaderMenu(true)} style={styles.headerRightButton}>
+                    <Text style={styles.headerRightButtonText}>⋮</Text>
                 </TouchableOpacity>
             </View>
+
             <View style={styles.videoContainer}>
                 {isFinished ? (
                     <View style={styles.finishedContainer}>
@@ -368,32 +370,11 @@ export default function TVDetail({ tvId, onBack }: Props) {
                 <View style={styles.headerRow}>
                     <Text style={styles.title}>{detail.name}</Text>
                     <View style={styles.tagContainer}>
-                        <TouchableOpacity
-                            style={styles.tagButton}
-                            onPress={() => setShowTagMenu(true)}
-                        >
+                        <View style={styles.tagButton}>
                             <Text style={styles.tagButtonText}>
                                 {tags.find(t => t.tag === detail.tag)?.name || detail.tag}
                             </Text>
-                        </TouchableOpacity>
-                        {showTagMenu && (
-                            <View style={styles.tagMenu}>
-                                {tags.map((tag) => (
-                                    <TouchableOpacity
-                                        key={tag.tag}
-                                        style={styles.menuItem}
-                                        onPress={() => handleTagUpdate(tag.tag)}
-                                    >
-                                        <Text style={[
-                                            styles.menuItemText,
-                                            detail.tag === tag.tag && styles.selectedTagText
-                                        ]}>
-                                            {tag.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
+                        </View>
                     </View>
                 </View>
                 <Text style={styles.subtitle}>
@@ -403,71 +384,8 @@ export default function TVDetail({ tvId, onBack }: Props) {
                     <Text style={styles.episodeTitle}>
                         {currentEpisode ? `正在播放: ${currentEpisode.name}` : '已看完'}
                     </Text>
-                    <View>
-                        <TouchableOpacity
-                            style={styles.downloadButton}
-                            onPress={() => setShowDownloadMenu(!showDownloadMenu)}
-                        >
-                            <Text style={styles.downloadButtonText}>下载 ▼</Text>
-                        </TouchableOpacity>
-
-                        {showDownloadMenu && (
-                            <View style={styles.downloadMenu}>
-                                {currentEpisode && (
-                                    <>
-                                        <TouchableOpacity
-                                            style={styles.menuItem}
-                                            onPress={downloadCurrentEpisode}
-                                        >
-                                            <Text style={styles.menuItemText}>
-                                                {getDownload(tvId, currentEpisodeIndex)
-                                                    ? '重新下载当前集'
-                                                    : '下载当前集'}
-                                            </Text>
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity
-                                            style={styles.menuItem}
-                                            onPress={downloadAfterCurrent}
-                                        >
-                                            <Text style={styles.menuItemText}>下载后续集</Text>
-                                        </TouchableOpacity>
-                                    </>
-                                )}
-
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={downloadAllEpisodes}
-                                >
-                                    <Text style={styles.menuItemText}>下载所有集</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={handleServerRedownload}
-                                >
-                                    <Text style={styles.menuItemText}>服务器重下</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
                 </View>
             </View>
-
-            {showTagMenu && (
-                <TouchableOpacity
-                    style={styles.fullScreenBackdrop}
-                    activeOpacity={1}
-                    onPress={() => setShowTagMenu(false)}
-                />
-            )}
-            {showDownloadMenu && (
-                <TouchableOpacity
-                    style={styles.fullScreenBackdrop}
-                    activeOpacity={1}
-                    onPress={() => setShowDownloadMenu(false)}
-                />
-            )}
 
             <ScrollView style={styles.episodeList}>
                 <Text style={styles.sectionTitle}>剧集列表</Text>
@@ -496,6 +414,82 @@ export default function TVDetail({ tvId, onBack }: Props) {
                     })}
                 </View>
             </ScrollView>
+
+            {/* Header Menu Modal */}
+            <Modal
+                visible={showHeaderMenu}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowHeaderMenu(false)}
+            >
+                <TouchableOpacity
+                    style={styles.menuOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowHeaderMenu(false)}
+                >
+                    <View style={styles.headerMenuContainer}>
+                        <TouchableOpacity style={styles.headerMenuItem} onPress={handleOpenSourceModal}>
+                            <Text style={styles.headerMenuItemText}>换源</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.headerMenuItem} onPress={() => {
+                            setShowHeaderMenu(false);
+                            setShowTagModal(true);
+                        }}>
+                            <Text style={styles.headerMenuItemText}>修改标签</Text>
+                        </TouchableOpacity>
+                        {currentEpisode && (
+                            <>
+                                <TouchableOpacity style={styles.headerMenuItem} onPress={downloadCurrentEpisode}>
+                                    <Text style={styles.headerMenuItemText}>
+                                        {getDownload(tvId, currentEpisodeIndex) ? '重新下载当前集' : '下载当前集'}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.headerMenuItem} onPress={downloadAfterCurrent}>
+                                    <Text style={styles.headerMenuItemText}>下载后续集</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                        <TouchableOpacity style={styles.headerMenuItem} onPress={downloadAllEpisodes}>
+                            <Text style={styles.headerMenuItemText}>下载所有集</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.headerMenuItem} onPress={handleServerRedownload}>
+                            <Text style={styles.headerMenuItemText}>服务器重下</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Tag Selection Modal */}
+            <Modal
+                visible={showTagModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowTagModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.menuOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowTagModal(false)}
+                >
+                    <View style={styles.tagModalContainer}>
+                        <Text style={styles.modalTitle}>选择标签</Text>
+                        {tags.map((tag) => (
+                            <TouchableOpacity
+                                key={tag.tag}
+                                style={styles.tagMenuItem}
+                                onPress={() => handleTagUpdate(tag.tag)}
+                            >
+                                <Text style={[
+                                    styles.tagMenuItemText,
+                                    detail.tag === tag.tag && styles.selectedTagText
+                                ]}>
+                                    {tag.name}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             <Modal
                 visible={showSourceModal}
@@ -637,6 +631,8 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        flex: 1,
+        textAlign: 'center',
     },
     headerBackButton: {
         width: 40,
@@ -646,8 +642,15 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: '#333',
     },
-    headerRightPlaceholder: {
+    headerRightButton: {
         width: 40,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+    },
+    headerRightButtonText: {
+        fontSize: 24,
+        color: '#333',
+        fontWeight: 'bold',
     },
     center: {
         flex: 1,
@@ -661,14 +664,6 @@ const styles = StyleSheet.create({
     },
     video: {
         flex: 1,
-    },
-    videoPlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    placeholderText: {
-        color: '#fff',
     },
     infoContainer: {
         padding: 15,
@@ -701,26 +696,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#333',
     },
-    tagMenu: {
-        position: 'absolute',
-        top: 35,
-        right: 0,
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-        minWidth: 120,
-        zIndex: 1001,
-    },
-    selectedTagText: {
-        color: '#007AFF',
-        fontWeight: 'bold',
-    },
     subtitle: {
         fontSize: 14,
         color: '#666',
@@ -735,18 +710,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginTop: 5,
-    },
-    downloadButton: {
-        backgroundColor: '#007AFF',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 4,
-        marginLeft: 10,
-    },
-    downloadButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '500',
     },
     episodeList: {
         flex: 1,
@@ -812,48 +775,48 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         fontWeight: 'bold',
     },
-    fullScreenBackdrop: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    downloadMenu: {
-        position: 'absolute',
-        top: 40,
-        right: 0,
+    headerMenuContainer: {
         backgroundColor: '#fff',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-        minWidth: 200,
-        zIndex: 1000,
+        borderRadius: 10,
+        width: 200,
+        paddingVertical: 5,
     },
-    menuItem: {
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+    headerMenuItem: {
+        paddingVertical: 15,
+        paddingHorizontal: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#f0f0f0',
     },
-    menuItemText: {
-        fontSize: 14,
+    headerMenuItemText: {
+        fontSize: 16,
         color: '#333',
     },
-    headerRightButton: {
-        width: 60,
-        justifyContent: 'center',
-        alignItems: 'flex-end',
+    tagModalContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        width: '80%',
+        padding: 20,
+        maxHeight: '70%',
     },
-    headerRightButtonText: {
-        fontSize: 14,
+    tagMenuItem: {
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        alignItems: 'center',
+    },
+    tagMenuItemText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    selectedTagText: {
         color: '#007AFF',
+        fontWeight: 'bold',
     },
     modalOverlay: {
         flex: 1,
