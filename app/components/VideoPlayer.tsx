@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import Slider from '@react-native-community/slider';
+import { Ionicons } from '@expo/vector-icons';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
 
@@ -25,6 +27,14 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const lastReportedTimeRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
+    const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Control states
+    const [showControls, setShowControls] = useState(true);
+    const [isPlaying, setIsPlaying] = useState(autoPlay);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [isSeeking, setIsSeeking] = useState(false);
 
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
@@ -39,6 +49,65 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             playerRef.current = player;
         }
     );
+
+    // Format time helper
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    // Toggle controls visibility
+    const toggleControls = () => {
+        setShowControls(prev => !prev);
+        if (!showControls) {
+            resetControlsTimeout();
+        } else {
+            if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+            }
+        }
+    };
+
+    const resetControlsTimeout = () => {
+        if (controlsTimeoutRef.current) {
+            clearTimeout(controlsTimeoutRef.current);
+        }
+        controlsTimeoutRef.current = setTimeout(() => {
+            if (isPlaying) {
+                setShowControls(false);
+            }
+        }, 3000);
+    };
+
+    // Handle Play/Pause
+    const handlePlayPause = () => {
+        if (isPlaying) {
+            player.pause();
+        } else {
+            player.play();
+        }
+        resetControlsTimeout();
+    };
+
+    // Handle Seek
+    const handleSeek = (value: number) => {
+        player.currentTime = value;
+        setCurrentTime(value);
+        setIsSeeking(false);
+        resetControlsTimeout();
+    };
+
+    const handleSlidingStart = () => {
+        setIsSeeking(true);
+        if (controlsTimeoutRef.current) {
+            clearTimeout(controlsTimeoutRef.current);
+        }
+    };
 
     // Update playerRef when player changes
     useEffect(() => {
@@ -144,9 +213,20 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             // Listen for play/pause changes
             if (player.addListener) {
                 subscriptions.push(player.addListener('playingChange', (event: { isPlaying: boolean }) => {
+                    setIsPlaying(event.isPlaying);
                     if (onPlayingChange) {
                         onPlayingChange(event.isPlaying);
                     }
+
+                    if (event.isPlaying) {
+                        resetControlsTimeout();
+                    } else {
+                        setShowControls(true); // Show controls when paused
+                        if (controlsTimeoutRef.current) {
+                            clearTimeout(controlsTimeoutRef.current);
+                        }
+                    }
+
                     if (!event.isPlaying) {
                         try {
                             // Safe to access properties inside event handler usually
@@ -164,6 +244,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 // Listen for playback completion
                 subscriptions.push(player.addListener('playToEnd', () => {
                     isEndedRef.current = true; // Mark as ended
+                    setIsPlaying(false);
+                    setShowControls(true);
                     if (onEnd) {
                         onEnd();
                     }
@@ -174,6 +256,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 subscriptions.push(player.addListener('timeUpdate', (event: { currentTime: number }) => {
                     const currentTime = event.currentTime;
                     const duration = player.duration;
+
+                    if (!isSeeking) {
+                        setCurrentTime(currentTime);
+                        setDuration(duration);
+                    }
 
                     lastKnownPositionRef.current = currentTime;
                     lastKnownDurationRef.current = duration;
@@ -194,20 +281,101 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
         return () => {
             subscriptions.forEach(sub => sub.remove());
+            if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+            }
         };
     }, [episode, initialPosition, player, onProgressUpdate, onEnd]);
 
     return (
-        <VideoView
-            style={[styles.video, style]}
-            player={player}
-            allowsPictureInPicture
-        />
+        <View style={[styles.container, style]}>
+            <VideoView
+                style={StyleSheet.absoluteFill}
+                player={player}
+                allowsPictureInPicture
+                nativeControls={false}
+            />
+
+            <TouchableWithoutFeedback onPress={toggleControls}>
+                <View style={[styles.overlay, !showControls && styles.hidden]}>
+                    {/* Center Play/Pause Button */}
+                    <View style={styles.centerControls}>
+                        <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
+                            <Ionicons
+                                name={isPlaying ? "pause" : "play"}
+                                size={40}
+                                color="#fff"
+                                style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Bottom Control Bar */}
+                    <View style={styles.bottomControls}>
+                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                        <Slider
+                            style={styles.slider}
+                            minimumValue={0}
+                            maximumValue={duration > 0 ? duration : 1}
+                            value={currentTime}
+                            onSlidingStart={handleSlidingStart}
+                            onSlidingComplete={handleSeek}
+                            minimumTrackTintColor="#007AFF"
+                            maximumTrackTintColor="#FFFFFF"
+                            thumbTintColor="#007AFF"
+                        />
+                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                    </View>
+                </View>
+            </TouchableWithoutFeedback>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    video: {
+    container: {
         flex: 1,
+        backgroundColor: '#000',
+        overflow: 'hidden',
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        justifyContent: 'space-between',
+        padding: 10,
+    },
+    hidden: {
+        opacity: 0,
+    },
+    centerControls: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    playPauseButton: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    bottomControls: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 8,
+        padding: 5,
+    },
+    slider: {
+        flex: 1,
+        marginHorizontal: 10,
+        height: 40,
+    },
+    timeText: {
+        color: '#fff',
+        fontSize: 12,
+        width: 50,
+        textAlign: 'center',
     },
 });
