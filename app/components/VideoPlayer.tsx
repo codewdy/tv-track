@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, BackHandler, PanResponder, PanResponderInstance, Dimensions } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Slider from '@react-native-community/slider';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
@@ -442,6 +442,10 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                 {/* Center Play/Pause Button */}
                 <View style={styles.centerControls}>
+                    <TouchableOpacity onPress={() => handleSeek(currentTime - 5)} style={styles.seekButton}>
+                        <MaterialCommunityIcons name="rewind-5" size={30} color="#fff" />
+                    </TouchableOpacity>
+
                     <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
                         <Ionicons
                             name={isPlaying ? "pause" : "play"}
@@ -449,6 +453,10 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                             color="#fff"
                             style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
                         />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => handleSeek(currentTime + 15)} style={styles.seekButton}>
+                        <MaterialCommunityIcons name="fast-forward-15" size={30} color="#fff" />
                     </TouchableOpacity>
                 </View>
 
@@ -497,6 +505,16 @@ const styles = StyleSheet.create({
     },
     centerControls: {
         flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 40,
+    },
+    seekButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },
