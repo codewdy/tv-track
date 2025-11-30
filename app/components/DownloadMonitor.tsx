@@ -113,35 +113,28 @@ export default function DownloadMonitor({ onBack }: Props) {
                 <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
             )}
 
-            <View style={styles.content}>
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>正在下载 ({downloading.length})</Text>
-                    {downloading.length === 0 ? (
-                        <Text style={styles.emptyText}>暂无下载任务</Text>
-                    ) : (
-                        <FlatList
-                            data={downloading}
-                            renderItem={renderTask}
-                            keyExtractor={(item, index) => `downloading-${index}`}
-                            style={styles.list}
-                        />
-                    )}
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>等待下载 ({pending.length})</Text>
-                    {pending.length === 0 ? (
-                        <Text style={styles.emptyText}>暂无等待任务</Text>
-                    ) : (
-                        <FlatList
-                            data={pending}
-                            renderItem={renderTask}
-                            keyExtractor={(item, index) => `pending-${index}`}
-                            style={styles.list}
-                        />
-                    )}
-                </View>
-            </View>
+            <FlatList
+                data={[
+                    ...(downloading.length > 0 ? [{ type: 'header', title: `正在下载 (${downloading.length})` }] : []),
+                    ...downloading.map(task => ({ type: 'task', data: task, section: 'downloading' })),
+                    ...(pending.length > 0 ? [{ type: 'header', title: `等待下载 (${pending.length})` }] : []),
+                    ...pending.map(task => ({ type: 'task', data: task, section: 'pending' }))
+                ]}
+                renderItem={({ item }: any) => {
+                    if (item.type === 'header') {
+                        return <Text style={styles.sectionTitle}>{item.title}</Text>;
+                    }
+                    return renderTask({ item: item.data });
+                }}
+                keyExtractor={(item: any, index) =>
+                    item.type === 'header' ? `header-${index}` : `${item.section}-${index}`
+                }
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                    <Text style={styles.emptyText}>暂无下载任务</Text>
+                }
+            />
         </View>
     );
 }
@@ -176,21 +169,18 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    content: {
+    list: {
         flex: 1,
-        padding: 15,
     },
-    section: {
-        marginBottom: 20,
+    listContent: {
+        padding: 15,
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 10,
+        marginTop: 10,
         color: '#333',
-    },
-    list: {
-        maxHeight: 300,
     },
     taskContainer: {
         backgroundColor: '#fff',
