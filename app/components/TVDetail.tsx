@@ -441,19 +441,19 @@ export default function TVDetail({ tvId, onBack }: Props) {
                             <>
                                 <TouchableOpacity style={styles.headerMenuItem} onPress={downloadCurrentEpisode}>
                                     <Text style={styles.headerMenuItemText}>
-                                        {getDownload(tvId, currentEpisodeIndex) ? '重新下载当前集' : '下载当前集'}
+                                        {getDownload(tvId, currentEpisodeIndex) ? '重新缓存当前集' : '缓存当前集'}
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.headerMenuItem} onPress={downloadAfterCurrent}>
-                                    <Text style={styles.headerMenuItemText}>下载后续集</Text>
+                                    <Text style={styles.headerMenuItemText}>缓存后续集</Text>
                                 </TouchableOpacity>
                             </>
                         )}
                         <TouchableOpacity style={styles.headerMenuItem} onPress={downloadAllEpisodes}>
-                            <Text style={styles.headerMenuItemText}>下载所有集</Text>
+                            <Text style={styles.headerMenuItemText}>缓存所有集</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.headerMenuItem} onPress={handleServerRedownload}>
-                            <Text style={styles.headerMenuItemText}>服务器重下</Text>
+                            <Text style={styles.headerMenuItemText}>重新下载源</Text>
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
