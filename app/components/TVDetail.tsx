@@ -182,13 +182,13 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
     };
 
 
+
     const handleVideoEnd = () => {
         if (!detail || !currentEpisode) return;
 
         const nextIndex = currentEpisodeIndex + 1;
 
         // Update status for the next episode (mark as started/unplayed)
-        // Even if it's the last episode, we increment the index as requested
         setWatch({
             id: tvId,
             watch: {
@@ -198,15 +198,76 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
             }
         });
 
-        setShouldAutoPlay(true); // Enable auto-play for automatic transition
-        setCurrentEpisode(detail.episodes[nextIndex]);
-        setCurrentEpisodeIndex(nextIndex);
-        setIsFinished(nextIndex >= detail.episodes.length);
+        // Auto-play next episode when video ends naturally
+        setShouldAutoPlay(true);
 
-        // Exit full screen if we've reached the end
-        if (nextIndex >= detail.episodes.length && isFullScreen) {
-            handleFullScreenChange(false);
+        if (nextIndex < detail.episodes.length) {
+            setCurrentEpisode(detail.episodes[nextIndex]);
+            setCurrentEpisodeIndex(nextIndex);
+            setIsFinished(false);
+        } else {
+            // Finished all episodes
+            setCurrentEpisodeIndex(nextIndex);
+            setIsFinished(true);
+            if (isFullScreen) {
+                handleFullScreenChange(false);
+            }
         }
+    };
+
+    const handleNextEpisode = (keepPlaying: boolean) => {
+        if (!detail || !currentEpisode) return;
+
+        const nextIndex = currentEpisodeIndex + 1;
+
+        // Update status for the next episode
+        setWatch({
+            id: tvId,
+            watch: {
+                watched_episode: nextIndex,
+                watched_episode_time: 0,
+                watched_episode_time_ratio: 0
+            }
+        });
+
+        // Maintain playback state
+        setShouldAutoPlay(keepPlaying);
+
+        if (nextIndex < detail.episodes.length) {
+            setCurrentEpisode(detail.episodes[nextIndex]);
+            setCurrentEpisodeIndex(nextIndex);
+            setIsFinished(false);
+        } else {
+            // Finished all episodes
+            setCurrentEpisodeIndex(nextIndex);
+            setIsFinished(true);
+            if (isFullScreen) {
+                handleFullScreenChange(false);
+            }
+        }
+    };
+
+    const handlePreviousEpisode = (keepPlaying: boolean) => {
+        if (!detail || !currentEpisode || currentEpisodeIndex <= 0) return;
+
+        const prevIndex = currentEpisodeIndex - 1;
+        const prevEpisode = detail.episodes[prevIndex];
+
+        // Update status for the previous episode
+        setWatch({
+            id: tvId,
+            watch: {
+                watched_episode: prevIndex,
+                watched_episode_time: 0,
+                watched_episode_time_ratio: 0
+            }
+        });
+
+        // Maintain playback state
+        setShouldAutoPlay(keepPlaying);
+        setCurrentEpisode(prevEpisode);
+        setCurrentEpisodeIndex(prevIndex);
+        setIsFinished(false);
     };
 
     const downloadAllEpisodes = async () => {
@@ -392,6 +453,9 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                         lastKnownDurationRef={lastKnownDurationRef}
                         onPlayingChange={handlePlayingChange}
                         onFullScreenChange={handleFullScreenChange}
+                        onNext={handleNextEpisode}
+                        onPrevious={handlePreviousEpisode}
+                        hasPrevious={currentEpisodeIndex > 0}
                     />
                 )}
             </View>

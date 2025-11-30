@@ -23,9 +23,12 @@ interface Props {
     lastKnownDurationRef: React.RefObject<number>;
     onPlayingChange?: (isPlaying: boolean) => void;
     onFullScreenChange?: (isFullScreen: boolean) => void;
+    onNext?: (keepPlaying: boolean) => void;
+    onPrevious?: (keepPlaying: boolean) => void;
+    hasPrevious?: boolean;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange, onFullScreenChange }: Props) {
+export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange, onFullScreenChange, onNext, onPrevious, hasPrevious = false }: Props) {
     const lastReportedTimeRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
@@ -442,6 +445,19 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                 {/* Center Play/Pause Button */}
                 <View style={styles.centerControls}>
+                    {/* Previous Episode Button */}
+                    <TouchableOpacity
+                        onPress={() => onPrevious && hasPrevious && onPrevious(isPlaying)}
+                        style={[styles.controlButton, !hasPrevious && styles.controlButtonDisabled]}
+                        disabled={!hasPrevious}
+                    >
+                        <MaterialCommunityIcons
+                            name="skip-previous"
+                            size={30}
+                            color={hasPrevious ? "#fff" : "#666"}
+                        />
+                    </TouchableOpacity>
+
                     <TouchableOpacity onPress={() => handleSeek(currentTime - 5)} style={styles.seekButton}>
                         <MaterialCommunityIcons name="rewind-5" size={30} color="#fff" />
                     </TouchableOpacity>
@@ -457,6 +473,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                     <TouchableOpacity onPress={() => handleSeek(currentTime + 15)} style={styles.seekButton}>
                         <MaterialCommunityIcons name="fast-forward-15" size={30} color="#fff" />
+                    </TouchableOpacity>
+
+                    {/* Next Episode Button */}
+                    <TouchableOpacity onPress={() => onNext && onNext(isPlaying)} style={styles.controlButton}>
+                        <MaterialCommunityIcons name="skip-next" size={30} color="#fff" />
                     </TouchableOpacity>
                 </View>
 
@@ -517,6 +538,17 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    controlButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    controlButtonDisabled: {
+        opacity: 0.3,
     },
     playPauseButton: {
         width: 60,
