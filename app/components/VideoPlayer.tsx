@@ -4,6 +4,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import Slider from '@react-native-community/slider';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as Brightness from 'expo-brightness';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
 
@@ -41,6 +42,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [duration, setDuration] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [brightness, setBrightness] = useState(0);
+    const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
 
     // Gesture seeking state
     const [isGestureSeeking, setIsGestureSeeking] = useState(false);
@@ -51,6 +54,14 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const currentTimeRef = useRef(0);
     const durationRef = useRef(0);
     const isGestureSeekingRef = useRef(false);
+    const lastTapTimeRef = useRef(0);
+    const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isPlayingRef = useRef(isPlaying);
+    const isGestureBrightnessRef = useRef(false);
+    const startBrightnessRef = useRef(0);
+    const startTouchXRef = useRef(0);
+    const playerHeightRef = useRef(0);
+    const playerWidthRef = useRef(0);
 
     // Update refs when state changes
     useEffect(() => {
@@ -61,13 +72,32 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         durationRef.current = duration;
     }, [duration]);
 
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
+
+    useEffect(() => {
+        (async () => {
+            const { status } = await Brightness.requestPermissionsAsync();
+            if (status === 'granted') {
+                const currentBrightness = await Brightness.getBrightnessAsync();
+                setBrightness(currentBrightness);
+            }
+        })();
+    }, []);
+
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (evt, gestureState) => {
-                return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
+                const width = playerWidthRef.current || Dimensions.get('window').width;
+                const isHorizontal = Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
+                const isVerticalLeft = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX < width * 0.25;
+                return isHorizontal || isVerticalLeft;
             },
             onPanResponderGrant: (evt, gestureState) => {
+                startTouchXRef.current = evt.nativeEvent.locationX;
+
                 // If we stole the responder (dx > 10), start seeking immediately
                 if (Math.abs(gestureState.dx) > 10) {
                     setIsGestureSeeking(true);
@@ -79,8 +109,36 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     }
                 }
             },
-            onPanResponderMove: (evt, gestureState) => {
-                const screenWidth = Dimensions.get('window').width;
+            onPanResponderMove: async (evt, gestureState) => {
+                const width = playerWidthRef.current || Dimensions.get('window').width;
+                const height = playerHeightRef.current || Dimensions.get('window').height;
+
+                // Check for Brightness Gesture (Left side vertical swipe)
+                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current) {
+                    // If vertical movement is significant and touch started on left 25%
+                    if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current < width * 0.25) {
+                        isGestureBrightnessRef.current = true;
+                        startBrightnessRef.current = await Brightness.getBrightnessAsync();
+                        setShowBrightnessIndicator(true);
+                        if (controlsTimeoutRef.current) {
+                            clearTimeout(controlsTimeoutRef.current);
+                        }
+                    }
+                }
+
+                if (isGestureBrightnessRef.current) {
+                    // Calculate brightness change
+                    // Dragging up (negative dy) increases brightness
+                    // Dragging down (positive dy) decreases brightness
+                    // Full player height drag = 100% brightness change
+                    const delta = -gestureState.dy / height;
+                    let newBrightness = startBrightnessRef.current + delta;
+                    newBrightness = Math.max(0, Math.min(1, newBrightness));
+
+                    setBrightness(newBrightness);
+                    await Brightness.setBrightnessAsync(newBrightness);
+                    return;
+                }
 
                 // If not yet seeking, check if we should start
                 if (!isGestureSeekingRef.current) {
@@ -97,7 +155,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 }
 
                 // 90 seconds for full screen width
-                const seekSeconds = (gestureState.dx / screenWidth) * 90;
+                const seekSeconds = (gestureState.dx / width) * 90;
 
                 let newTime = currentTimeRef.current + seekSeconds;
                 // Clamp time
@@ -108,8 +166,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             },
             onPanResponderRelease: (evt, gestureState) => {
                 if (isGestureSeekingRef.current) {
-                    const screenWidth = Dimensions.get('window').width;
-                    const seekSeconds = (gestureState.dx / screenWidth) * 90;
+                    const width = playerWidthRef.current || Dimensions.get('window').width;
+                    const seekSeconds = (gestureState.dx / width) * 90;
                     let targetTime = currentTimeRef.current + seekSeconds;
                     targetTime = Math.max(0, Math.min(targetTime, durationRef.current));
 
@@ -121,14 +179,38 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     setIsGestureSeeking(false);
                     isGestureSeekingRef.current = false;
                     resetControlsTimeout();
+                } else if (isGestureBrightnessRef.current) {
+                    isGestureBrightnessRef.current = false;
+                    setShowBrightnessIndicator(false);
+                    resetControlsTimeout();
                 } else {
                     // It was a tap
-                    toggleControls();
+                    const now = Date.now();
+                    const DOUBLE_TAP_DELAY = 300;
+
+                    if (now - lastTapTimeRef.current < DOUBLE_TAP_DELAY) {
+                        // Double tap detected
+                        if (singleTapTimeoutRef.current) {
+                            clearTimeout(singleTapTimeoutRef.current);
+                            singleTapTimeoutRef.current = null;
+                        }
+                        handlePlayPause();
+                        lastTapTimeRef.current = 0; // Reset to prevent triple tap triggering another double tap
+                    } else {
+                        // Single tap detected, wait for potential double tap
+                        lastTapTimeRef.current = now;
+                        singleTapTimeoutRef.current = setTimeout(() => {
+                            toggleControls();
+                            singleTapTimeoutRef.current = null;
+                        }, DOUBLE_TAP_DELAY);
+                    }
                 }
             },
             onPanResponderTerminate: () => {
                 setIsGestureSeeking(false);
                 isGestureSeekingRef.current = false;
+                isGestureBrightnessRef.current = false;
+                setShowBrightnessIndicator(false);
                 resetControlsTimeout();
             }
         })
@@ -183,7 +265,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
     // Handle Play/Pause
     const handlePlayPause = () => {
-        if (isPlaying) {
+        if (isPlayingRef.current) {
             player.pause();
         } else {
             player.play();
@@ -422,7 +504,13 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     }, [episode, initialPosition, player, onProgressUpdate, onEnd]);
 
     return (
-        <View style={[styles.container, style]}>
+        <View
+            style={[styles.container, style]}
+            onLayout={(e) => {
+                playerHeightRef.current = e.nativeEvent.layout.height;
+                playerWidthRef.current = e.nativeEvent.layout.width;
+            }}
+        >
             <VideoView
                 style={StyleSheet.absoluteFill}
                 player={player}
@@ -431,7 +519,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             />
 
             <View
-                style={[styles.overlay, !showControls && !isGestureSeeking && styles.hidden]}
+                style={[styles.overlay, !showControls && !isGestureSeeking && !showBrightnessIndicator && styles.hidden]}
                 {...panResponder.panHandlers}
             >
                 {/* Gesture Indicator */}
@@ -446,8 +534,20 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     </View>
                 )}
 
+                {/* Brightness Indicator */}
+                {showBrightnessIndicator && (
+                    <View style={styles.centerIndicator}>
+                        <MaterialCommunityIcons
+                            name={brightness > 0.5 ? "brightness-5" : brightness > 0.2 ? "brightness-6" : "brightness-7"}
+                            size={50}
+                            color="#fff"
+                        />
+                        <Text style={styles.indicatorText}>{Math.round(brightness * 100)}%</Text>
+                    </View>
+                )}
+
                 {/* Center Play/Pause Button */}
-                {!isGestureSeeking && (
+                {!isGestureSeeking && !showBrightnessIndicator && (
                     <View style={styles.centerControls}>
                         {/* Previous Episode Button */}
                         <TouchableOpacity
@@ -487,7 +587,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 )}
 
                 {/* Bottom Control Bar */}
-                {!isGestureSeeking && (
+                {!isGestureSeeking && !showBrightnessIndicator && (
                     <View style={styles.bottomControls}>
                         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                         <Slider
@@ -611,5 +711,23 @@ const styles = StyleSheet.create({
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
+    },
+    centerIndicator: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: [{ translateX: -50 }, { translateY: -50 }],
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        borderRadius: 10,
+        padding: 20,
+        zIndex: 20,
+    },
+    indicatorText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginTop: 10,
     },
 });
