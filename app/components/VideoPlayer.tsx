@@ -270,6 +270,9 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     // Seek to initial position after player is ready
     useEffect(() => {
         if (episode && player) {
+            // Immediately update UI state when episode changes
+            setIsPlaying(autoPlay);
+
             // Set update interval for timeUpdate event (in seconds)
             try {
                 (player as any).timeUpdateEventInterval = 0.5;
