@@ -5,6 +5,8 @@ import { TVDetail as TVDetailType, Episode, TagConfig, Source } from '../types';
 import VideoPlayer from './VideoPlayer';
 import { useDownload } from '../context/DownloadContext';
 import * as NavigationBar from 'expo-navigation-bar';
+import { AuthImage } from './AuthImage';
+import { API_CONFIG } from '../config';
 
 interface Props {
     tvId: number;
@@ -631,14 +633,20 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                             renderItem={({ item }) => {
                                 return (
                                     <TouchableOpacity
-                                        style={styles.sourceItem}
+                                        style={styles.sourceItemContainer}
                                         onPress={() => handleSourceSelect(item)}
                                     >
-                                        <View>
-                                            <Text style={styles.sourceName}>{item.name}</Text>
-                                            <Text style={styles.sourceInfo}>
-                                                频道: {item.channel_name} | 集数: {item.episodes.length}
-                                            </Text>
+                                        <AuthImage
+                                            uri={item.cover_url}
+                                            headers={{ Authorization: API_CONFIG.AUTH_HEADER }}
+                                            style={styles.sourceItemImage}
+                                            resizeMode="cover"
+                                        />
+                                        <View style={styles.sourceItemInfo}>
+                                            <Text style={styles.sourceItemName}>{item.title || item.name}</Text>
+                                            <Text style={styles.sourceItemChannel}>{item.source_key} - {item.channel_name}</Text>
+                                            <Text style={styles.sourceItemUrl} numberOfLines={1}>{item.url}</Text>
+                                            <Text style={styles.sourceItemEpisodes}>集数: {item.episodes.length}</Text>
                                         </View>
                                     </TouchableOpacity>
                                 );
@@ -797,6 +805,45 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     tagButtonText: {
+        fontSize: 12,
+        color: '#333',
+    },
+    sourceItemContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    sourceItemImage: {
+        width: 60,
+        height: 80,
+        borderRadius: 4,
+        marginRight: 10,
+        backgroundColor: '#eee',
+    },
+    sourceItemInfo: {
+        flex: 1,
+    },
+    sourceItemName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    sourceItemChannel: {
+        fontSize: 12,
+        color: '#007AFF',
+        marginBottom: 2,
+    },
+    sourceItemUrl: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 2,
+    },
+    sourceItemEpisodes: {
         fontSize: 12,
         color: '#333',
     },
