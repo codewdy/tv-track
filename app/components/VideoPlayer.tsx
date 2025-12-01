@@ -447,66 +447,70 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 )}
 
                 {/* Center Play/Pause Button */}
-                <View style={styles.centerControls}>
-                    {/* Previous Episode Button */}
-                    <TouchableOpacity
-                        onPress={() => onPrevious && hasPrevious && onPrevious(isPlaying)}
-                        style={[styles.controlButton, !hasPrevious && styles.controlButtonDisabled]}
-                        disabled={!hasPrevious}
-                    >
-                        <MaterialCommunityIcons
-                            name="skip-previous"
-                            size={30}
-                            color={hasPrevious ? "#fff" : "#666"}
-                        />
-                    </TouchableOpacity>
+                {!isGestureSeeking && (
+                    <View style={styles.centerControls}>
+                        {/* Previous Episode Button */}
+                        <TouchableOpacity
+                            onPress={() => onPrevious && hasPrevious && onPrevious(isPlaying)}
+                            style={[styles.controlButton, !hasPrevious && styles.controlButtonDisabled]}
+                            disabled={!hasPrevious}
+                        >
+                            <MaterialCommunityIcons
+                                name="skip-previous"
+                                size={30}
+                                color={hasPrevious ? "#fff" : "#666"}
+                            />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => handleSeek(currentTime - 5)} style={styles.seekButton}>
-                        <MaterialCommunityIcons name="rewind-5" size={30} color="#fff" />
-                    </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleSeek(currentTime - 5)} style={styles.seekButton}>
+                            <MaterialCommunityIcons name="rewind-5" size={30} color="#fff" />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
-                        <Ionicons
-                            name={isPlaying ? "pause" : "play"}
-                            size={40}
-                            color="#fff"
-                            style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
-                        />
-                    </TouchableOpacity>
+                        <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
+                            <Ionicons
+                                name={isPlaying ? "pause" : "play"}
+                                size={40}
+                                color="#fff"
+                                style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
+                            />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => handleSeek(currentTime + 15)} style={styles.seekButton}>
-                        <MaterialCommunityIcons name="fast-forward-15" size={30} color="#fff" />
-                    </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleSeek(currentTime + 15)} style={styles.seekButton}>
+                            <MaterialCommunityIcons name="fast-forward-15" size={30} color="#fff" />
+                        </TouchableOpacity>
 
-                    {/* Next Episode Button */}
-                    <TouchableOpacity onPress={() => onNext && onNext(isPlaying)} style={styles.controlButton}>
-                        <MaterialCommunityIcons name="skip-next" size={30} color="#fff" />
-                    </TouchableOpacity>
-                </View>
+                        {/* Next Episode Button */}
+                        <TouchableOpacity onPress={() => onNext && onNext(isPlaying)} style={styles.controlButton}>
+                            <MaterialCommunityIcons name="skip-next" size={30} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Bottom Control Bar */}
-                <View style={styles.bottomControls}>
-                    <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                    <Slider
-                        style={styles.slider}
-                        minimumValue={0}
-                        maximumValue={duration > 0 ? duration : 1}
-                        value={currentTime}
-                        onSlidingStart={handleSlidingStart}
-                        onSlidingComplete={handleSeek}
-                        minimumTrackTintColor="#007AFF"
-                        maximumTrackTintColor="#FFFFFF"
-                        thumbTintColor="#007AFF"
-                    />
-                    <Text style={styles.timeText}>{formatTime(duration)}</Text>
-                    <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
-                        <Ionicons
-                            name={isFullScreen ? "contract" : "expand"}
-                            size={20}
-                            color="#fff"
+                {!isGestureSeeking && (
+                    <View style={styles.bottomControls}>
+                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                        <Slider
+                            style={styles.slider}
+                            minimumValue={0}
+                            maximumValue={duration > 0 ? duration : 1}
+                            value={currentTime}
+                            onSlidingStart={handleSlidingStart}
+                            onSlidingComplete={handleSeek}
+                            minimumTrackTintColor="#007AFF"
+                            maximumTrackTintColor="#FFFFFF"
+                            thumbTintColor="#007AFF"
                         />
-                    </TouchableOpacity>
-                </View>
+                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                        <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
+                            <Ionicons
+                                name={isFullScreen ? "contract" : "expand"}
+                                size={20}
+                                color="#fff"
+                            />
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
         </View>
     );
