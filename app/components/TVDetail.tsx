@@ -929,14 +929,16 @@ const styles = StyleSheet.create({
     menuOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-end',
     },
     headerMenuContainer: {
         backgroundColor: '#fff',
         borderRadius: 10,
         width: 200,
         paddingVertical: 5,
+        marginTop: 50,
+        marginRight: 10,
     },
     headerMenuItem: {
         paddingVertical: 15,
