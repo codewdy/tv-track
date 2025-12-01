@@ -44,6 +44,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [brightness, setBrightness] = useState(0);
     const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
+    const [volume, setVolume] = useState(1);
+    const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
 
     // Gesture seeking state
     const [isGestureSeeking, setIsGestureSeeking] = useState(false);
@@ -59,6 +61,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const isPlayingRef = useRef(isPlaying);
     const isGestureBrightnessRef = useRef(false);
     const startBrightnessRef = useRef(0);
+    const isGestureVolumeRef = useRef(false);
+    const startVolumeRef = useRef(0);
     const startTouchXRef = useRef(0);
     const playerHeightRef = useRef(0);
     const playerWidthRef = useRef(0);
@@ -93,7 +97,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 const width = playerWidthRef.current || Dimensions.get('window').width;
                 const isHorizontal = Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
                 const isVerticalLeft = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX < width * 0.25;
-                return isHorizontal || isVerticalLeft;
+                const isVerticalRight = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX > width * 0.75;
+                return isHorizontal || isVerticalLeft || isVerticalRight;
             },
             onPanResponderGrant: (evt, gestureState) => {
                 startTouchXRef.current = evt.nativeEvent.locationX;
@@ -114,12 +119,21 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 const height = playerHeightRef.current || Dimensions.get('window').height;
 
                 // Check for Brightness Gesture (Left side vertical swipe)
-                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current) {
+                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current && !isGestureVolumeRef.current) {
                     // If vertical movement is significant and touch started on left 25%
                     if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current < width * 0.25) {
                         isGestureBrightnessRef.current = true;
                         startBrightnessRef.current = await Brightness.getBrightnessAsync();
                         setShowBrightnessIndicator(true);
+                        if (controlsTimeoutRef.current) {
+                            clearTimeout(controlsTimeoutRef.current);
+                        }
+                    }
+                    // If vertical movement is significant and touch started on right 25%
+                    else if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current > width * 0.75) {
+                        isGestureVolumeRef.current = true;
+                        startVolumeRef.current = player.volume;
+                        setShowVolumeIndicator(true);
                         if (controlsTimeoutRef.current) {
                             clearTimeout(controlsTimeoutRef.current);
                         }
@@ -137,6 +151,20 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                     setBrightness(newBrightness);
                     await Brightness.setBrightnessAsync(newBrightness);
+                    return;
+                }
+
+                if (isGestureVolumeRef.current) {
+                    // Calculate volume change
+                    // Dragging up (negative dy) increases volume
+                    // Dragging down (positive dy) decreases volume
+                    // Full player height drag = 100% volume change
+                    const delta = -gestureState.dy / height;
+                    let newVolume = startVolumeRef.current + delta;
+                    newVolume = Math.max(0, Math.min(1, newVolume));
+
+                    setVolume(newVolume);
+                    player.volume = newVolume;
                     return;
                 }
 
@@ -183,6 +211,10 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     isGestureBrightnessRef.current = false;
                     setShowBrightnessIndicator(false);
                     resetControlsTimeout();
+                } else if (isGestureVolumeRef.current) {
+                    isGestureVolumeRef.current = false;
+                    setShowVolumeIndicator(false);
+                    resetControlsTimeout();
                 } else {
                     // It was a tap
                     const now = Date.now();
@@ -211,10 +243,13 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 isGestureSeekingRef.current = false;
                 isGestureBrightnessRef.current = false;
                 setShowBrightnessIndicator(false);
+                isGestureVolumeRef.current = false;
+                setShowVolumeIndicator(false);
                 resetControlsTimeout();
             }
         })
     ).current;
+
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
         return `${API_CONFIG.BASE_URL}${url}`;
@@ -519,7 +554,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             />
 
             <View
-                style={[styles.overlay, !showControls && !isGestureSeeking && !showBrightnessIndicator && styles.hidden]}
+                style={[styles.overlay, !showControls && !isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && styles.hidden]}
                 {...panResponder.panHandlers}
             >
                 {/* Gesture Indicator */}
@@ -546,8 +581,20 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     </View>
                 )}
 
+                {/* Volume Indicator */}
+                {showVolumeIndicator && (
+                    <View style={styles.centerIndicator}>
+                        <Ionicons
+                            name={volume > 0.5 ? "volume-high" : volume > 0 ? "volume-low" : "volume-mute"}
+                            size={50}
+                            color="#fff"
+                        />
+                        <Text style={styles.indicatorText}>{Math.round(volume * 100)}%</Text>
+                    </View>
+                )}
+
                 {/* Center Play/Pause Button */}
-                {!isGestureSeeking && !showBrightnessIndicator && (
+                {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
                     <View style={styles.centerControls}>
                         {/* Previous Episode Button */}
                         <TouchableOpacity
@@ -587,7 +634,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 )}
 
                 {/* Bottom Control Bar */}
-                {!isGestureSeeking && !showBrightnessIndicator && (
+                {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
                     <View style={styles.bottomControls}>
                         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                         <Slider
