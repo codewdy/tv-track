@@ -471,11 +471,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                     if (event.isPlaying) {
                         resetControlsTimeout();
-                    } else {
-                        setShowControls(true); // Show controls when paused
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
                     }
 
                     if (!event.isPlaying) {
