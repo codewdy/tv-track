@@ -590,7 +590,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                 {/* Center Play/Pause Button */}
                 {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
-                    <View style={styles.centerControls}>
+                    <View style={styles.centerControls} pointerEvents={showControls ? 'auto' : 'none'}>
                         {/* Previous Episode Button */}
                         <TouchableOpacity
                             onPress={() => onPrevious && hasPrevious && onPrevious(isPlaying)}
@@ -630,7 +630,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                 {/* Bottom Control Bar */}
                 {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
-                    <View style={styles.bottomControls}>
+                    <View style={styles.bottomControls} pointerEvents={showControls ? 'auto' : 'none'}>
                         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                         <Slider
                             style={styles.slider}
