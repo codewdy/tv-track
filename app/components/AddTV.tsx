@@ -109,6 +109,13 @@ export default function AddTV({ onBack }: Props) {
         </TouchableOpacity>
     );
 
+    const renderEpisodeItem = ({ item }: { item: { name: string; url: string } }) => (
+        <View style={styles.episodeItem}>
+            <Text style={styles.episodeName}>{item.name}</Text>
+            <Text style={styles.episodeUrl} numberOfLines={1}>{item.url}</Text>
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -161,7 +168,7 @@ export default function AddTV({ onBack }: Props) {
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>配置剧集</Text>
 
-                        <ScrollView style={styles.modalScroll}>
+                        <View style={styles.configContainer}>
                             <Text style={styles.label}>名称</Text>
                             <TextInput
                                 style={styles.input}
@@ -195,7 +202,16 @@ export default function AddTV({ onBack }: Props) {
                                     onValueChange={setConfigTracking}
                                 />
                             </View>
-                        </ScrollView>
+
+                            <Text style={styles.label}>剧集列表 ({selectedSource?.episodes?.length || 0})</Text>
+                        </View>
+
+                        <FlatList
+                            data={selectedSource?.episodes || []}
+                            renderItem={renderEpisodeItem}
+                            keyExtractor={(item, index) => index.toString()}
+                            style={styles.modalList}
+                        />
 
                         <View style={styles.modalButtons}>
                             <TouchableOpacity
@@ -399,5 +415,25 @@ const styles = StyleSheet.create({
     confirmButtonText: {
         color: '#fff',
         fontWeight: 'bold',
+    },
+    modalList: {
+        marginBottom: 10,
+    },
+    episodeItem: {
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    episodeName: {
+        fontSize: 14,
+        color: '#333',
+        marginBottom: 2,
+    },
+    episodeUrl: {
+        fontSize: 12,
+        color: '#999',
+    },
+    configContainer: {
+        marginBottom: 10,
     },
 });

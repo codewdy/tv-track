@@ -663,6 +663,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                 </View>
             </Modal>
 
+            {/* Config Modal */}
             <Modal
                 visible={showConfigModal}
                 transparent={true}
@@ -695,8 +696,23 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                                 <Text style={styles.configDescription}>
                                     开启追踪后，系统会自动检查该源的更新。
                                 </Text>
+                                <Text style={[styles.configLabel, { marginTop: 10 }]}>
+                                    剧集列表 ({selectedSource.episodes?.length || 0})
+                                </Text>
                             </View>
                         )}
+
+                        <FlatList
+                            data={selectedSource?.episodes || []}
+                            renderItem={({ item }) => (
+                                <View style={styles.configEpisodeItem}>
+                                    <Text style={styles.configEpisodeName}>{item.name}</Text>
+                                    <Text style={styles.configEpisodeUrl} numberOfLines={1}>{item.url}</Text>
+                                </View>
+                            )}
+                            keyExtractor={(item, index) => index.toString()}
+                            style={styles.configList}
+                        />
 
                         <View style={styles.configButtons}>
                             <TouchableOpacity
@@ -714,8 +730,8 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                         </View>
                     </View>
                 </View>
-            </Modal>
-        </View>
+            </Modal >
+        </View >
     );
 }
 
@@ -1052,6 +1068,24 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 20,
         width: '85%',
+        maxHeight: '80%',
+    },
+    configList: {
+        marginBottom: 10,
+    },
+    configEpisodeItem: {
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    configEpisodeName: {
+        fontSize: 14,
+        color: '#333',
+        marginBottom: 2,
+    },
+    configEpisodeUrl: {
+        fontSize: 12,
+        color: '#999',
     },
     configContent: {
         marginBottom: 20,
