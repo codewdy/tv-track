@@ -27,12 +27,26 @@ if config.logger.filename:
 
 tracker = Tracker(config)
 
+@web.middleware
+async def cors_middleware(request, handler):
+    if request.method == 'OPTIONS':
+        response = web.Response()
+    else:
+        response = await handler(request)
+    
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS, PUT, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
+middlewares = [cors_middleware]
+
 if config.service.auth_username and config.service.auth_password:
     auth = BasicAuthMiddleware(
         username=config.service.auth_username, password=config.service.auth_password)
-    app = web.Application(middlewares=[auth])
-else:
-    app = web.Application()
+    middlewares.append(auth)
+
+app = web.Application(middlewares=middlewares)
 app.add_routes(create_routes(tracker, mock=args.mock))
 app.add_routes(audio_routes(
     '/audio', config.tracker.resource_dir, tracker))
