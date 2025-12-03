@@ -252,6 +252,7 @@ interface GestureRefs {
     duration: number;
     isPlaying: boolean;
     volume: number;
+    showControls: boolean;
 }
 
 function useGestureHandler(
@@ -273,7 +274,7 @@ function useGestureHandler(
     });
     const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const handleTap = useCallback((isDoubleTap: boolean) => {
+    const handleTap = useCallback((isDoubleTap: boolean, wasShowingControls: boolean) => {
         if (isDoubleTap) {
             // Double tap - toggle play/pause
             const player = playerRef.current;
@@ -284,12 +285,18 @@ function useGestureHandler(
                     player.play();
                 }
             }
+            resetControlsTimeout();
         } else {
             // Single tap - toggle controls
             dispatch({ type: 'TOGGLE_CONTROLS' });
+            // Match original behavior: only reset timeout when showing controls
+            if (!wasShowingControls) {
+                resetControlsTimeout();
+            } else {
+                clearControlsTimeout();
+            }
         }
-        resetControlsTimeout();
-    }, [dispatch, playerRef, gestureRefs, resetControlsTimeout]);
+    }, [dispatch, playerRef, gestureRefs, resetControlsTimeout, clearControlsTimeout]);
 
     const panResponder = useMemo(() => PanResponder.create({
         onStartShouldSetPanResponder: () => true,
@@ -374,6 +381,8 @@ function useGestureHandler(
                 const targetTime = clamp(refs.currentTime + seekSeconds, 0, refs.duration);
                 if (playerRef.current) {
                     playerRef.current.currentTime = targetTime;
+                    // Update UI state immediately to match original behavior
+                    dispatch({ type: 'SET_TIME', payload: { currentTime: targetTime, duration: refs.duration } });
                 }
                 gs.isGestureSeeking = false;
                 dispatch({ type: 'END_GESTURE' });
@@ -390,18 +399,19 @@ function useGestureHandler(
                 // Handle tap
                 const now = Date.now();
                 const DOUBLE_TAP_DELAY = 300;
+                const wasShowingControls = gestureRefs.current!.showControls;
 
                 if (now - gs.lastTapTime < DOUBLE_TAP_DELAY) {
                     if (singleTapTimeoutRef.current) {
                         clearTimeout(singleTapTimeoutRef.current);
                         singleTapTimeoutRef.current = null;
                     }
-                    handleTap(true);
+                    handleTap(true, wasShowingControls);
                     gs.lastTapTime = 0;
                 } else {
                     gs.lastTapTime = now;
                     singleTapTimeoutRef.current = setTimeout(() => {
-                        handleTap(false);
+                        handleTap(false, gestureRefs.current!.showControls);
                         singleTapTimeoutRef.current = null;
                     }, DOUBLE_TAP_DELAY);
                 }
@@ -420,7 +430,7 @@ function useGestureHandler(
     return panResponder;
 }
 
-function useControlsTimeout(dispatch: React.Dispatch<PlayerAction>, isPlaying: boolean) {
+function useControlsTimeout(dispatch: React.Dispatch<PlayerAction>, isPlayingRef: React.RefObject<boolean>) {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const clear = useCallback(() => {
@@ -433,11 +443,12 @@ function useControlsTimeout(dispatch: React.Dispatch<PlayerAction>, isPlaying: b
     const reset = useCallback(() => {
         clear();
         timeoutRef.current = setTimeout(() => {
-            if (isPlaying) {
+            // Use ref to get current isPlaying value, avoiding stale closure
+            if (isPlayingRef.current) {
                 dispatch({ type: 'SET_CONTROLS', payload: false });
             }
         }, 3000);
-    }, [dispatch, isPlaying, clear]);
+    }, [dispatch, isPlayingRef, clear]);
 
     useEffect(() => () => clear(), [clear]);
 
@@ -471,13 +482,19 @@ export default function VideoPlayer({
     const playerDimensionsRef = useRef({ width: Dimensions.get('window').width, height: Dimensions.get('window').height });
 
     // Gesture refs - mutable values for PanResponder
-    const gestureRefs = useRef<GestureRefs>({ currentTime: 0, duration: 0, isPlaying: false, volume: 1 });
+    const gestureRefs = useRef<GestureRefs>({ currentTime: 0, duration: 0, isPlaying: false, volume: 1, showControls: true });
     useEffect(() => {
-        gestureRefs.current = { currentTime, duration, isPlaying, volume };
-    }, [currentTime, duration, isPlaying, volume]);
+        gestureRefs.current = { currentTime, duration, isPlaying, volume, showControls };
+    }, [currentTime, duration, isPlaying, volume, showControls]);
+
+    // Ref for isPlaying to avoid stale closures in timeout
+    const isPlayingRef = useRef(isPlaying);
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
 
     // Controls timeout
-    const { reset: resetControlsTimeout, clear: clearControlsTimeout } = useControlsTimeout(dispatch, isPlaying);
+    const { reset: resetControlsTimeout, clear: clearControlsTimeout } = useControlsTimeout(dispatch, isPlayingRef);
 
     // Gesture handler
     const panResponder = useGestureHandler(

@@ -4,3 +4,4 @@ test-data
 tracker.log*
 result.json
 config.json
+.vscode
