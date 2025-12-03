@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, BackHandler, PanResponder, PanResponderInstance, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useCallback, useMemo, useReducer } from 'react';
+import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, PanResponder, Dimensions, BackHandler } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Slider from '@react-native-community/slider';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import * as Brightness from 'expo-brightness';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
 
+// ============= Types =============
 interface ProgressUpdate {
     currentTime: number;
     duration: number;
@@ -15,7 +16,7 @@ interface ProgressUpdate {
 
 interface Props {
     episode: Episode | null;
-    initialPosition?: number; // in seconds
+    initialPosition?: number;
     style?: ViewStyle;
     onProgressUpdate?: (progress: ProgressUpdate) => void;
     onEnd?: () => void;
@@ -29,326 +30,609 @@ interface Props {
     hasPrevious?: boolean;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange, onFullScreenChange, onNext, onPrevious, hasPrevious = false }: Props) {
-    const lastReportedTimeRef = useRef<number>(0);
-    const isEndedRef = useRef<boolean>(false);
-    const playerRef = useRef<any>(null);
-    const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+// ============= State Reducer =============
+interface PlayerState {
+    // Playback
+    isPlaying: boolean;
+    currentTime: number;
+    duration: number;
+    isSeeking: boolean;
+    // UI
+    showControls: boolean;
+    isFullScreen: boolean;
+    // Gestures
+    gestureType: 'none' | 'seek' | 'brightness' | 'volume';
+    gestureSeekTime: number;
+    gestureSeekOffset: number;
+    brightness: number;
+    volume: number;
+}
 
-    // Control states
-    const [showControls, setShowControls] = useState(true);
-    const [isPlaying, setIsPlaying] = useState(autoPlay);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [isSeeking, setIsSeeking] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const [brightness, setBrightness] = useState(0);
-    const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
-    const [volume, setVolume] = useState(1);
-    const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
+type PlayerAction =
+    | { type: 'SET_PLAYING'; payload: boolean }
+    | { type: 'SET_TIME'; payload: { currentTime: number; duration: number } }
+    | { type: 'SET_SEEKING'; payload: boolean }
+    | { type: 'TOGGLE_CONTROLS' }
+    | { type: 'SET_CONTROLS'; payload: boolean }
+    | { type: 'SET_FULLSCREEN'; payload: boolean }
+    | { type: 'START_GESTURE'; payload: { type: 'seek' | 'brightness' | 'volume'; startTime?: number } }
+    | { type: 'UPDATE_GESTURE_SEEK'; payload: { time: number; offset: number } }
+    | { type: 'SET_BRIGHTNESS'; payload: number }
+    | { type: 'SET_VOLUME'; payload: number }
+    | { type: 'END_GESTURE' };
 
-    // Gesture seeking state
-    const [isGestureSeeking, setIsGestureSeeking] = useState(false);
-    const [gestureSeekTime, setGestureSeekTime] = useState(0);
-    const [gestureSeekOffset, setGestureSeekOffset] = useState(0);
+const initialState: PlayerState = {
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    isSeeking: false,
+    showControls: true,
+    isFullScreen: false,
+    gestureType: 'none',
+    gestureSeekTime: 0,
+    gestureSeekOffset: 0,
+    brightness: 0,
+    volume: 1,
+};
 
-    // Refs for PanResponder to access current values without re-binding
-    const currentTimeRef = useRef(0);
-    const durationRef = useRef(0);
-    const isGestureSeekingRef = useRef(false);
-    const lastTapTimeRef = useRef(0);
+function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
+    switch (action.type) {
+        case 'SET_PLAYING':
+            return { ...state, isPlaying: action.payload };
+        case 'SET_TIME':
+            return state.isSeeking ? state : { ...state, ...action.payload };
+        case 'SET_SEEKING':
+            return { ...state, isSeeking: action.payload };
+        case 'TOGGLE_CONTROLS':
+            return { ...state, showControls: !state.showControls };
+        case 'SET_CONTROLS':
+            return { ...state, showControls: action.payload };
+        case 'SET_FULLSCREEN':
+            return { ...state, isFullScreen: action.payload };
+        case 'START_GESTURE':
+            return {
+                ...state,
+                gestureType: action.payload.type,
+                gestureSeekTime: action.payload.startTime ?? state.currentTime,
+                gestureSeekOffset: 0,
+            };
+        case 'UPDATE_GESTURE_SEEK':
+            return { ...state, gestureSeekTime: action.payload.time, gestureSeekOffset: action.payload.offset };
+        case 'SET_BRIGHTNESS':
+            return { ...state, brightness: action.payload };
+        case 'SET_VOLUME':
+            return { ...state, volume: action.payload };
+        case 'END_GESTURE':
+            return { ...state, gestureType: 'none' };
+        default:
+            return state;
+    }
+}
+
+// ============= Utilities =============
+const formatTime = (seconds: number): string => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h > 0
+        ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+        : `${m}:${s.toString().padStart(2, '0')}`;
+};
+
+const getVideoUrl = (url: string): string => {
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
+    return `${API_CONFIG.BASE_URL}${url}`;
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+
+// ============= Sub-Components =============
+interface GestureIndicatorProps {
+    type: 'seek' | 'brightness' | 'volume';
+    seekTime?: number;
+    duration?: number;
+    seekOffset?: number;
+    brightness?: number;
+    volume?: number;
+}
+
+const GestureIndicator = React.memo(({ type, seekTime = 0, duration = 0, seekOffset = 0, brightness = 0, volume = 0 }: GestureIndicatorProps) => {
+    if (type === 'seek') {
+        return (
+            <View style={styles.gestureIndicator}>
+                <Text style={styles.gestureTimeText}>
+                    {formatTime(seekTime)} / {formatTime(duration)}
+                </Text>
+                <Text style={styles.gestureOffsetText}>
+                    {seekOffset > 0 ? '+' : ''}{Math.round(seekOffset)}s
+                </Text>
+            </View>
+        );
+    }
+
+    if (type === 'brightness') {
+        const iconName = brightness > 0.5 ? "brightness-5" : brightness > 0.2 ? "brightness-6" : "brightness-7";
+        return (
+            <View style={styles.centerIndicator}>
+                <MaterialCommunityIcons name={iconName} size={50} color="#fff" />
+                <Text style={styles.indicatorText}>{Math.round(brightness * 100)}%</Text>
+            </View>
+        );
+    }
+
+    if (type === 'volume') {
+        const iconName = volume > 0.5 ? "volume-high" : volume > 0 ? "volume-low" : "volume-mute";
+        return (
+            <View style={styles.centerIndicator}>
+                <Ionicons name={iconName} size={50} color="#fff" />
+                <Text style={styles.indicatorText}>{Math.round(volume * 100)}%</Text>
+            </View>
+        );
+    }
+
+    return null;
+});
+
+interface CenterControlsProps {
+    isPlaying: boolean;
+    hasPrevious: boolean;
+    onPlayPause: () => void;
+    onSeekBackward: () => void;
+    onSeekForward: () => void;
+    onPrevious: () => void;
+    onNext: () => void;
+}
+
+const CenterControls = React.memo(({ isPlaying, hasPrevious, onPlayPause, onSeekBackward, onSeekForward, onPrevious, onNext }: CenterControlsProps) => (
+    <View style={styles.centerControls}>
+        <TouchableOpacity
+            onPress={onPrevious}
+            style={[styles.controlButton, !hasPrevious && styles.controlButtonDisabled]}
+            disabled={!hasPrevious}
+        >
+            <MaterialCommunityIcons name="skip-previous" size={30} color={hasPrevious ? "#fff" : "#666"} />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onSeekBackward} style={styles.seekButton}>
+            <MaterialCommunityIcons name="rewind-5" size={30} color="#fff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onPlayPause} style={styles.playPauseButton}>
+            <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={40}
+                color="#fff"
+                style={{ marginLeft: isPlaying ? 0 : 4 }}
+            />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onSeekForward} style={styles.seekButton}>
+            <MaterialCommunityIcons name="fast-forward-15" size={30} color="#fff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onNext} style={styles.controlButton}>
+            <MaterialCommunityIcons name="skip-next" size={30} color="#fff" />
+        </TouchableOpacity>
+    </View>
+));
+
+interface BottomControlsProps {
+    currentTime: number;
+    duration: number;
+    isFullScreen: boolean;
+    onSlidingStart: () => void;
+    onSeek: (value: number) => void;
+    onToggleFullScreen: () => void;
+}
+
+const BottomControls = React.memo(({ currentTime, duration, isFullScreen, onSlidingStart, onSeek, onToggleFullScreen }: BottomControlsProps) => (
+    <View style={styles.bottomControls}>
+        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+        <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={duration > 0 ? duration : 1}
+            value={currentTime}
+            onSlidingStart={onSlidingStart}
+            onSlidingComplete={onSeek}
+            minimumTrackTintColor="#007AFF"
+            maximumTrackTintColor="#FFFFFF"
+            thumbTintColor="#007AFF"
+        />
+        <Text style={styles.timeText}>{formatTime(duration)}</Text>
+        <TouchableOpacity onPress={onToggleFullScreen} style={styles.fullScreenButton}>
+            <Ionicons name={isFullScreen ? "contract" : "expand"} size={20} color="#fff" />
+        </TouchableOpacity>
+    </View>
+));
+
+// ============= Custom Hooks =============
+interface GestureRefs {
+    currentTime: number;
+    duration: number;
+    isPlaying: boolean;
+    volume: number;
+}
+
+function useGestureHandler(
+    dispatch: React.Dispatch<PlayerAction>,
+    gestureRefs: React.RefObject<GestureRefs>,
+    playerRef: React.RefObject<any>,
+    playerDimensionsRef: React.RefObject<{ width: number; height: number }>,
+    resetControlsTimeout: () => void,
+    clearControlsTimeout: () => void
+) {
+    const gestureStateRef = useRef({
+        isGestureSeeking: false,
+        isGestureBrightness: false,
+        isGestureVolume: false,
+        startTouchX: 0,
+        startBrightness: 0,
+        startVolume: 0,
+        lastTapTime: 0,
+    });
     const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const isPlayingRef = useRef(isPlaying);
-    const isGestureBrightnessRef = useRef(false);
-    const startBrightnessRef = useRef(0);
-    const isGestureVolumeRef = useRef(false);
-    const startVolumeRef = useRef(0);
-    const startTouchXRef = useRef(0);
-    const playerHeightRef = useRef(0);
-    const playerWidthRef = useRef(0);
 
-    // Update refs when state changes
+    const handleTap = useCallback((isDoubleTap: boolean) => {
+        if (isDoubleTap) {
+            // Double tap - toggle play/pause
+            const player = playerRef.current;
+            if (player) {
+                if (gestureRefs.current!.isPlaying) {
+                    player.pause();
+                } else {
+                    player.play();
+                }
+            }
+        } else {
+            // Single tap - toggle controls
+            dispatch({ type: 'TOGGLE_CONTROLS' });
+        }
+        resetControlsTimeout();
+    }, [dispatch, playerRef, gestureRefs, resetControlsTimeout]);
+
+    const panResponder = useMemo(() => PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (evt, gestureState) => {
+            const { width } = playerDimensionsRef.current!;
+            const isHorizontal = Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
+            const isVerticalLeft = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX < width * 0.25;
+            const isVerticalRight = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX > width * 0.75;
+            return isHorizontal || isVerticalLeft || isVerticalRight;
+        },
+        onPanResponderGrant: (evt, gestureState) => {
+            const gs = gestureStateRef.current;
+            gs.startTouchX = evt.nativeEvent.locationX;
+
+            if (Math.abs(gestureState.dx) > 10) {
+                gs.isGestureSeeking = true;
+                dispatch({ type: 'START_GESTURE', payload: { type: 'seek', startTime: gestureRefs.current!.currentTime } });
+                clearControlsTimeout();
+            }
+        },
+        onPanResponderMove: async (evt, gestureState) => {
+            const gs = gestureStateRef.current;
+            const { width, height } = playerDimensionsRef.current!;
+            const refs = gestureRefs.current!;
+
+            // Check for brightness/volume gesture start
+            if (!gs.isGestureSeeking && !gs.isGestureBrightness && !gs.isGestureVolume) {
+                if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10) {
+                    if (gs.startTouchX < width * 0.25) {
+                        gs.isGestureBrightness = true;
+                        gs.startBrightness = await Brightness.getBrightnessAsync();
+                        dispatch({ type: 'START_GESTURE', payload: { type: 'brightness' } });
+                        clearControlsTimeout();
+                    } else if (gs.startTouchX > width * 0.75) {
+                        gs.isGestureVolume = true;
+                        gs.startVolume = refs.volume;
+                        dispatch({ type: 'START_GESTURE', payload: { type: 'volume' } });
+                        clearControlsTimeout();
+                    }
+                }
+            }
+
+            if (gs.isGestureBrightness) {
+                const delta = -gestureState.dy / height;
+                const newBrightness = clamp(gs.startBrightness + delta, 0, 1);
+                dispatch({ type: 'SET_BRIGHTNESS', payload: newBrightness });
+                await Brightness.setBrightnessAsync(newBrightness);
+                return;
+            }
+
+            if (gs.isGestureVolume) {
+                const delta = -gestureState.dy / height;
+                const newVolume = clamp(gs.startVolume + delta, 0, 1);
+                dispatch({ type: 'SET_VOLUME', payload: newVolume });
+                if (playerRef.current) {
+                    playerRef.current.volume = newVolume;
+                }
+                return;
+            }
+
+            // Start seek gesture if not already
+            if (!gs.isGestureSeeking && Math.abs(gestureState.dx) > 10) {
+                gs.isGestureSeeking = true;
+                dispatch({ type: 'START_GESTURE', payload: { type: 'seek', startTime: refs.currentTime } });
+                clearControlsTimeout();
+                return;
+            }
+
+            if (gs.isGestureSeeking) {
+                const seekSeconds = (gestureState.dx / width) * 90;
+                const newTime = clamp(refs.currentTime + seekSeconds, 0, refs.duration);
+                dispatch({ type: 'UPDATE_GESTURE_SEEK', payload: { time: newTime, offset: seekSeconds } });
+            }
+        },
+        onPanResponderRelease: (evt, gestureState) => {
+            const gs = gestureStateRef.current;
+            const { width } = playerDimensionsRef.current!;
+            const refs = gestureRefs.current!;
+
+            if (gs.isGestureSeeking) {
+                const seekSeconds = (gestureState.dx / width) * 90;
+                const targetTime = clamp(refs.currentTime + seekSeconds, 0, refs.duration);
+                if (playerRef.current) {
+                    playerRef.current.currentTime = targetTime;
+                }
+                gs.isGestureSeeking = false;
+                dispatch({ type: 'END_GESTURE' });
+                resetControlsTimeout();
+            } else if (gs.isGestureBrightness) {
+                gs.isGestureBrightness = false;
+                dispatch({ type: 'END_GESTURE' });
+                resetControlsTimeout();
+            } else if (gs.isGestureVolume) {
+                gs.isGestureVolume = false;
+                dispatch({ type: 'END_GESTURE' });
+                resetControlsTimeout();
+            } else {
+                // Handle tap
+                const now = Date.now();
+                const DOUBLE_TAP_DELAY = 300;
+
+                if (now - gs.lastTapTime < DOUBLE_TAP_DELAY) {
+                    if (singleTapTimeoutRef.current) {
+                        clearTimeout(singleTapTimeoutRef.current);
+                        singleTapTimeoutRef.current = null;
+                    }
+                    handleTap(true);
+                    gs.lastTapTime = 0;
+                } else {
+                    gs.lastTapTime = now;
+                    singleTapTimeoutRef.current = setTimeout(() => {
+                        handleTap(false);
+                        singleTapTimeoutRef.current = null;
+                    }, DOUBLE_TAP_DELAY);
+                }
+            }
+        },
+        onPanResponderTerminate: () => {
+            const gs = gestureStateRef.current;
+            gs.isGestureSeeking = false;
+            gs.isGestureBrightness = false;
+            gs.isGestureVolume = false;
+            dispatch({ type: 'END_GESTURE' });
+            resetControlsTimeout();
+        }
+    }), [dispatch, gestureRefs, playerRef, playerDimensionsRef, resetControlsTimeout, clearControlsTimeout, handleTap]);
+
+    return panResponder;
+}
+
+function useControlsTimeout(dispatch: React.Dispatch<PlayerAction>, isPlaying: boolean) {
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const clear = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+    }, []);
+
+    const reset = useCallback(() => {
+        clear();
+        timeoutRef.current = setTimeout(() => {
+            if (isPlaying) {
+                dispatch({ type: 'SET_CONTROLS', payload: false });
+            }
+        }, 3000);
+    }, [dispatch, isPlaying, clear]);
+
+    useEffect(() => () => clear(), [clear]);
+
+    return { reset, clear };
+}
+
+// ============= Main Component =============
+export default function VideoPlayer({
+    episode,
+    initialPosition = 0,
+    style,
+    onProgressUpdate,
+    onEnd,
+    autoPlay = false,
+    lastKnownPositionRef,
+    lastKnownDurationRef,
+    onPlayingChange,
+    onFullScreenChange,
+    onNext,
+    onPrevious,
+    hasPrevious = false
+}: Props) {
+    // State
+    const [state, dispatch] = useReducer(playerReducer, { ...initialState, isPlaying: autoPlay });
+    const { isPlaying, currentTime, duration, isSeeking, showControls, isFullScreen, gestureType, gestureSeekTime, gestureSeekOffset, brightness, volume } = state;
+
+    // Refs
+    const playerRef = useRef<any>(null);
+    const isEndedRef = useRef(false);
+    const lastReportedTimeRef = useRef(initialPosition);
+    const playerDimensionsRef = useRef({ width: Dimensions.get('window').width, height: Dimensions.get('window').height });
+
+    // Gesture refs - mutable values for PanResponder
+    const gestureRefs = useRef<GestureRefs>({ currentTime: 0, duration: 0, isPlaying: false, volume: 1 });
     useEffect(() => {
-        currentTimeRef.current = currentTime;
-    }, [currentTime]);
+        gestureRefs.current = { currentTime, duration, isPlaying, volume };
+    }, [currentTime, duration, isPlaying, volume]);
 
-    useEffect(() => {
-        durationRef.current = duration;
-    }, [duration]);
+    // Controls timeout
+    const { reset: resetControlsTimeout, clear: clearControlsTimeout } = useControlsTimeout(dispatch, isPlaying);
 
-    useEffect(() => {
-        isPlayingRef.current = isPlaying;
-    }, [isPlaying]);
+    // Gesture handler
+    const panResponder = useGestureHandler(
+        dispatch,
+        gestureRefs,
+        playerRef,
+        playerDimensionsRef,
+        resetControlsTimeout,
+        clearControlsTimeout
+    );
 
+    // Initialize brightness
     useEffect(() => {
         (async () => {
             const { status } = await Brightness.requestPermissionsAsync();
             if (status === 'granted') {
                 const currentBrightness = await Brightness.getBrightnessAsync();
-                setBrightness(currentBrightness);
+                dispatch({ type: 'SET_BRIGHTNESS', payload: currentBrightness });
             }
         })();
     }, []);
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (evt, gestureState) => {
-                const width = playerWidthRef.current || Dimensions.get('window').width;
-                const isHorizontal = Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
-                const isVerticalLeft = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX < width * 0.25;
-                const isVerticalRight = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX > width * 0.75;
-                return isHorizontal || isVerticalLeft || isVerticalRight;
-            },
-            onPanResponderGrant: (evt, gestureState) => {
-                startTouchXRef.current = evt.nativeEvent.locationX;
-
-                // If we stole the responder (dx > 10), start seeking immediately
-                if (Math.abs(gestureState.dx) > 10) {
-                    setIsGestureSeeking(true);
-                    isGestureSeekingRef.current = true;
-                    setGestureSeekTime(currentTimeRef.current);
-                    setGestureSeekOffset(0);
-                    if (controlsTimeoutRef.current) {
-                        clearTimeout(controlsTimeoutRef.current);
-                    }
-                }
-            },
-            onPanResponderMove: async (evt, gestureState) => {
-                const width = playerWidthRef.current || Dimensions.get('window').width;
-                const height = playerHeightRef.current || Dimensions.get('window').height;
-
-                // Check for Brightness Gesture (Left side vertical swipe)
-                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current && !isGestureVolumeRef.current) {
-                    // If vertical movement is significant and touch started on left 25%
-                    if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current < width * 0.25) {
-                        isGestureBrightnessRef.current = true;
-                        startBrightnessRef.current = await Brightness.getBrightnessAsync();
-                        setShowBrightnessIndicator(true);
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
-                    }
-                    // If vertical movement is significant and touch started on right 25%
-                    else if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current > width * 0.75) {
-                        isGestureVolumeRef.current = true;
-                        startVolumeRef.current = player.volume;
-                        setShowVolumeIndicator(true);
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
-                    }
-                }
-
-                if (isGestureBrightnessRef.current) {
-                    // Calculate brightness change
-                    // Dragging up (negative dy) increases brightness
-                    // Dragging down (positive dy) decreases brightness
-                    // Full player height drag = 100% brightness change
-                    const delta = -gestureState.dy / height;
-                    let newBrightness = startBrightnessRef.current + delta;
-                    newBrightness = Math.max(0, Math.min(1, newBrightness));
-
-                    setBrightness(newBrightness);
-                    await Brightness.setBrightnessAsync(newBrightness);
-                    return;
-                }
-
-                if (isGestureVolumeRef.current) {
-                    // Calculate volume change
-                    // Dragging up (negative dy) increases volume
-                    // Dragging down (positive dy) decreases volume
-                    // Full player height drag = 100% volume change
-                    const delta = -gestureState.dy / height;
-                    let newVolume = startVolumeRef.current + delta;
-                    newVolume = Math.max(0, Math.min(1, newVolume));
-
-                    setVolume(newVolume);
-                    player.volume = newVolume;
-                    return;
-                }
-
-                // If not yet seeking, check if we should start
-                if (!isGestureSeekingRef.current) {
-                    if (Math.abs(gestureState.dx) > 10) {
-                        setIsGestureSeeking(true);
-                        isGestureSeekingRef.current = true;
-                        setGestureSeekTime(currentTimeRef.current);
-                        setGestureSeekOffset(0);
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
-                    }
-                    return;
-                }
-
-                // 90 seconds for full screen width
-                const seekSeconds = (gestureState.dx / width) * 90;
-
-                let newTime = currentTimeRef.current + seekSeconds;
-                // Clamp time
-                newTime = Math.max(0, Math.min(newTime, durationRef.current));
-
-                setGestureSeekTime(newTime);
-                setGestureSeekOffset(seekSeconds);
-            },
-            onPanResponderRelease: (evt, gestureState) => {
-                if (isGestureSeekingRef.current) {
-                    const width = playerWidthRef.current || Dimensions.get('window').width;
-                    const seekSeconds = (gestureState.dx / width) * 90;
-                    let targetTime = currentTimeRef.current + seekSeconds;
-                    targetTime = Math.max(0, Math.min(targetTime, durationRef.current));
-
-                    if (playerRef.current) {
-                        playerRef.current.currentTime = targetTime;
-                        setCurrentTime(targetTime);
-                    }
-
-                    setIsGestureSeeking(false);
-                    isGestureSeekingRef.current = false;
-                    resetControlsTimeout();
-                } else if (isGestureBrightnessRef.current) {
-                    isGestureBrightnessRef.current = false;
-                    setShowBrightnessIndicator(false);
-                    resetControlsTimeout();
-                } else if (isGestureVolumeRef.current) {
-                    isGestureVolumeRef.current = false;
-                    setShowVolumeIndicator(false);
-                    resetControlsTimeout();
-                } else {
-                    // It was a tap
-                    const now = Date.now();
-                    const DOUBLE_TAP_DELAY = 300;
-
-                    if (now - lastTapTimeRef.current < DOUBLE_TAP_DELAY) {
-                        // Double tap detected
-                        if (singleTapTimeoutRef.current) {
-                            clearTimeout(singleTapTimeoutRef.current);
-                            singleTapTimeoutRef.current = null;
-                        }
-                        handlePlayPause();
-                        lastTapTimeRef.current = 0; // Reset to prevent triple tap triggering another double tap
-                    } else {
-                        // Single tap detected, wait for potential double tap
-                        lastTapTimeRef.current = now;
-                        singleTapTimeoutRef.current = setTimeout(() => {
-                            toggleControls();
-                            singleTapTimeoutRef.current = null;
-                        }, DOUBLE_TAP_DELAY);
-                    }
-                }
-            },
-            onPanResponderTerminate: () => {
-                setIsGestureSeeking(false);
-                isGestureSeekingRef.current = false;
-                isGestureBrightnessRef.current = false;
-                setShowBrightnessIndicator(false);
-                isGestureVolumeRef.current = false;
-                setShowVolumeIndicator(false);
-                resetControlsTimeout();
-            }
-        })
-    ).current;
-
-    const getVideoUrl = (url: string) => {
-        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
-        return `${API_CONFIG.BASE_URL}${url}`;
-    };
-
+    // Create player
     const player = useVideoPlayer(
         episode ? getVideoUrl(episode.url) : null,
-        (player) => {
-            player.loop = false;
-            player.staysActiveInBackground = true;
-            playerRef.current = player;
+        (p) => {
+            p.loop = false;
+            p.staysActiveInBackground = true;
+            playerRef.current = p;
         }
     );
 
-    // Format time helper
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = Math.floor(seconds % 60);
-        if (h > 0) {
-            return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
-        return `${m}:${s.toString().padStart(2, '0')}`;
-    };
-
-    // Toggle controls visibility
-    const toggleControls = () => {
-        setShowControls(prev => !prev);
-        if (!showControls) {
-            resetControlsTimeout();
-        } else {
-            if (controlsTimeoutRef.current) {
-                clearTimeout(controlsTimeoutRef.current);
-            }
-        }
-    };
-
-    const resetControlsTimeout = () => {
-        if (controlsTimeoutRef.current) {
-            clearTimeout(controlsTimeoutRef.current);
-        }
-        controlsTimeoutRef.current = setTimeout(() => {
-            if (isPlaying) {
-                setShowControls(false);
-            }
-        }, 3000);
-    };
-
-    // Handle Play/Pause
-    const handlePlayPause = () => {
-        if (isPlayingRef.current) {
-            player.pause();
-        } else {
-            player.play();
-        }
-        resetControlsTimeout();
-    };
-
-    // Handle Seek
-    const handleSeek = (value: number) => {
-        player.currentTime = value;
-        setCurrentTime(value);
-        setIsSeeking(false);
-        resetControlsTimeout();
-    };
-
-    const handleSlidingStart = () => {
-        setIsSeeking(true);
-        if (controlsTimeoutRef.current) {
-            clearTimeout(controlsTimeoutRef.current);
-        }
-    };
-
-    const toggleFullScreen = async () => {
-        if (isFullScreen) {
-            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-            setIsFullScreen(false);
-            if (onFullScreenChange) onFullScreenChange(false);
-        } else {
-            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-            setIsFullScreen(true);
-            if (onFullScreenChange) onFullScreenChange(true);
-        }
-        resetControlsTimeout();
-    };
-
+    // Update episode source
     useEffect(() => {
-        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        lastKnownPositionRef.current = -1;
+        lastKnownDurationRef.current = -1;
+        if (episode) {
+            isEndedRef.current = false;
+            const url = getVideoUrl(episode.url);
+            const source = { uri: url, headers: { Authorization: API_CONFIG.AUTH_HEADER } };
+            if ((player as any).replaceAsync) {
+                (player as any).replaceAsync(source);
+            } else {
+                player.replace(source);
+            }
+        }
+    }, [episode, player, lastKnownPositionRef, lastKnownDurationRef]);
+
+    // Seek to initial position and handle autoPlay
+    useEffect(() => {
+        if (!episode || !player) return;
+
+        dispatch({ type: 'SET_PLAYING', payload: autoPlay });
+
+        try {
+            (player as any).timeUpdateEventInterval = 0.5;
+        } catch { /* ignore */ }
+
+        if (initialPosition > 0) {
+            const timer = setTimeout(() => {
+                try {
+                    player.currentTime = initialPosition;
+                    autoPlay ? player.play() : player.pause();
+                } catch (e) {
+                    console.error('Failed to seek to initial position:', e);
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        } else {
+            autoPlay ? player.play() : player.pause();
+        }
+    }, [episode, initialPosition, player, autoPlay]);
+
+    // Player event listeners
+    useEffect(() => {
+        if (!episode || !player?.addListener) return;
+
+        lastReportedTimeRef.current = initialPosition;
+
+        const reportProgress = (ct: number, dur: number, immediate = false) => {
+            if (isEndedRef.current || ct <= 0 || dur <= 0) return;
+            if (!immediate && Math.abs(ct - lastReportedTimeRef.current) <= 5) return;
+
+            lastReportedTimeRef.current = ct;
+            onProgressUpdate?.({ currentTime: ct, duration: dur });
+        };
+
+        const subscriptions = [
+            player.addListener('playingChange', (event: { isPlaying: boolean }) => {
+                dispatch({ type: 'SET_PLAYING', payload: event.isPlaying });
+                onPlayingChange?.(event.isPlaying);
+
+                if (event.isPlaying) {
+                    resetControlsTimeout();
+                } else {
+                    try {
+                        const ct = player.currentTime;
+                        const dur = player.duration;
+                        lastKnownPositionRef.current = ct;
+                        lastKnownDurationRef.current = dur;
+                        reportProgress(ct, dur, true);
+                    } catch { /* ignore */ }
+                }
+            }),
+            player.addListener('playToEnd', () => {
+                isEndedRef.current = true;
+                dispatch({ type: 'SET_PLAYING', payload: false });
+                dispatch({ type: 'SET_CONTROLS', payload: true });
+                onEnd?.();
+            }),
+            (() => {
+                let lastTime = 0;
+                return player.addListener('timeUpdate', (event: { currentTime: number }) => {
+                    const ct = event.currentTime;
+                    const dur = player.duration;
+
+                    dispatch({ type: 'SET_TIME', payload: { currentTime: ct, duration: dur } });
+                    lastKnownPositionRef.current = ct;
+                    lastKnownDurationRef.current = dur;
+
+                    // Detect seek (jump > 2s)
+                    if (Math.abs(ct - lastTime) > 2 && lastTime > 0) {
+                        reportProgress(ct, dur, true);
+                    }
+                    lastTime = ct;
+                    reportProgress(ct, dur);
+                });
+            })()
+        ];
+
+        return () => subscriptions.forEach(sub => sub.remove());
+    }, [episode, initialPosition, player, onProgressUpdate, onEnd, onPlayingChange, resetControlsTimeout, lastKnownPositionRef, lastKnownDurationRef]);
+
+    // Fullscreen toggle
+    const toggleFullScreen = useCallback(async () => {
+        const newFullScreen = !isFullScreen;
+        await ScreenOrientation.lockAsync(
+            newFullScreen ? ScreenOrientation.OrientationLock.LANDSCAPE : ScreenOrientation.OrientationLock.PORTRAIT_UP
+        );
+        dispatch({ type: 'SET_FULLSCREEN', payload: newFullScreen });
+        onFullScreenChange?.(newFullScreen);
+        resetControlsTimeout();
+    }, [isFullScreen, onFullScreenChange, resetControlsTimeout]);
+
+    // Back button handler for fullscreen
+    useEffect(() => {
+        const handler = BackHandler.addEventListener('hardwareBackPress', () => {
             if (isFullScreen) {
                 toggleFullScreen();
                 return true;
             }
             return false;
         });
-
-        return () => {
-            backHandler.remove();
-        };
-    }, [isFullScreen]);
+        return () => handler.remove();
+    }, [isFullScreen, toggleFullScreen]);
 
     // Reset orientation on unmount
     useEffect(() => {
@@ -357,188 +641,44 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         };
     }, []);
 
-    // Update playerRef when player changes
-    useEffect(() => {
-        playerRef.current = player;
-    }, [player]);
-
-    // Update player source when episode changes
-    useEffect(() => {
-        lastKnownPositionRef.current = -1;
-        lastKnownDurationRef.current = -1;
-        if (episode) {
-            isEndedRef.current = false; // Reset ended state
-            const url = getVideoUrl(episode.url);
-            // Use replaceAsync to avoid main thread freeze warning
-            if ((player as any).replaceAsync) {
-                (player as any).replaceAsync({
-                    uri: url,
-                    headers: { Authorization: API_CONFIG.AUTH_HEADER }
-                });
-            } else {
-                player.replace({
-                    uri: url,
-                    headers: { Authorization: API_CONFIG.AUTH_HEADER }
-                });
-            }
+    // Handlers
+    const handlePlayPause = useCallback(() => {
+        if (isPlaying) {
+            player.pause();
+        } else {
+            player.play();
         }
-    }, [episode]);
+        resetControlsTimeout();
+    }, [isPlaying, player, resetControlsTimeout]);
 
-    // Seek to initial position after player is ready
-    useEffect(() => {
-        if (episode && player) {
-            // Immediately update UI state when episode changes
-            setIsPlaying(autoPlay);
+    const handleSeek = useCallback((value: number) => {
+        player.currentTime = value;
+        dispatch({ type: 'SET_TIME', payload: { currentTime: value, duration } });
+        dispatch({ type: 'SET_SEEKING', payload: false });
+        resetControlsTimeout();
+    }, [player, duration, resetControlsTimeout]);
 
-            // Set update interval for timeUpdate event (in seconds)
-            try {
-                (player as any).timeUpdateEventInterval = 0.5;
-            } catch (e) {
-                // Ignore
-            }
+    const handleSlidingStart = useCallback(() => {
+        dispatch({ type: 'SET_SEEKING', payload: true });
+        clearControlsTimeout();
+    }, [clearControlsTimeout]);
 
-            if (initialPosition > 0) {
-                // Wait a bit for the video to load before seeking
-                const timer = setTimeout(() => {
-                    try {
-                        player.currentTime = initialPosition;
-                        if (autoPlay) {
-                            player.play();
-                        } else {
-                            player.pause();
-                        }
-                    } catch (error) {
-                        console.error('Failed to seek to initial position:', error);
-                    }
-                }, 500);
-                return () => clearTimeout(timer);
-            } else {
-                if (autoPlay) {
-                    player.play();
-                } else {
-                    player.pause();
-                }
-            }
-        }
-    }, [episode, initialPosition, player, autoPlay]);
+    const handleSeekBackward = useCallback(() => handleSeek(Math.max(0, currentTime - 5)), [handleSeek, currentTime]);
+    const handleSeekForward = useCallback(() => handleSeek(Math.min(duration, currentTime + 15)), [handleSeek, currentTime, duration]);
+    const handlePrevious = useCallback(() => hasPrevious && onPrevious?.(isPlaying), [hasPrevious, onPrevious, isPlaying]);
+    const handleNext = useCallback(() => onNext?.(isPlaying), [onNext, isPlaying]);
 
-    // Report progress using event listeners
-    useEffect(() => {
-        if (!episode || !player) return;
-
-        lastReportedTimeRef.current = initialPosition;
-
-        const reportProgress = (currentTime: number, duration: number) => {
-            if (isEndedRef.current) return; // Stop reporting if ended
-            try {
-                // Only report if we have valid values and time has changed
-                if (currentTime > 0 && duration > 0 && Math.abs(currentTime - lastReportedTimeRef.current) > 5) {
-                    lastReportedTimeRef.current = currentTime;
-                    if (onProgressUpdate) {
-                        onProgressUpdate({ currentTime, duration });
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to report progress:', error);
-            }
-        };
-
-        const reportProgressImmediate = (currentTime: number, duration: number) => {
-            if (isEndedRef.current) return; // Stop reporting if ended
-            try {
-                if (currentTime > 0 && duration > 0) {
-                    lastReportedTimeRef.current = currentTime;
-                    if (onProgressUpdate) {
-                        onProgressUpdate({ currentTime, duration });
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to report progress immediately:', error);
-            }
-        };
-
-        // Subscribe to events
-        const subscriptions: any[] = [];
-
-        try {
-            // Listen for play/pause changes
-            if (player.addListener) {
-                subscriptions.push(player.addListener('playingChange', (event: { isPlaying: boolean }) => {
-                    setIsPlaying(event.isPlaying);
-                    if (onPlayingChange) {
-                        onPlayingChange(event.isPlaying);
-                    }
-
-                    if (event.isPlaying) {
-                        resetControlsTimeout();
-                    }
-
-                    if (!event.isPlaying) {
-                        try {
-                            // Safe to access properties inside event handler usually
-                            const currentTime = player.currentTime;
-                            const duration = player.duration;
-                            lastKnownPositionRef.current = currentTime;
-                            lastKnownDurationRef.current = duration;
-                            reportProgressImmediate(currentTime, duration);
-                        } catch (e) {
-                            // Ignore
-                        }
-                    }
-                }));
-
-                // Listen for playback completion
-                subscriptions.push(player.addListener('playToEnd', () => {
-                    isEndedRef.current = true; // Mark as ended
-                    setIsPlaying(false);
-                    setShowControls(true);
-                    if (onEnd) {
-                        onEnd();
-                    }
-                }));
-
-                // Listen for time updates to detect seeks
-                let lastTime = 0;
-                subscriptions.push(player.addListener('timeUpdate', (event: { currentTime: number }) => {
-                    const currentTime = event.currentTime;
-                    const duration = player.duration;
-
-                    if (!isSeeking) {
-                        setCurrentTime(currentTime);
-                        setDuration(duration);
-                    }
-
-                    lastKnownPositionRef.current = currentTime;
-                    lastKnownDurationRef.current = duration;
-
-                    // Check for seek
-                    if (Math.abs(currentTime - lastTime) > 2 && lastTime > 0) {
-                        reportProgressImmediate(currentTime, duration);
-                    }
-                    lastTime = currentTime;
-
-                    // Also handle periodic reporting here
-                    reportProgress(currentTime, duration);
-                }));
-            }
-        } catch (e) {
-            console.error('[VideoPlayer] Failed to add listeners:', e);
-        }
-
-        return () => {
-            subscriptions.forEach(sub => sub.remove());
-            if (controlsTimeoutRef.current) {
-                clearTimeout(controlsTimeoutRef.current);
-            }
-        };
-    }, [episode, initialPosition, player, onProgressUpdate, onEnd]);
+    // Overlay visibility
+    const showOverlay = showControls || gestureType !== 'none';
 
     return (
         <View
             style={[styles.container, style]}
             onLayout={(e) => {
-                playerHeightRef.current = e.nativeEvent.layout.height;
-                playerWidthRef.current = e.nativeEvent.layout.width;
+                playerDimensionsRef.current = {
+                    width: e.nativeEvent.layout.width,
+                    height: e.nativeEvent.layout.height
+                };
             }}
         >
             <VideoView
@@ -548,116 +688,52 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 nativeControls={false}
             />
 
-            <View
-                style={[styles.overlay, !showControls && !isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && styles.hidden]}
-                {...panResponder.panHandlers}
-            >
-                {/* Gesture Indicator */}
-                {isGestureSeeking && (
-                    <View style={styles.gestureIndicator}>
-                        <Text style={styles.gestureTimeText}>
-                            {formatTime(gestureSeekTime)} / {formatTime(duration)}
-                        </Text>
-                        <Text style={styles.gestureOffsetText}>
-                            {gestureSeekOffset > 0 ? '+' : ''}{Math.round(gestureSeekOffset)}s
-                        </Text>
-                    </View>
+            <View style={[styles.overlay, !showOverlay && styles.hidden]} {...panResponder.panHandlers}>
+                {gestureType === 'seek' && (
+                    <GestureIndicator
+                        type="seek"
+                        seekTime={gestureSeekTime}
+                        duration={duration}
+                        seekOffset={gestureSeekOffset}
+                    />
                 )}
 
-                {/* Brightness Indicator */}
-                {showBrightnessIndicator && (
-                    <View style={styles.centerIndicator}>
-                        <MaterialCommunityIcons
-                            name={brightness > 0.5 ? "brightness-5" : brightness > 0.2 ? "brightness-6" : "brightness-7"}
-                            size={50}
-                            color="#fff"
+                {gestureType === 'brightness' && (
+                    <GestureIndicator type="brightness" brightness={brightness} />
+                )}
+
+                {gestureType === 'volume' && (
+                    <GestureIndicator type="volume" volume={volume} />
+                )}
+
+                {gestureType === 'none' && (
+                    <>
+                        <CenterControls
+                            isPlaying={isPlaying}
+                            hasPrevious={hasPrevious}
+                            onPlayPause={handlePlayPause}
+                            onSeekBackward={handleSeekBackward}
+                            onSeekForward={handleSeekForward}
+                            onPrevious={handlePrevious}
+                            onNext={handleNext}
                         />
-                        <Text style={styles.indicatorText}>{Math.round(brightness * 100)}%</Text>
-                    </View>
-                )}
 
-                {/* Volume Indicator */}
-                {showVolumeIndicator && (
-                    <View style={styles.centerIndicator}>
-                        <Ionicons
-                            name={volume > 0.5 ? "volume-high" : volume > 0 ? "volume-low" : "volume-mute"}
-                            size={50}
-                            color="#fff"
-                        />
-                        <Text style={styles.indicatorText}>{Math.round(volume * 100)}%</Text>
-                    </View>
-                )}
-
-                {/* Center Play/Pause Button */}
-                {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
-                    <View style={styles.centerControls}>
-                        {/* Previous Episode Button */}
-                        <TouchableOpacity
-                            onPress={() => onPrevious && hasPrevious && onPrevious(isPlaying)}
-                            style={[styles.controlButton, !hasPrevious && styles.controlButtonDisabled]}
-                            disabled={!hasPrevious}
-                        >
-                            <MaterialCommunityIcons
-                                name="skip-previous"
-                                size={30}
-                                color={hasPrevious ? "#fff" : "#666"}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={() => handleSeek(currentTime - 5)} style={styles.seekButton}>
-                            <MaterialCommunityIcons name="rewind-5" size={30} color="#fff" />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
-                            <Ionicons
-                                name={isPlaying ? "pause" : "play"}
-                                size={40}
-                                color="#fff"
-                                style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={() => handleSeek(currentTime + 15)} style={styles.seekButton}>
-                            <MaterialCommunityIcons name="fast-forward-15" size={30} color="#fff" />
-                        </TouchableOpacity>
-
-                        {/* Next Episode Button */}
-                        <TouchableOpacity onPress={() => onNext && onNext(isPlaying)} style={styles.controlButton}>
-                            <MaterialCommunityIcons name="skip-next" size={30} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Bottom Control Bar */}
-                {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
-                    <View style={styles.bottomControls}>
-                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                        <Slider
-                            style={styles.slider}
-                            minimumValue={0}
-                            maximumValue={duration > 0 ? duration : 1}
-                            value={currentTime}
+                        <BottomControls
+                            currentTime={currentTime}
+                            duration={duration}
+                            isFullScreen={isFullScreen}
                             onSlidingStart={handleSlidingStart}
-                            onSlidingComplete={handleSeek}
-                            minimumTrackTintColor="#007AFF"
-                            maximumTrackTintColor="#FFFFFF"
-                            thumbTintColor="#007AFF"
+                            onSeek={handleSeek}
+                            onToggleFullScreen={toggleFullScreen}
                         />
-                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
-                        <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
-                            <Ionicons
-                                name={isFullScreen ? "contract" : "expand"}
-                                size={20}
-                                color="#fff"
-                            />
-                        </TouchableOpacity>
-                    </View>
+                    </>
                 )}
             </View>
         </View>
     );
 }
 
+// ============= Styles =============
 const styles = StyleSheet.create({
     container: {
         flex: 1,
