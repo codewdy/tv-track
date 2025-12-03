@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, BackHandler, PanResponder, PanResponderInstance, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { StyleSheet, ViewStyle, View, Text, TouchableOpacity, BackHandler } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Slider from '@react-native-community/slider';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import * as Brightness from 'expo-brightness';
 import { Episode } from '../types';
 import { API_CONFIG } from '../config';
+import { usePlayerControls } from '../hooks/usePlayerControls';
+import { usePlayerGestures } from '../hooks/usePlayerGestures';
 
 interface ProgressUpdate {
     currentTime: number;
@@ -29,227 +30,33 @@ interface Props {
     hasPrevious?: boolean;
 }
 
-export default function VideoPlayer({ episode, initialPosition = 0, style, onProgressUpdate, onEnd, autoPlay = false, lastKnownPositionRef, lastKnownDurationRef, onPlayingChange, onFullScreenChange, onNext, onPrevious, hasPrevious = false }: Props) {
+export default function VideoPlayer({
+    episode,
+    initialPosition = 0,
+    style,
+    onProgressUpdate,
+    onEnd,
+    autoPlay = false,
+    lastKnownPositionRef,
+    lastKnownDurationRef,
+    onPlayingChange,
+    onFullScreenChange,
+    onNext,
+    onPrevious,
+    hasPrevious = false
+}: Props) {
     const lastReportedTimeRef = useRef<number>(0);
     const isEndedRef = useRef<boolean>(false);
     const playerRef = useRef<any>(null);
-    const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Control states
-    const [showControls, setShowControls] = useState(true);
+    // Playback State
     const [isPlaying, setIsPlaying] = useState(autoPlay);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [brightness, setBrightness] = useState(0);
-    const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
-    const [volume, setVolume] = useState(1);
-    const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
 
-    // Gesture seeking state
-    const [isGestureSeeking, setIsGestureSeeking] = useState(false);
-    const [gestureSeekTime, setGestureSeekTime] = useState(0);
-    const [gestureSeekOffset, setGestureSeekOffset] = useState(0);
-
-    // Refs for PanResponder to access current values without re-binding
-    const currentTimeRef = useRef(0);
-    const durationRef = useRef(0);
-    const isGestureSeekingRef = useRef(false);
-    const lastTapTimeRef = useRef(0);
-    const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const isPlayingRef = useRef(isPlaying);
-    const isGestureBrightnessRef = useRef(false);
-    const startBrightnessRef = useRef(0);
-    const isGestureVolumeRef = useRef(false);
-    const startVolumeRef = useRef(0);
-    const startTouchXRef = useRef(0);
-    const playerHeightRef = useRef(0);
-    const playerWidthRef = useRef(0);
-
-    // Update refs when state changes
-    useEffect(() => {
-        currentTimeRef.current = currentTime;
-    }, [currentTime]);
-
-    useEffect(() => {
-        durationRef.current = duration;
-    }, [duration]);
-
-    useEffect(() => {
-        isPlayingRef.current = isPlaying;
-    }, [isPlaying]);
-
-    useEffect(() => {
-        (async () => {
-            const { status } = await Brightness.requestPermissionsAsync();
-            if (status === 'granted') {
-                const currentBrightness = await Brightness.getBrightnessAsync();
-                setBrightness(currentBrightness);
-            }
-        })();
-    }, []);
-
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (evt, gestureState) => {
-                const width = playerWidthRef.current || Dimensions.get('window').width;
-                const isHorizontal = Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
-                const isVerticalLeft = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX < width * 0.25;
-                const isVerticalRight = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX > width * 0.75;
-                return isHorizontal || isVerticalLeft || isVerticalRight;
-            },
-            onPanResponderGrant: (evt, gestureState) => {
-                startTouchXRef.current = evt.nativeEvent.locationX;
-
-                // If we stole the responder (dx > 10), start seeking immediately
-                if (Math.abs(gestureState.dx) > 10) {
-                    setIsGestureSeeking(true);
-                    isGestureSeekingRef.current = true;
-                    setGestureSeekTime(currentTimeRef.current);
-                    setGestureSeekOffset(0);
-                    if (controlsTimeoutRef.current) {
-                        clearTimeout(controlsTimeoutRef.current);
-                    }
-                }
-            },
-            onPanResponderMove: async (evt, gestureState) => {
-                const width = playerWidthRef.current || Dimensions.get('window').width;
-                const height = playerHeightRef.current || Dimensions.get('window').height;
-
-                // Check for Brightness Gesture (Left side vertical swipe)
-                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current && !isGestureVolumeRef.current) {
-                    // If vertical movement is significant and touch started on left 25%
-                    if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current < width * 0.25) {
-                        isGestureBrightnessRef.current = true;
-                        startBrightnessRef.current = await Brightness.getBrightnessAsync();
-                        setShowBrightnessIndicator(true);
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
-                    }
-                    // If vertical movement is significant and touch started on right 25%
-                    else if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current > width * 0.75) {
-                        isGestureVolumeRef.current = true;
-                        startVolumeRef.current = player.volume;
-                        setShowVolumeIndicator(true);
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
-                    }
-                }
-
-                if (isGestureBrightnessRef.current) {
-                    // Calculate brightness change
-                    // Dragging up (negative dy) increases brightness
-                    // Dragging down (positive dy) decreases brightness
-                    // Full player height drag = 100% brightness change
-                    const delta = -gestureState.dy / height;
-                    let newBrightness = startBrightnessRef.current + delta;
-                    newBrightness = Math.max(0, Math.min(1, newBrightness));
-
-                    setBrightness(newBrightness);
-                    await Brightness.setBrightnessAsync(newBrightness);
-                    return;
-                }
-
-                if (isGestureVolumeRef.current) {
-                    // Calculate volume change
-                    // Dragging up (negative dy) increases volume
-                    // Dragging down (positive dy) decreases volume
-                    // Full player height drag = 100% volume change
-                    const delta = -gestureState.dy / height;
-                    let newVolume = startVolumeRef.current + delta;
-                    newVolume = Math.max(0, Math.min(1, newVolume));
-
-                    setVolume(newVolume);
-                    player.volume = newVolume;
-                    return;
-                }
-
-                // If not yet seeking, check if we should start
-                if (!isGestureSeekingRef.current) {
-                    if (Math.abs(gestureState.dx) > 10) {
-                        setIsGestureSeeking(true);
-                        isGestureSeekingRef.current = true;
-                        setGestureSeekTime(currentTimeRef.current);
-                        setGestureSeekOffset(0);
-                        if (controlsTimeoutRef.current) {
-                            clearTimeout(controlsTimeoutRef.current);
-                        }
-                    }
-                    return;
-                }
-
-                // 90 seconds for full screen width
-                const seekSeconds = (gestureState.dx / width) * 90;
-
-                let newTime = currentTimeRef.current + seekSeconds;
-                // Clamp time
-                newTime = Math.max(0, Math.min(newTime, durationRef.current));
-
-                setGestureSeekTime(newTime);
-                setGestureSeekOffset(seekSeconds);
-            },
-            onPanResponderRelease: (evt, gestureState) => {
-                if (isGestureSeekingRef.current) {
-                    const width = playerWidthRef.current || Dimensions.get('window').width;
-                    const seekSeconds = (gestureState.dx / width) * 90;
-                    let targetTime = currentTimeRef.current + seekSeconds;
-                    targetTime = Math.max(0, Math.min(targetTime, durationRef.current));
-
-                    if (playerRef.current) {
-                        playerRef.current.currentTime = targetTime;
-                        setCurrentTime(targetTime);
-                    }
-
-                    setIsGestureSeeking(false);
-                    isGestureSeekingRef.current = false;
-                    resetControlsTimeout();
-                } else if (isGestureBrightnessRef.current) {
-                    isGestureBrightnessRef.current = false;
-                    setShowBrightnessIndicator(false);
-                    resetControlsTimeout();
-                } else if (isGestureVolumeRef.current) {
-                    isGestureVolumeRef.current = false;
-                    setShowVolumeIndicator(false);
-                    resetControlsTimeout();
-                } else {
-                    // It was a tap
-                    const now = Date.now();
-                    const DOUBLE_TAP_DELAY = 300;
-
-                    if (now - lastTapTimeRef.current < DOUBLE_TAP_DELAY) {
-                        // Double tap detected
-                        if (singleTapTimeoutRef.current) {
-                            clearTimeout(singleTapTimeoutRef.current);
-                            singleTapTimeoutRef.current = null;
-                        }
-                        handlePlayPause();
-                        lastTapTimeRef.current = 0; // Reset to prevent triple tap triggering another double tap
-                    } else {
-                        // Single tap detected, wait for potential double tap
-                        lastTapTimeRef.current = now;
-                        singleTapTimeoutRef.current = setTimeout(() => {
-                            toggleControls();
-                            singleTapTimeoutRef.current = null;
-                        }, DOUBLE_TAP_DELAY);
-                    }
-                }
-            },
-            onPanResponderTerminate: () => {
-                setIsGestureSeeking(false);
-                isGestureSeekingRef.current = false;
-                isGestureBrightnessRef.current = false;
-                setShowBrightnessIndicator(false);
-                isGestureVolumeRef.current = false;
-                setShowVolumeIndicator(false);
-                resetControlsTimeout();
-            }
-        })
-    ).current;
-
+    // Video Player Setup
     const getVideoUrl = (url: string) => {
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://')) return url;
         return `${API_CONFIG.BASE_URL}${url}`;
@@ -264,6 +71,57 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         }
     );
 
+    // Controls Hook
+    const {
+        showControls,
+        toggleControls,
+        resetControlsTimeout,
+        show: showControlsExplicitly
+    } = usePlayerControls(isPlaying);
+
+    // Handlers
+    const handlePlayPause = useCallback(() => {
+        if (isPlaying) {
+            player.pause();
+        } else {
+            player.play();
+        }
+        resetControlsTimeout();
+    }, [isPlaying, player, resetControlsTimeout]);
+
+    const handleSeek = useCallback((value: number) => {
+        player.currentTime = value;
+        setCurrentTime(value);
+        setIsSeeking(false);
+        resetControlsTimeout();
+    }, [player, resetControlsTimeout]);
+
+    const handleSlidingStart = useCallback(() => {
+        setIsSeeking(true);
+        resetControlsTimeout();
+    }, [resetControlsTimeout]);
+
+    // Gestures Hook
+    const {
+        panHandlers,
+        isGestureSeeking,
+        gestureSeekTime,
+        gestureSeekOffset,
+        brightness,
+        showBrightnessIndicator,
+        volume,
+        showVolumeIndicator,
+        setPlayerLayout
+    } = usePlayerGestures({
+        player,
+        currentTime,
+        duration,
+        onSeek: handleSeek,
+        onInteract: resetControlsTimeout,
+        onTogglePlayPause: handlePlayPause,
+        onToggleControls: toggleControls
+    });
+
     // Format time helper
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600);
@@ -273,54 +131,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
         return `${m}:${s.toString().padStart(2, '0')}`;
-    };
-
-    // Toggle controls visibility
-    const toggleControls = () => {
-        setShowControls(prev => !prev);
-        if (!showControls) {
-            resetControlsTimeout();
-        } else {
-            if (controlsTimeoutRef.current) {
-                clearTimeout(controlsTimeoutRef.current);
-            }
-        }
-    };
-
-    const resetControlsTimeout = () => {
-        if (controlsTimeoutRef.current) {
-            clearTimeout(controlsTimeoutRef.current);
-        }
-        controlsTimeoutRef.current = setTimeout(() => {
-            if (isPlaying) {
-                setShowControls(false);
-            }
-        }, 3000);
-    };
-
-    // Handle Play/Pause
-    const handlePlayPause = () => {
-        if (isPlayingRef.current) {
-            player.pause();
-        } else {
-            player.play();
-        }
-        resetControlsTimeout();
-    };
-
-    // Handle Seek
-    const handleSeek = (value: number) => {
-        player.currentTime = value;
-        setCurrentTime(value);
-        setIsSeeking(false);
-        resetControlsTimeout();
-    };
-
-    const handleSlidingStart = () => {
-        setIsSeeking(true);
-        if (controlsTimeoutRef.current) {
-            clearTimeout(controlsTimeoutRef.current);
-        }
     };
 
     const toggleFullScreen = async () => {
@@ -336,6 +146,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         resetControlsTimeout();
     };
 
+    // Effects
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
             if (isFullScreen) {
@@ -350,26 +161,22 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         };
     }, [isFullScreen]);
 
-    // Reset orientation on unmount
     useEffect(() => {
         return () => {
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
         };
     }, []);
 
-    // Update playerRef when player changes
     useEffect(() => {
         playerRef.current = player;
     }, [player]);
 
-    // Update player source when episode changes
     useEffect(() => {
         lastKnownPositionRef.current = -1;
         lastKnownDurationRef.current = -1;
         if (episode) {
-            isEndedRef.current = false; // Reset ended state
+            isEndedRef.current = false;
             const url = getVideoUrl(episode.url);
-            // Use replaceAsync to avoid main thread freeze warning
             if ((player as any).replaceAsync) {
                 (player as any).replaceAsync({
                     uri: url,
@@ -384,21 +191,14 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         }
     }, [episode]);
 
-    // Seek to initial position after player is ready
     useEffect(() => {
         if (episode && player) {
-            // Immediately update UI state when episode changes
             setIsPlaying(autoPlay);
-
-            // Set update interval for timeUpdate event (in seconds)
             try {
                 (player as any).timeUpdateEventInterval = 0.5;
-            } catch (e) {
-                // Ignore
-            }
+            } catch (e) { }
 
             if (initialPosition > 0) {
-                // Wait a bit for the video to load before seeking
                 const timer = setTimeout(() => {
                     try {
                         player.currentTime = initialPosition;
@@ -422,16 +222,14 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         }
     }, [episode, initialPosition, player, autoPlay]);
 
-    // Report progress using event listeners
     useEffect(() => {
         if (!episode || !player) return;
 
         lastReportedTimeRef.current = initialPosition;
 
         const reportProgress = (currentTime: number, duration: number) => {
-            if (isEndedRef.current) return; // Stop reporting if ended
+            if (isEndedRef.current) return;
             try {
-                // Only report if we have valid values and time has changed
                 if (currentTime > 0 && duration > 0 && Math.abs(currentTime - lastReportedTimeRef.current) > 5) {
                     lastReportedTimeRef.current = currentTime;
                     if (onProgressUpdate) {
@@ -444,7 +242,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         };
 
         const reportProgressImmediate = (currentTime: number, duration: number) => {
-            if (isEndedRef.current) return; // Stop reporting if ended
+            if (isEndedRef.current) return;
             try {
                 if (currentTime > 0 && duration > 0) {
                     lastReportedTimeRef.current = currentTime;
@@ -457,11 +255,9 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             }
         };
 
-        // Subscribe to events
         const subscriptions: any[] = [];
 
         try {
-            // Listen for play/pause changes
             if (player.addListener) {
                 subscriptions.push(player.addListener('playingChange', (event: { isPlaying: boolean }) => {
                     setIsPlaying(event.isPlaying);
@@ -475,29 +271,24 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                     if (!event.isPlaying) {
                         try {
-                            // Safe to access properties inside event handler usually
                             const currentTime = player.currentTime;
                             const duration = player.duration;
                             lastKnownPositionRef.current = currentTime;
                             lastKnownDurationRef.current = duration;
                             reportProgressImmediate(currentTime, duration);
-                        } catch (e) {
-                            // Ignore
-                        }
+                        } catch (e) { }
                     }
                 }));
 
-                // Listen for playback completion
                 subscriptions.push(player.addListener('playToEnd', () => {
-                    isEndedRef.current = true; // Mark as ended
+                    isEndedRef.current = true;
                     setIsPlaying(false);
-                    setShowControls(true);
+                    showControlsExplicitly();
                     if (onEnd) {
                         onEnd();
                     }
                 }));
 
-                // Listen for time updates to detect seeks
                 let lastTime = 0;
                 subscriptions.push(player.addListener('timeUpdate', (event: { currentTime: number }) => {
                     const currentTime = event.currentTime;
@@ -511,13 +302,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     lastKnownPositionRef.current = currentTime;
                     lastKnownDurationRef.current = duration;
 
-                    // Check for seek
                     if (Math.abs(currentTime - lastTime) > 2 && lastTime > 0) {
                         reportProgressImmediate(currentTime, duration);
                     }
                     lastTime = currentTime;
 
-                    // Also handle periodic reporting here
                     reportProgress(currentTime, duration);
                 }));
             }
@@ -527,9 +316,6 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
         return () => {
             subscriptions.forEach(sub => sub.remove());
-            if (controlsTimeoutRef.current) {
-                clearTimeout(controlsTimeoutRef.current);
-            }
         };
     }, [episode, initialPosition, player, onProgressUpdate, onEnd]);
 
@@ -537,8 +323,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         <View
             style={[styles.container, style]}
             onLayout={(e) => {
-                playerHeightRef.current = e.nativeEvent.layout.height;
-                playerWidthRef.current = e.nativeEvent.layout.width;
+                setPlayerLayout(e.nativeEvent.layout.width, e.nativeEvent.layout.height);
             }}
         >
             <VideoView
@@ -550,7 +335,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
             <View
                 style={[styles.overlay, !showControls && !isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && styles.hidden]}
-                {...panResponder.panHandlers}
+                {...panHandlers}
             >
                 {/* Gesture Indicator */}
                 {isGestureSeeking && (
@@ -613,7 +398,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                                 name={isPlaying ? "pause" : "play"}
                                 size={40}
                                 color="#fff"
-                                style={{ marginLeft: isPlaying ? 0 : 4 }} // Slight offset for play icon to center visually
+                                style={{ marginLeft: isPlaying ? 0 : 4 }}
                             />
                         </TouchableOpacity>
 
