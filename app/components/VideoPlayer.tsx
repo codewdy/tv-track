@@ -181,10 +181,11 @@ interface CenterControlsProps {
     onSeekForward: () => void;
     onPrevious: () => void;
     onNext: () => void;
+    pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only';
 }
 
-const CenterControls = React.memo(({ isPlaying, hasPrevious, onPlayPause, onSeekBackward, onSeekForward, onPrevious, onNext }: CenterControlsProps) => (
-    <View style={styles.centerControls}>
+const CenterControls = React.memo(({ isPlaying, hasPrevious, onPlayPause, onSeekBackward, onSeekForward, onPrevious, onNext, pointerEvents }: CenterControlsProps) => (
+    <View style={styles.centerControls} pointerEvents={pointerEvents}>
         <TouchableOpacity
             onPress={onPrevious}
             style={[styles.controlButton, !hasPrevious && styles.controlButtonDisabled]}
@@ -223,10 +224,11 @@ interface BottomControlsProps {
     onSlidingStart: () => void;
     onSeek: (value: number) => void;
     onToggleFullScreen: () => void;
+    pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only';
 }
 
-const BottomControls = React.memo(({ currentTime, duration, isFullScreen, onSlidingStart, onSeek, onToggleFullScreen }: BottomControlsProps) => (
-    <View style={styles.bottomControls}>
+const BottomControls = React.memo(({ currentTime, duration, isFullScreen, onSlidingStart, onSeek, onToggleFullScreen, pointerEvents }: BottomControlsProps) => (
+    <View style={styles.bottomControls} pointerEvents={pointerEvents}>
         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
         <Slider
             style={styles.slider}
@@ -733,6 +735,7 @@ export default function VideoPlayer({
                             onSeekForward={handleSeekForward}
                             onPrevious={handlePrevious}
                             onNext={handleNext}
+                            pointerEvents={showControls ? 'auto' : 'none'}
                         />
 
                         <BottomControls
@@ -742,6 +745,7 @@ export default function VideoPlayer({
                             onSlidingStart={handleSlidingStart}
                             onSeek={handleSeek}
                             onToggleFullScreen={toggleFullScreen}
+                            pointerEvents={showControls ? 'auto' : 'none'}
                         />
                     </>
                 )}
