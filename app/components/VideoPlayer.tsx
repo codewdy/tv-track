@@ -46,6 +46,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
     const [volume, setVolume] = useState(1);
     const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
+    const [playbackRate, setPlaybackRate] = useState(1.0);
+    const [showSpeedSelector, setShowSpeedSelector] = useState(false);
 
     // Gesture seeking state
     const [isGestureSeeking, setIsGestureSeeking] = useState(false);
@@ -260,6 +262,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         (player) => {
             player.loop = false;
             player.staysActiveInBackground = true;
+            player.playbackRate = playbackRate;
             playerRef.current = player;
         }
     );
@@ -336,6 +339,16 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         resetControlsTimeout();
     };
 
+    // Handle Playback Rate Change
+    const handlePlaybackRateChange = (rate: number) => {
+        setPlaybackRate(rate);
+        setShowSpeedSelector(false);
+        if (playerRef.current) {
+            playerRef.current.playbackRate = rate;
+        }
+        resetControlsTimeout();
+    };
+
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
             if (isFullScreen) {
@@ -360,7 +373,17 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     // Update playerRef when player changes
     useEffect(() => {
         playerRef.current = player;
+        if (player) {
+            player.playbackRate = playbackRate;
+        }
     }, [player]);
+
+    // Update playbackRate when state changes
+    useEffect(() => {
+        if (playerRef.current) {
+            playerRef.current.playbackRate = playbackRate;
+        }
+    }, [playbackRate]);
 
     // Update player source when episode changes
     useEffect(() => {
@@ -628,6 +651,23 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     </View>
                 )}
 
+                {/* Speed Selector */}
+                {showSpeedSelector && (
+                    <View style={styles.speedSelector}>
+                        {[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0].map((rate) => (
+                            <TouchableOpacity
+                                key={rate}
+                                style={[styles.speedOption, playbackRate === rate && styles.speedOptionSelected]}
+                                onPress={() => handlePlaybackRateChange(rate)}
+                            >
+                                <Text style={[styles.speedText, playbackRate === rate && styles.speedTextSelected]}>
+                                    {rate}x
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
                 {/* Bottom Control Bar */}
                 {!isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && (
                     <View style={styles.bottomControls} pointerEvents={showControls ? 'auto' : 'none'}>
@@ -644,6 +684,9 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                             thumbTintColor="#007AFF"
                         />
                         <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                        <TouchableOpacity onPress={() => setShowSpeedSelector(!showSpeedSelector)} style={styles.speedButton}>
+                            <Text style={styles.speedButtonText}>{playbackRate}x</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
                             <Ionicons
                                 name={isFullScreen ? "contract" : "expand"}
@@ -728,6 +771,43 @@ const styles = StyleSheet.create({
     fullScreenButton: {
         padding: 5,
         marginLeft: 5,
+    },
+    speedButton: {
+        padding: 5,
+        marginLeft: 5,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 4,
+        paddingHorizontal: 8,
+    },
+    speedButtonText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    speedSelector: {
+        position: 'absolute',
+        bottom: 60,
+        right: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        borderRadius: 8,
+        padding: 5,
+        zIndex: 15,
+    },
+    speedOption: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 4,
+    },
+    speedOptionSelected: {
+        backgroundColor: '#007AFF',
+    },
+    speedText: {
+        color: '#fff',
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    speedTextSelected: {
+        fontWeight: 'bold',
     },
     gestureIndicator: {
         position: 'absolute',
