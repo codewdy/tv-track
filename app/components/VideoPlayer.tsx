@@ -48,6 +48,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1.0);
     const [showSpeedSelector, setShowSpeedSelector] = useState(false);
+    const [isLongPressFF, setIsLongPressFF] = useState(false);
 
     // Gesture seeking state
     const [isGestureSeeking, setIsGestureSeeking] = useState(false);
@@ -69,6 +70,12 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const playerHeightRef = useRef(0);
     const playerWidthRef = useRef(0);
 
+    // Long press fast forward refs
+    const originalPlaybackRateRef = useRef(playbackRate);
+    const isLongPressDetectingRef = useRef(false);
+    const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isLongPressFFRef = useRef(false);
+
     // Update refs when state changes
     useEffect(() => {
         currentTimeRef.current = currentTime;
@@ -83,6 +90,10 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     }, [isPlaying]);
 
     useEffect(() => {
+        isLongPressFFRef.current = isLongPressFF;
+    }, [isLongPressFF]);
+
+    useEffect(() => {
         (async () => {
             const { status } = await Brightness.requestPermissionsAsync();
             if (status === 'granted') {
@@ -92,10 +103,32 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
         })();
     }, []);
 
+    // Handle long press detection
+    const handleLongPressDetected = () => {
+        // Only start long press FF if no other gestures are active
+        if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current && !isGestureVolumeRef.current) {
+            // Store original playback rate
+            originalPlaybackRateRef.current = playbackRate;
+            // Enable long press fast forward
+            setIsLongPressFF(true);
+            isLongPressFFRef.current = true;
+            // Set playback rate to 2x
+            handlePlaybackRateChange(2.0);
+            if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+            }
+        }
+    };
+
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (evt, gestureState) => {
+                // 如果长按快进已经激活，不启动新的手势
+                if (isLongPressFFRef.current) {
+                    return false;
+                }
+
                 const width = playerWidthRef.current || Dimensions.get('window').width;
                 const isHorizontal = Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
                 const isVerticalLeft = Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 20 && evt.nativeEvent.locationX < width * 0.25;
@@ -105,8 +138,20 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
             onPanResponderGrant: (evt, gestureState) => {
                 startTouchXRef.current = evt.nativeEvent.locationX;
 
+                // Start long press detection (300ms delay)
+                isLongPressDetectingRef.current = true;
+                longPressTimeoutRef.current = setTimeout(() => {
+                    handleLongPressDetected();
+                }, 300);
+
                 // If we stole the responder (dx > 10), start seeking immediately
                 if (Math.abs(gestureState.dx) > 10) {
+                    // Cancel long press detection if we're starting to seek
+                    if (longPressTimeoutRef.current) {
+                        clearTimeout(longPressTimeoutRef.current);
+                        longPressTimeoutRef.current = null;
+                    }
+                    isLongPressDetectingRef.current = false;
                     setIsGestureSeeking(true);
                     isGestureSeekingRef.current = true;
                     setGestureSeekTime(currentTimeRef.current);
@@ -120,10 +165,25 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 const width = playerWidthRef.current || Dimensions.get('window').width;
                 const height = playerHeightRef.current || Dimensions.get('window').height;
 
+                // Cancel long press detection if any significant movement is detected
+                if (isLongPressDetectingRef.current && (Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10)) {
+                    if (longPressTimeoutRef.current) {
+                        clearTimeout(longPressTimeoutRef.current);
+                        longPressTimeoutRef.current = null;
+                    }
+                    isLongPressDetectingRef.current = false;
+                }
+
                 // Check for Brightness Gesture (Left side vertical swipe)
-                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current && !isGestureVolumeRef.current) {
+                if (!isGestureSeekingRef.current && !isGestureBrightnessRef.current && !isGestureVolumeRef.current && !isLongPressFFRef.current) {
                     // If vertical movement is significant and touch started on left 25%
                     if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current < width * 0.25) {
+                        // Cancel long press detection if we're starting brightness gesture
+                        if (longPressTimeoutRef.current) {
+                            clearTimeout(longPressTimeoutRef.current);
+                            longPressTimeoutRef.current = null;
+                        }
+                        isLongPressDetectingRef.current = false;
                         isGestureBrightnessRef.current = true;
                         startBrightnessRef.current = await Brightness.getBrightnessAsync();
                         setShowBrightnessIndicator(true);
@@ -133,6 +193,12 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     }
                     // If vertical movement is significant and touch started on right 25%
                     else if (Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dx) < 10 && startTouchXRef.current > width * 0.75) {
+                        // Cancel long press detection if we're starting volume gesture
+                        if (longPressTimeoutRef.current) {
+                            clearTimeout(longPressTimeoutRef.current);
+                            longPressTimeoutRef.current = null;
+                        }
+                        isLongPressDetectingRef.current = false;
                         isGestureVolumeRef.current = true;
                         startVolumeRef.current = player.volume;
                         setShowVolumeIndicator(true);
@@ -171,7 +237,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 }
 
                 // If not yet seeking, check if we should start
-                if (!isGestureSeekingRef.current) {
+                if (!isGestureSeekingRef.current && !isLongPressFFRef.current) {
                     if (Math.abs(gestureState.dx) > 10) {
                         setIsGestureSeeking(true);
                         isGestureSeekingRef.current = true;
@@ -184,18 +250,34 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     return;
                 }
 
-                // 90 seconds for full screen width
-                const seekSeconds = (gestureState.dx / width) * 90;
+                // Only perform seeking if not in long press fast forward mode
+                if (!isLongPressFFRef.current) {
+                    // 90 seconds for full screen width
+                    const seekSeconds = (gestureState.dx / width) * 90;
 
-                let newTime = currentTimeRef.current + seekSeconds;
-                // Clamp time
-                newTime = Math.max(0, Math.min(newTime, durationRef.current));
+                    let newTime = currentTimeRef.current + seekSeconds;
+                    // Clamp time
+                    newTime = Math.max(0, Math.min(newTime, durationRef.current));
 
-                setGestureSeekTime(newTime);
-                setGestureSeekOffset(seekSeconds);
+                    setGestureSeekTime(newTime);
+                    setGestureSeekOffset(seekSeconds);
+                }
             },
             onPanResponderRelease: (evt, gestureState) => {
-                if (isGestureSeekingRef.current) {
+                // Cancel any pending long press detection
+                if (longPressTimeoutRef.current) {
+                    clearTimeout(longPressTimeoutRef.current);
+                    longPressTimeoutRef.current = null;
+                }
+                isLongPressDetectingRef.current = false;
+
+                // Restore original playback rate if long press FF was active
+                if (isLongPressFFRef.current) {
+                    handlePlaybackRateChange(originalPlaybackRateRef.current);
+                    setIsLongPressFF(false);
+                    isLongPressFFRef.current = false;
+                    resetControlsTimeout();
+                } else if (isGestureSeekingRef.current) {
                     const width = playerWidthRef.current || Dimensions.get('window').width;
                     const seekSeconds = (gestureState.dx / width) * 90;
                     let targetTime = currentTimeRef.current + seekSeconds;
@@ -241,6 +323,20 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 }
             },
             onPanResponderTerminate: () => {
+                // Cancel any pending long press detection
+                if (longPressTimeoutRef.current) {
+                    clearTimeout(longPressTimeoutRef.current);
+                    longPressTimeoutRef.current = null;
+                }
+                isLongPressDetectingRef.current = false;
+
+                // Restore original playback rate if long press FF was active
+                if (isLongPressFFRef.current) {
+                    handlePlaybackRateChange(originalPlaybackRateRef.current);
+                    setIsLongPressFF(false);
+                    isLongPressFFRef.current = false;
+                }
+
                 setIsGestureSeeking(false);
                 isGestureSeekingRef.current = false;
                 isGestureBrightnessRef.current = false;
@@ -367,6 +463,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     useEffect(() => {
         return () => {
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+            // Clear long press timeout if component unmounts
+            if (longPressTimeoutRef.current) {
+                clearTimeout(longPressTimeoutRef.current);
+                longPressTimeoutRef.current = null;
+            }
         };
     }, []);
 
@@ -608,6 +709,18 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                             color="#fff"
                         />
                         <Text style={styles.indicatorText}>{Math.round(volume * 100)}%</Text>
+                    </View>
+                )}
+
+                {/* Long Press Fast Forward Indicator */}
+                {isLongPressFF && (
+                    <View style={styles.centerIndicator}>
+                        <Ionicons
+                            name="play-forward"
+                            size={50}
+                            color="#fff"
+                        />
+                        <Text style={styles.indicatorText}>2x</Text>
                     </View>
                 )}
 
