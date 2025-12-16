@@ -298,7 +298,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
     const downloadAfterCurrent = async () => {
         if (!detail) return;
 
-        for (let i = currentEpisodeIndex + 1; i < detail.episodes.length; i++) {
+        for (let i = currentEpisodeIndex; i < detail.episodes.length; i++) {
             const episode = detail.episodes[i];
             const existingDownload = getDownload(tvId, i);
 
@@ -563,7 +563,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.headerMenuItem} onPress={downloadAfterCurrent}>
-                                    <Text style={styles.headerMenuItemText}>缓存后续集</Text>
+                                    <Text style={styles.headerMenuItemText}>缓存当前及后续集</Text>
                                 </TouchableOpacity>
                             </>
                         )}
