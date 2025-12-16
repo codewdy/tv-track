@@ -13,10 +13,15 @@ export interface DownloadItem {
     status: DownloadStatus;
     localUri?: string;
     resumable?: FileSystem.DownloadResumable;
+    retryCount?: number;
+    maxRetries?: number;
+    retryInterval?: number;
 }
 
 const METADATA_FILE = (FileSystem.documentDirectory || '') + 'downloads_metadata.json';
 const MAX_CONCURRENT_DOWNLOADS = 5;
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_INTERVAL = 5000; // 5 seconds
 
 class DownloadManager {
     private downloads: Map<string, DownloadItem> = new Map();
@@ -157,14 +162,34 @@ class DownloadManager {
                 item.status = 'finished';
                 item.localUri = result.uri;
                 item.resumable = undefined;
+                item.retryCount = 0; // Reset retry count on success
                 this.notifyListeners();
                 this.processQueue(); // Slot freed
             }
         } catch (e) {
             console.error("Download error", e);
-            item.status = 'error';
-            this.notifyListeners();
-            this.processQueue(); // Slot freed (even if error)
+
+            // Handle retry logic
+            const retryCount = item.retryCount || 0;
+            const maxRetries = item.maxRetries || DEFAULT_MAX_RETRIES;
+            const retryInterval = item.retryInterval || DEFAULT_RETRY_INTERVAL;
+
+            if (retryCount < maxRetries) {
+                // Increment retry count and schedule retry
+                item.retryCount = retryCount + 1;
+                item.status = 'pending'; // Put back in queue
+                this.notifyListeners();
+
+                // Delay before retrying to prevent immediate re-queue
+                setTimeout(() => {
+                    this.processQueue();
+                }, retryInterval);
+            } else {
+                // Max retries reached, mark as error
+                item.status = 'error';
+                this.notifyListeners();
+                this.processQueue(); // Slot freed (even if error)
+            }
         }
     }
 
@@ -187,6 +212,9 @@ class DownloadManager {
             episodeId,
             progress: 0,
             status: 'pending', // Start as pending
+            retryCount: 0,
+            maxRetries: DEFAULT_MAX_RETRIES,
+            retryInterval: DEFAULT_RETRY_INTERVAL,
             // Resumable will be created when running
         };
 
