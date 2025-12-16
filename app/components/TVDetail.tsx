@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler, Modal, TextInput, FlatList, Switch, StatusBar } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useClient } from '../context/ClientProvider';
 import { TVDetail as TVDetailType, Episode, TagConfig, Source } from '../types';
 import VideoPlayer from './VideoPlayer';
@@ -491,6 +492,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                             {detail.episodes.map((ep, index) => {
                                 const isSelected = currentEpisode?.url === ep.url;
                                 const isWatched = index < detail.watch.watched_episode;
+                                const downloadInfo = getDownload(tvId, index);
                                 return (
                                     <TouchableOpacity
                                         key={index}
@@ -507,6 +509,22 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                                         ]}>
                                             {ep.name}
                                         </Text>
+                                        {downloadInfo && (
+                                            <MaterialCommunityIcons
+                                                name="download"
+                                                size={14}
+                                                color={
+                                                    downloadInfo.status === 'finished'
+                                                        ? '#4CAF50'
+                                                        : downloadInfo.status === 'error'
+                                                            ? '#F44336'
+                                                            : downloadInfo.status === 'paused'
+                                                                ? '#FF9800'
+                                                                : '#2196F3'
+                                                }
+                                                style={styles.downloadBadge}
+                                            />
+                                        )}
                                     </TouchableOpacity>
                                 );
                             })}
@@ -1138,5 +1156,11 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    downloadBadge: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        zIndex: 10,
     },
 });
