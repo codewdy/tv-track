@@ -60,7 +60,6 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
                     } else {
                         tvDetail = await fetchTV(tvId);
                         newCache.set(tvId, tvDetail);
-                        console.log(`缓存TV ${tvId}的详情`);
                     }
 
                     // 创建TV对象用于列表展示
@@ -101,7 +100,6 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
                     try {
                         const detail = await fetchTV(tvId);
                         newCache.set(tvId, detail);
-                        console.log(`缓存TV ${tvId}的详情用于删除已观看缓存`);
                     } catch (error) {
                         console.error(`获取TV ${tvId}的详情失败:`, error);
                     }
@@ -124,8 +122,6 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
                     deletedCount++;
                 }
             }
-
-            console.log(`已删除${deletedCount}个已观看的缓存`);
         } catch (error) {
             console.error('删除已观看缓存失败:', error);
             console.error('删除已观看缓存失败');
@@ -136,7 +132,6 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
     useEffect(() => {
         // 清空缓存
         setTvDetailCache(new Map());
-        console.log('缓存已清空');
     }, []);
 
     // 下载列表变化时重新获取数据
@@ -260,8 +255,6 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
             for (const download of downloads) {
                 await deleteDownload(download.id);
             }
-
-            console.log('已删除所有下载');
         } catch (error) {
             console.error('删除TV组下载失败:', error);
         }
