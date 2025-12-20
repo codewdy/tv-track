@@ -1,10 +1,42 @@
 import React, { useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, BackHandler, Alert } from 'react-native';
 import { useDownload } from '../context/DownloadContext';
 import { DownloadItem } from '../utils/downloadManager';
+import { fetchMonitor } from '../api/client';
+import { MonitorResponse } from '../types';
 
 const DownloadList = ({ onBack }: { onBack: () => void }) => {
     const { downloads, pauseDownload, resumeDownload, deleteDownload } = useDownload();
+
+    const deleteWatchedDownloads = async () => {
+        try {
+            // 获取监控数据以获取已观看的剧集信息
+            const monitorData: MonitorResponse = await fetchMonitor();
+
+            // 创建一个映射，将tvId映射到已观看的剧集索引
+            const watchedMap = new Map<number, number>();
+            for (const tv of monitorData.tvs) {
+                watchedMap.set(tv.id, tv.watch.watched_episode);
+            }
+
+            // 遍历所有下载项
+            for (const download of downloads) {
+                const { tvId, episodeId } = download;
+
+                // 检查该剧集是否已观看
+                const watchedEpisode = watchedMap.get(tvId);
+                if (watchedEpisode !== undefined && episodeId < watchedEpisode) {
+                    // 删除已观看的缓存
+                    await deleteDownload(download.id);
+                }
+            }
+
+            Alert.alert('成功', '已删除所有已观看的缓存');
+        } catch (error) {
+            console.error('删除已观看缓存失败:', error);
+            Alert.alert('错误', '删除已观看缓存失败');
+        }
+    };
 
     useEffect(() => {
         const backAction = () => {
@@ -56,7 +88,9 @@ const DownloadList = ({ onBack }: { onBack: () => void }) => {
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>本地缓存</Text>
-                <View style={styles.headerRightPlaceholder} />
+                <TouchableOpacity onPress={deleteWatchedDownloads} style={styles.deleteAllButton}>
+                    <Text style={styles.deleteAllButtonText}>删除已看</Text>
+                </TouchableOpacity>
             </View>
             <FlatList
                 data={downloads}
@@ -93,6 +127,17 @@ const styles = StyleSheet.create({
     },
     headerRightPlaceholder: {
         width: 40,
+    },
+    deleteAllButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: '#FF3B30',
+        borderRadius: 4,
+    },
+    deleteAllButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '500',
     },
     title: {
         fontSize: 18,
