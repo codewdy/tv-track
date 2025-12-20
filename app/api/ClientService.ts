@@ -81,6 +81,18 @@ class ClientService {
         this.listeners.forEach(l => l(this._isOffline));
     }
 
+    private moveTVToFront(id: number) {
+        if (this.offlineMonitorData) {
+            const tvIndex = this.offlineMonitorData.tvs.findIndex(tv => tv.id === id);
+            if (tvIndex !== -1) {
+                // Remove TV from current position
+                const tv = this.offlineMonitorData.tvs.splice(tvIndex, 1)[0];
+                // Add TV to front
+                this.offlineMonitorData.tvs.unshift(tv);
+            }
+        }
+    }
+
     get isOffline() {
         return this._isOffline;
     }
@@ -246,6 +258,16 @@ class ClientService {
                 detail.watch = request.watch;
                 this.offlineTVDetails.set(request.id, detail);
 
+                // Update monitor data if available
+                if (this.offlineMonitorData) {
+                    const tvIndex = this.offlineMonitorData.tvs.findIndex(t => t.id === request.id);
+                    if (tvIndex !== -1) {
+                        this.offlineMonitorData.tvs[tvIndex].watch = request.watch;
+                        // Move TV to front in monitor data
+                        this.moveTVToFront(request.id);
+                    }
+                }
+
                 // Mark for sync
                 this.pendingSyncTvIds.add(request.id);
 
@@ -270,6 +292,8 @@ class ClientService {
                     const tvIndex = this.offlineMonitorData.tvs.findIndex(t => t.id === request.id);
                     if (tvIndex !== -1) {
                         this.offlineMonitorData.tvs[tvIndex].tag = request.tag;
+                        // Move TV to front in monitor data
+                        this.moveTVToFront(request.id);
                     }
                 }
 
