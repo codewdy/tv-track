@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import React, { useState, useRef } from 'react';
+import { StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import TVList from './components/TVList';
@@ -8,6 +8,7 @@ import DownloadList from './components/DownloadList';
 import AddTV from './components/AddTV';
 import DownloadMonitor from './components/DownloadMonitor';
 import ErrorList from './components/ErrorList';
+import AutoUpdate, { AutoUpdateRef } from './components/AutoUpdate';
 import { DownloadProvider } from './context/DownloadContext';
 import { ClientProvider } from './context/ClientProvider';
 import { AppErrorProvider } from './context/AppErrorContext';
@@ -18,9 +19,10 @@ import { useClient } from './context/ClientProvider';
 
 interface MainContentProps {
   onFullScreenChange: (isFullScreen: boolean) => void;
+  onCheckUpdate: () => void;
 }
 
-function MainContent({ onFullScreenChange }: MainContentProps) {
+function MainContent({ onFullScreenChange, onCheckUpdate }: MainContentProps) {
   const [selectedTVId, setSelectedTVId] = useState<number | null>(null);
   const [showDownloads, setShowDownloads] = useState(false);
   const [showAddTV, setShowAddTV] = useState(false);
@@ -114,6 +116,16 @@ function MainContent({ onFullScreenChange }: MainContentProps) {
                     {isOffline ? '切换到在线模式' : '切换到离线模式'}
                   </Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setShowMenu(false);
+                    onCheckUpdate();
+                  }}
+                >
+                  <Text style={styles.menuItemText}>检查更新</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -130,6 +142,7 @@ function MainContent({ onFullScreenChange }: MainContentProps) {
 
 export default function App() {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const autoUpdateRef = useRef<AutoUpdateRef>(null);
 
   return (
     <DownloadProvider>
@@ -137,11 +150,14 @@ export default function App() {
         <SafeAreaView style={[styles.container, isFullScreen && { backgroundColor: '#000' }]} edges={isFullScreen ? [] : undefined}>
           <AppErrorProvider>
             <ClientProvider>
-              <MainContent onFullScreenChange={setIsFullScreen} />
+              <MainContent onFullScreenChange={setIsFullScreen} onCheckUpdate={() => autoUpdateRef.current?.checkForUpdates()} />
             </ClientProvider>
             <AppErrorOverlay />
           </AppErrorProvider>
-          <StatusBar style={isFullScreen ? "light" : "auto"} hidden={isFullScreen} />
+          <StatusBar barStyle={isFullScreen ? "light-content" : "default"} hidden={isFullScreen} />
+
+          {/* 自动更新组件 */}
+          <AutoUpdate ref={autoUpdateRef} />
         </SafeAreaView>
       </SafeAreaProvider>
     </DownloadProvider>
@@ -224,4 +240,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+
 });

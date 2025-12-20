@@ -20,7 +20,10 @@
       "icon": "./assets/icon.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.codewdy.tvtrack"
+      "package": "com.codewdy.tvtrack",
+      "permissions": [
+        "REQUEST_INSTALL_PACKAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
