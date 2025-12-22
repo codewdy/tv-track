@@ -171,7 +171,7 @@ export default function AddTV({ onBack }: Props) {
                         <View style={styles.configContainer}>
                             <Text style={styles.label}>名称</Text>
                             <TextInput
-                                style={styles.input}
+                                style={styles.modalInput}
                                 value={configName}
                                 onChangeText={setConfigName}
                             />
@@ -435,5 +435,14 @@ const styles = StyleSheet.create({
     },
     configContainer: {
         marginBottom: 10,
+    },
+    modalInput: {
+        height: 40,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 4,
+        paddingHorizontal: 10,
+        marginBottom: 10,
+        backgroundColor: '#f9f9f9',
     },
 });
