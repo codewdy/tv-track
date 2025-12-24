@@ -62,6 +62,7 @@ class Searchers:
 
 if __name__ == "__main__":
     async def run():
+        Searcher._SELFTEST_MAX_ERROR_TIME = 1
         async with Context(use_browser=True) as ctx:
             await Searchers().self_test()
     asyncio.run(run())

@@ -6,6 +6,8 @@ from utils.context import Context
 
 
 class Searcher:
+    _SELFTEST_MAX_ERROR_TIME = 3
+
     def __init__(self, config):
         self.resource_searcher = create_resource_searcher(
             config["resource_searcher"])
@@ -16,6 +18,7 @@ class Searcher:
         self.key = config["key"]
         self.name = config["name"]
         self.self_test_keyword = config["self_test"]["keyword"]
+        self.selftest_error_time = 0
 
     async def search(self, keyword):
         try:
@@ -61,11 +64,17 @@ class Searcher:
 
     async def self_test(self):
         with Context.handle_error_context(f"self test {self.key} error", type="critical"):
-            rst = await self.search(self.self_test_keyword)
-            example_video = await self.get_video(rst[0].episodes[0].url)
-            if example_video is None:
-                raise RuntimeError("self test error: ", self.name,
-                                   self.self_test_keyword)
+            try:
+                rst = await self.search(self.self_test_keyword)
+                example_video = await self.get_video(rst[0].episodes[0].url)
+                if example_video is None:
+                    raise RuntimeError("self test error: ", self.name,
+                                       self.self_test_keyword)
+                self.selftest_error_time = 0
+            except:
+                self.selftest_error_time += 1
+                if self.selftest_error_time >= Searcher._SELFTEST_MAX_ERROR_TIME:
+                    raise
 
 
 if __name__ == "__main__":
