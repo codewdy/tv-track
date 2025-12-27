@@ -74,55 +74,6 @@
             }
         },
         {
-            "key": "bfzy",
-            "name": "暴风资源(720p)",
-            "enable": false,
-            "subject_searcher": {
-                "type": "cms",
-                "url": "https://bfzyapi.com/api.php/provide/vod/",
-                "url_pattern": "https://bfzy2.tv/index.php/vod/detail/id/{vod_id}.html"
-            },
-            "channel_searcher": {
-                "type": "web_a",
-                "episode_lists": ".bfzym3u8",
-                "episodes_from_list": "li a:not(.bugs):not(.ckey)",
-                "cover": ".left img"
-            },
-            "resource_searcher": {
-                "type": "parse_url"
-            },
-            "self_test": {
-                "keyword": "生活大爆炸"
-            }
-        },
-        {
-            "key": "freeok",
-            "name": "freeok",
-            "enable": false,
-            "subject_searcher": {
-                "search_url": "https://www.freeok.fun/so1so/-------------.html?wd={keyword}",
-                "type": "web_a",
-                "token": ".module-card-item-title a",
-                "a": ".module-card-item-title a",
-                "cover": ".module-item-pic img",
-                "cover_attr": "data-original"
-            },
-            "channel_searcher": {
-                "type": "web_a",
-                "channel_names": ".module-tab-item span",
-                "episode_lists": ".his-tab-list",
-                "episodes_from_list": "a span",
-                "episode_links_from_list": "a",
-                "filter": "超清有广①"
-            },
-            "resource_searcher": {
-                "type": "browser"
-            },
-            "self_test": {
-                "keyword": "爱情公寓"
-            }
-        },
-        {
             "key": "myripon",
             "name": "忘忧草",
             "enable": true,
