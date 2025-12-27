@@ -252,8 +252,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
                 // Only perform seeking if not in long press fast forward mode
                 if (!isLongPressFFRef.current) {
-                    // 90 seconds for full screen width
-                    const seekSeconds = (gestureState.dx / width) * 90;
+                    // 100 seconds for full screen width
+                    const seekSeconds = (gestureState.dx / width) * 100;
 
                     let newTime = currentTimeRef.current + seekSeconds;
                     // Clamp time
@@ -279,7 +279,7 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                     resetControlsTimeout();
                 } else if (isGestureSeekingRef.current) {
                     const width = playerWidthRef.current || Dimensions.get('window').width;
-                    const seekSeconds = (gestureState.dx / width) * 90;
+                    const seekSeconds = (gestureState.dx / width) * 100;
                     let targetTime = currentTimeRef.current + seekSeconds;
                     targetTime = Math.max(0, Math.min(targetTime, durationRef.current));
 
