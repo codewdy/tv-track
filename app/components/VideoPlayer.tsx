@@ -399,10 +399,11 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
 
     // Handle Play/Pause
     const handlePlayPause = () => {
+        if (!playerRef.current) return;
         if (isPlayingRef.current) {
-            player.pause();
+            playerRef.current.pause();
         } else {
-            player.play();
+            playerRef.current.play();
         }
         resetControlsTimeout();
     };
