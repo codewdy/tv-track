@@ -29,6 +29,7 @@ function MainContent({ onFullScreenChange, onCheckUpdate }: MainContentProps) {
   const [showDownloadMonitor, setShowDownloadMonitor] = useState(false);
   const [showErrorList, setShowErrorList] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const { isOffline, toggleOfflineMode } = useClient();
 
   return (
@@ -53,11 +54,11 @@ function MainContent({ onFullScreenChange, onCheckUpdate }: MainContentProps) {
             <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuButton}>
               <Text style={styles.menuButtonText}>☰</Text>
             </TouchableOpacity>
-            <View style={styles.titleContainer}>
+            <TouchableOpacity style={styles.titleContainer} onPress={() => setIsSearchVisible(prev => !prev)}>
               <Text style={styles.headerTitle}>
                 {isOffline ? '追番小助手 (离线)' : '追番小助手'}
               </Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.headerRight} />
           </View>
 
@@ -133,6 +134,8 @@ function MainContent({ onFullScreenChange, onCheckUpdate }: MainContentProps) {
           <TVList
             onSelect={setSelectedTVId}
             onErrorClick={() => setShowErrorList(true)}
+            isSearchVisible={isSearchVisible}
+            setIsSearchVisible={setIsSearchVisible}
           />
         </>
       )}

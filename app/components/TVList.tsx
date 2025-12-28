@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, SectionList, StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, SectionList, StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity, TextInput } from 'react-native';
 import { useClient } from '../context/ClientProvider';
 import { TV } from '../types';
 import { AuthImage } from './AuthImage';
@@ -13,10 +13,13 @@ interface TVSection {
 interface Props {
     onSelect: (id: number) => void;
     onErrorClick: () => void;
+    isSearchVisible: boolean;
+    setIsSearchVisible: (visible: boolean) => void;
 }
 
-export default function TVList({ onSelect, onErrorClick }: Props) {
+export default function TVList({ onSelect, onErrorClick, isSearchVisible, setIsSearchVisible }: Props) {
     const [sections, setSections] = useState<TVSection[]>([]);
+    const [originalSections, setOriginalSections] = useState<TVSection[]>([]);
     const [tagMap, setTagMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -24,6 +27,7 @@ export default function TVList({ onSelect, onErrorClick }: Props) {
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
     const [criticalErrors, setCriticalErrors] = useState(0);
     const [errors, setErrors] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
     const { fetchMonitor, fetchConfig, isOffline } = useClient();
 
     const loadData = async () => {
@@ -64,6 +68,7 @@ export default function TVList({ onSelect, onErrorClick }: Props) {
                 setCollapsedSections(initialCollapsed);
             }
 
+            setOriginalSections(grouped);
             setSections(grouped);
             setCriticalErrors(monitorData.critical_errors || 0);
             setErrors(monitorData.errors || 0);
@@ -95,6 +100,26 @@ export default function TVList({ onSelect, onErrorClick }: Props) {
             return next;
         });
     };
+
+    // Filter sections based on search query
+    useEffect(() => {
+        if (!isSearchVisible || !searchQuery.trim()) {
+            setSections(originalSections);
+            return;
+        }
+
+        const filtered = originalSections.map(section => {
+            const filteredData = section.data.filter(item =>
+                item.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            return {
+                ...section,
+                data: filteredData
+            };
+        }).filter(section => section.data.length > 0);
+
+        setSections(filtered);
+    }, [searchQuery, originalSections, isSearchVisible]);
 
     const renderItem = ({ item }: { item: TV }) => {
         const imageUrl = item.icon_url.startsWith('http')
@@ -163,6 +188,22 @@ export default function TVList({ onSelect, onErrorClick }: Props) {
                     )}
                 </TouchableOpacity>
             )}
+
+            {isSearchVisible && (
+                <View style={styles.searchContainer}>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="搜索剧集..."
+                        placeholderTextColor="#999"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        clearButtonMode="while-editing"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoFocus
+                    />
+                </View>
+            )}
             <SectionList
                 sections={sectionsToRender}
                 renderItem={renderItem}
@@ -229,6 +270,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
     },
+    appTitleContainer: {
+        padding: 15,
+        backgroundColor: '#2196F3',
+        alignItems: 'center',
+    },
+    appTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
     sectionHeaderContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -293,6 +344,20 @@ const styles = StyleSheet.create({
     },
     episodes: {
         fontSize: 12,
+        color: '#333',
+    },
+    searchContainer: {
+        padding: 10,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    searchInput: {
+        height: 40,
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        fontSize: 16,
         color: '#333',
     },
     error: {
