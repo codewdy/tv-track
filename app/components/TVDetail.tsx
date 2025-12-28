@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler, Modal, TextInput, FlatList, Switch, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Alert, BackHandler, Modal, TextInput, FlatList, Switch, StatusBar, AppState } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useClient } from '../context/ClientProvider';
 import { TVDetail as TVDetailType, Episode, TagConfig, Source } from '../types';
@@ -39,6 +39,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
     const [selectedSource, setSelectedSource] = useState<Source | null>(null);
     const [enableTracking, setEnableTracking] = useState(true);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -76,6 +77,22 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
         }
     }, [tvId, currentEpisodeIndex, onBack, isFullScreen]);
 
+    // Handle app state changes (background to foreground)
+    useEffect(() => {
+        const handleAppStateChange = (nextAppState: string) => {
+            // When app comes back to foreground and not playing, reload data
+            if (nextAppState === 'active' && !isPlaying) {
+                loadData();
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        return () => {
+            subscription.remove();
+        };
+    }, [tvId, isPlaying]);
+
     const loadData = async () => {
         try {
             setLoading(true);
@@ -83,6 +100,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
                 fetchTV(tvId),
                 fetchConfig()
             ]);
+            setShouldAutoPlay(false);
             setDetail(data);
             setTags(config.tags);
             if (data.episodes && data.episodes.length > 0) {
@@ -152,6 +170,7 @@ export default function TVDetail({ tvId, onBack, onFullScreenChange }: Props) {
 
     // Handle playing state changes
     const handlePlayingChange = (isPlaying: boolean) => {
+        setIsPlaying(isPlaying);
         if (isPlaying) {
             hasPlayedRef.current = true;
         }
