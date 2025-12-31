@@ -49,6 +49,8 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
     const [playbackRate, setPlaybackRate] = useState(1.0);
     const [showSpeedSelector, setShowSpeedSelector] = useState(false);
     const [isLongPressFF, setIsLongPressFF] = useState(false);
+    const [currentSystemTime, setCurrentSystemTime] = useState('');
+
 
     // Gesture seeking state
     const [isGestureSeeking, setIsGestureSeeking] = useState(false);
@@ -101,6 +103,25 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 setBrightness(currentBrightness);
             }
         })();
+    }, []);
+
+    // Update system time every second
+    useEffect(() => {
+        const updateSystemTime = () => {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            setCurrentSystemTime(`${hours}:${minutes}`);
+        };
+
+        // Initial update
+        updateSystemTime();
+
+        // Set up interval to update every second
+        const interval = setInterval(updateSystemTime, 1000);
+
+        // Clean up interval on unmount
+        return () => clearInterval(interval);
     }, []);
 
     // Handle long press detection
@@ -677,6 +698,13 @@ export default function VideoPlayer({ episode, initialPosition = 0, style, onPro
                 style={[styles.overlay, !showControls && !isGestureSeeking && !showBrightnessIndicator && !showVolumeIndicator && styles.hidden]}
                 {...panResponder.panHandlers}
             >
+                {/* System Time Display */}
+                {showControls && (
+                    <View style={styles.systemTimeContainer}>
+                        <Text style={styles.systemTimeText}>{currentSystemTime}</Text>
+                    </View>
+                )}
+
                 {/* Gesture Indicator */}
                 {isGestureSeeking && (
                     <View style={styles.gestureIndicator}>
@@ -820,6 +848,21 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000',
         overflow: 'hidden',
+    },
+    systemTimeContainer: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        zIndex: 15,
+    },
+    systemTimeText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,
